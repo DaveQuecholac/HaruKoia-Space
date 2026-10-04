@@ -1,0 +1,68 @@
+---
+description: Antes de implementar una funcionalidad — proponer el alcance completo en chat; nunca imponerlo ni escribirlo a archivos sin autorización
+alwaysApply: true
+---
+
+# Funcionalidad — proponer el alcance en chat (obligatorio)
+
+**Precedencia:** funciona **con** **`agent-explicit-request-only.mdc`** (implementar solo lo que el usuario autorizó **después** de la propuesta). **No** anula los límites que el usuario ya dio en el mismo mensaje (por ejemplo "solo el worker este turno").
+
+**No aplica:** preguntas puras, ediciones de documentación que el usuario nombró, o tareas ya acotadas capa por capa en su mensaje.
+
+---
+
+## 1. Cuándo se abre esta puerta
+
+Antes de la **primera edición** para implementar una **funcionalidad de producto** (capacidad nueva, pasar de simulado a real, refactor que cambia comportamiento visible):
+
+1. **`design-first.mdc`** — el diseño debe definir el comportamiento; si no, detenerse y preguntar.
+2. Mostrar **solo en el chat** un **bloque de propuesta**.
+
+Disparadores: "implementa…", "cablea…", "hazlo", "sigue con…", "rebanada N".
+
+**Prohibido:** empezar a codear porque un documento de plan enumera pasos, sin esta propuesta y sin que el usuario elija (salvo que el mensaje del usuario ya liste las capas y superficies **exactas** de este turno).
+
+---
+
+## 2. Bloque de propuesta (en el chat, no en archivos)
+
+Incluye **todo** lo siguiente. Etiquétalo **`Propuesta`**. **No** lo trates como permiso para implementar.
+
+| # | Sección | Contenido |
+|---|---------|-----------|
+| 1 | **Superficie** | Pantalla, comando o proceso afectado; modo real o simulado |
+| 2 | **Capas sugeridas** | Qué paquetes y procesos toca, y cuáles forman **un** incremento entregable |
+| 2b | **Modelo extensible** | **`agent-extensible-capability-design.mdc`** — frase del mecanismo, variantes de hoy y la siguiente probable, dueño del mecanismo contra plugins, prueba de extensión, patrón existente a extender. **Prohibido** implementar tuberías paralelas con nombre de la feature sin esta fila |
+| 3 | **Qué reemplaza** | Implementación anterior, simulada o parcial, en la **misma** superficie, que dejaría de usarse |
+| 3b | **Huérfanos a retirar** | Código que **solo** existía para lo anterior y queda sin consumidor — salvo convivencia explícita |
+| 4 | **Rebanadas sugeridas** | Opciones numeradas (por ejemplo A = solo datos, B = datos + API, C = extremo a extremo con interfaz) |
+| 5 | **Verificación** | Camino de humo, pruebas y typecheck de los paquetes afectados |
+| 6 | **Qué queda fuera** | Explícito, incluido lo que se deja a propósito |
+
+**El usuario debe elegir** (o editar) antes de implementar. Confirmaciones cortas cuentan: "sí, C", "solo B".
+
+---
+
+## 3. Prohibido sin autorización
+
+| **No** hagas | Por qué |
+|--------------|---------|
+| Implementar interfaz o retiro de lo anterior porque "las features son de extremo a extremo por defecto" | El alcance completo se **propone**, no se impone |
+| Implementar **solo** una capa y marcar la funcionalidad como "lista" cuando la propuesta listaba pendientes en la misma superficie | Incompleto, salvo que el usuario haya elegido esa rebanada |
+| Escribir la propuesta en `docs/` o en otros archivos | **Solo chat** hasta que el usuario pida documentarla y nombre la ruta |
+
+---
+
+## 4. Después de que el usuario autoriza
+
+- **`agent-explicit-request-only.mdc`** — la lista PERMITIDO es **solo** lo que eligió.
+- **`agent-implementation-slices-and-gates.mdc`** — una rebanada autorizada, checkpoint, y reportar lo que queda pendiente.
+- **`agent-mock-to-real-no-carryover.mdc`** — al pasar de simulado a real, sin arrastrar fallbacks del simulado.
+
+---
+
+## 5. Relación
+
+- **`agent.mdc`** — los pasos del plan reflejan la elección **autorizada**, no la propuesta completa.
+- **`agent-extensible-capability-design.mdc`** — la fila de modelo extensible es obligatoria en capacidades que admiten variantes.
+- **`documentation-first-and-doc-code-sync.mdc`** — sincronizar docs **después** del código estable autorizado; no usar la sincronía de docs para colar alcance no pedido.

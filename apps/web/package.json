@@ -1,0 +1,32 @@
+{
+  "name": "@harukoia/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web — pizarra, presencia y lectura local de lo publicado",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/pm2-dev.mjs start && node scripts/pm2-dev.mjs logs",
+    "dev:start": "node scripts/pm2-dev.mjs start",
+    "dev:stop": "node scripts/pm2-dev.mjs stop",
+    "dev:restart": "node scripts/pm2-dev.mjs restart",
+    "dev:logs": "node scripts/pm2-dev.mjs logs",
+    "dev:status": "node scripts/pm2-dev.mjs status",
+    "dev:plain": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@harukoia/domain": "workspace:*",
+    "@harukoia/schema": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}

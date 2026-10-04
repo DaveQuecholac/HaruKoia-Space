@@ -1,0 +1,64 @@
+---
+description: Responder primero la pregunta real del usuario — sin investigación proactiva; herramientas según el tipo de mensaje
+alwaysApply: true
+---
+
+# Responder primero — sin investigación proactiva
+
+**Máxima precedencia** entre las reglas de comportamiento del agente (ver **Precedencia** abajo). Leer **`agent-questions-not-commands.mdc`** en el mismo turno.
+
+## Paso 0 (cada turno, antes de cualquier herramienta)
+
+Clasifica el mensaje:
+
+| Tipo | Ejemplos | Permitido este turno |
+|------|----------|----------------------|
+| **A. Meta / procedimiento / opinión** | "qué procedimiento seguirías", "por qué no hiciste", "cómo configurarías las rules", "analiza y propón" (sin implementar) | **Solo texto.** Sin Grep, Read, Shell, WebSearch, Task, Glob. |
+| **B. Concepto / framework** | "cómo funciona la réplica de RxDB", "qué es un CRDT" | **Texto** desde conocimiento. **WebSearch** solo si de otro modo adivinarías detalles de API — **una** consulta máximo, luego responde. **Sin grep al repo.** |
+| **C. Hecho del repo** | "dónde está definido X", "qué dice el análisis de arquitectura" | **Read puntual** en las rutas nombradas. |
+| **D. Implementar** | "agrega X", "arréglalo", "edita la regla Y", "impleméntalo", "hazlo" | **`agent-feature-proposal-e2e.mdc`** para funcionalidad de producto → el usuario elige alcance → luego herramientas según la rebanada autorizada. Capacidades nuevas: bloque de mecanismo de **`agent-extensible-capability-design.mdc`** antes de código con forma de feature. Un alcance ya estrecho en el mensaje del usuario salta la propuesta. |
+
+**Por defecto, si dudas: tipo A** — responde en texto y pregunta si quieren investigación en el repo o implementación.
+
+## Prohibido (fallas reales)
+
+| El usuario dijo | **No** hagas |
+|-----------------|--------------|
+| Procedimiento / cómo lo harías / qué harías | Grep o lectura del repo "para ser preciso con este proyecto", salvo que pidan el estado **actual de este repo** |
+| Por qué hiciste / por qué no hiciste | Volver a buscar, correr herramientas o "demostrar" con investigación en el **mismo** turno |
+| Corrige tu comportamiento | Tocar el repo o correr herramientas para "arreglarlo" — reconoce en texto, salvo que digan **restaura** o **implementa** |
+| Hizo una **pregunta** | Sustituir una respuesta directa por investigación ("por ser exhaustivo") |
+
+## Forma de la respuesta
+
+1. **Primero:** respuesta directa a lo que preguntaron.
+2. **Después** (solo si es tipo D, o si lo pidieron): plan corto o *"¿quieres que revise el repo o que lo aplique?"*
+3. **Nunca** volcados de archivos no pedidos, "esto es lo que encontré" largo, ni uso de herramientas para rellenar la respuesta.
+
+## Presupuesto de herramientas
+
+| Herramienta | A | B | C | D |
+|-------------|---|---|---|---|
+| Grep / Glob | No | No | Mínimo, acotado | Sí |
+| Read | No | No | Solo archivos nombrados | Sí |
+| Shell | No | No | Solo lectura si lo pidieron | Sí |
+| WebSearch | No | 0–1 si falta detalle de API | No | Si hace falta |
+| Write / StrReplace / Delete | No | No | No | Después de autorización |
+
+## Precedencia (cuando las reglas chocan)
+
+1. Mensaje **literal** del usuario (mismo turno)
+2. **`agent-answer-first.mdc`** (este archivo)
+3. **`agent-explicit-request-only.mdc`** — **solo** rutas y acciones pedidas explícitamente; sin extras "útiles" ni limpieza no ordenada
+4. **`design-first.mdc`** — diseño antes de código; prohibido implementar por supuesto
+5. **`agent-feature-proposal-e2e.mdc`** — proponer alcance en chat antes de código de feature; **no** amplía lo permitido sin que el usuario elija
+6. **`agent-questions-not-commands.mdc`**
+7. **`agent-stop-report-no-unauthorized-scope.mdc`**
+8. El resto de las reglas siempre activas — **solo en modo implementación (tipo D)**
+
+**Excepciones para tipos A y B:** `documentation-first-and-doc-code-sync.mdc` (no exige bucear en docs antes de responder), el punto de "Investigar" de `agent.mdc`, y "ejecuta, no postergues" hasta que el usuario autorice implementación.
+
+## Relación con otras reglas
+
+- **`agent.mdc`:** la investigación y la lectura de docs de patrones aplican **después** de confirmar tipo D.
+- **`agent-implementation-discipline.mdc`:** docs oficiales antes del repo para **comportamiento de terceros** — especialmente tipo B; no es excusa para grepear el repo en tipo A.

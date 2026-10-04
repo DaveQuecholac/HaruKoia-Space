@@ -1,0 +1,69 @@
+---
+description: Layout de documentación — docs/fijos para lo permanente, docs/dev/<rama-git> para el trabajo en curso; sin análisis y plan no hay código
+alwaysApply: true
+---
+
+# Layout de documentación (`docs/`)
+
+Toda la documentación vive en **`docs/`**. Dos roles, no se mezclan.
+
+| Rol | Ruta | Contenido |
+|-----|------|-----------|
+| **Fija** | `docs/fijos/**` | Contexto de producto, arquitectura, fases, estructura del proyecto. Permanente |
+| **Desarrollo** | `docs/dev/<ruta-de-la-rama-git>/` | Análisis, plan, notas y evidencia de **esa** rama |
+
+Índices: `docs/README.md` y `docs/dev/README.md`.
+
+## Mapeo de la rama (obligatorio)
+
+1. Antes de crear o mover markdown "de la rama", corre `git branch --show-current` (o usa la rama que el usuario nombró).
+2. Mapea con los **mismos segmentos**: rama `dev/pizarra-sesion` → **`docs/dev/dev/pizarra-sesion/`**.
+3. **Prohibido** inventar una carpeta temática distinta al nombre de la rama.
+4. Si el repositorio todavía no tiene git inicializado, **pregunta** antes de crear una carpeta de rama; no adivines el nombre.
+
+## Artefactos mínimos de una rama
+
+| Archivo | Propósito |
+|---------|-----------|
+| `README.md` | Índice: alcance, rebanadas, estado, decisiones que podrían malinterpretarse |
+| `analisis-*.md` | Contexto, opciones, decisiones, restricciones. Para capacidades nuevas incluye el bloque de mecanismo de **`agent-extensible-capability-design.mdc`** |
+| `plan-*.md` | Rebanadas ordenadas, archivos, criterios de aceptación |
+
+Una rebanada está **documentada** solo si el análisis y el plan nombran la superficie, las capas y la verificación de **esa** rebanada.
+
+## Puerta antes del primer código de producto
+
+**Prohibido** `Write` / `StrReplace` / `Delete` en código de producto (`apps/**`, `packages/**`) hasta que la carpeta de la rama actual documente la rebanada.
+
+Bloque obligatorio en el chat antes de la primera edición de producto:
+
+```
+Rama: <rama git>
+Docs de rama: docs/dev/<ruta>/
+Análisis: <archivo> — cubre esta rebanada: sí/no
+Plan: <archivo> — cubre esta rebanada: sí/no
+```
+
+Si la respuesta es **no** → escribe primero la documentación de rama. No codees.
+
+## Prohibido
+
+| No hagas | Por qué |
+|----------|---------|
+| Implementar y "documentar después" | El trabajo sin documentar no es válido en este proyecto |
+| Poner notas de rama en `docs/fijos/` | Lo fijo es permanente; la rama es temporal |
+| Poner decisiones permanentes solo en la carpeta de una rama | Se pierden al cerrar la rama; promuévelas a `docs/fijos/` |
+| Arrancar desde un resumen del chat | La fuente durable es la rama más su carpeta en `docs/dev/` |
+
+## Si ya hay código sin documentación
+
+1. **Detén** las ediciones de producto.
+2. Escribe `analisis-*.md` y `plan-*.md` de forma retroactiva y actualiza el `README.md` de la rama.
+3. Continúa **solo** alineado a esos archivos (o a la corrección del usuario).
+
+## Relación
+
+- **`arquitectura-harukoia.mdc`** — qué documento fijo manda sobre qué.
+- **`design-first.mdc`** — diseño antes de código; prohibido implementar por supuesto.
+- **`documentation-first-and-doc-code-sync.mdc`** — sincronía doc–código y parada ante contradicciones.
+- **`agent-implementation-slices-and-gates.mdc`** — el plan es entrada, no autorización automática.

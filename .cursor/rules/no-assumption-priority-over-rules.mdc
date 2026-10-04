@@ -1,0 +1,38 @@
+---
+description: Puerta dura — nunca agregar caminos de compatibilidad o fallback salvo autorización explícita del usuario
+alwaysApply: true
+---
+
+# Ningún supuesto por encima de las reglas
+
+Cuando una regla dice **sin fallback, sin arrastrar lo anterior**, el agente debe tratarlo como absoluto.
+
+## Ley central
+
+- Nunca agregues comportamiento de compatibilidad a partir de supuestos como "para no romper los datos que ya existen".
+- Agrega compatibilidad o fallback **solo** cuando el usuario lo autorice explícitamente en el mismo hilo con:
+  - `authorize_legacy_fallback: true`
+- Si ese token falta, el comportamiento de fallback está **prohibido**.
+
+## Puerta obligatoria antes de editar (debe imprimirse antes del primer write)
+
+1. Cita la petición del usuario.
+2. Enumera las reglas que restringen este cambio.
+3. Agrega `Supuestos en conflicto:` y déjalo vacío.
+4. Si aparece algún supuesto (por ejemplo compatibilidad hacia atrás), **detente y pregunta**.
+
+## Patrones prohibidos sin autorización explícita
+
+- Mapas de alias de formatos anteriores en los caminos de lectura.
+- Preprocesadores de esquema que normalizan cargas antiguas al contrato nuevo.
+- Resolución de un campo desde varias fuentes (`x || y || z`) entre formas antigua y actual.
+- Valores por defecto temporales que tapan la ausencia de un campo canónico.
+
+## Condición de parada
+
+Si parece que hace falta un fallback y no está `authorize_legacy_fallback: true`, **detente y pregunta** en lugar de codearlo.
+
+## Relación
+
+- **`agent-mock-to-real-no-carryover.mdc`** — el mismo criterio al pasar de simulado a real.
+- **`design-first.mdc`** — si el diseño no dice qué pasa con los datos anteriores, es un hueco de diseño, no un hueco que el agente rellene.

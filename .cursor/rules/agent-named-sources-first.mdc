@@ -1,0 +1,64 @@
+---
+description: Los archivos que el usuario nombra van primero (incluido el .env de desarrollo); respuestas literales y proporcionales, sin sustitutos ni expansión
+alwaysApply: true
+---
+
+# Fuentes nombradas primero — respuestas literales
+
+**Precedencia:** junto con **`agent-answer-first.mdc`** y **`development-environment-variables.mdc`**. Cuando el usuario apunta a **archivos concretos** o hace una pregunta **factual y estrecha**, esta regla gana sobre "documentación primero", el grep amplio del repo, y el relleno de "ser exhaustivo".
+
+---
+
+## 1. Ley central
+
+1. **El usuario nombra una fuente** — una ruta, "el `.env`", "el Dockerfile", "lee X" — **abre esa fuente primero** (herramienta Read) y luego responde.
+2. **Responde solo lo que preguntaron**, en proporción a la pregunta. **Detente** al terminar.
+3. **Sin sustitutos** para *actual / real / mío / según el .env*: `.env.example`, otro README, un grep genérico o "cómo se hace normalmente" **no son** el archivo que nombraron.
+
+---
+
+## 2. `.env` de desarrollo (obligatorio)
+
+- Los `.env` y `.env.local` de desarrollo de este repo son **no productivos** — el agente **debe leerlos** cuando la pregunta es sobre variables configuradas, entorno de ejecución, contenedores, conectividad, o "según el env".
+- **No** cambies el `.env` por el `.env.example` por costumbre o por exceso de precaución.
+- **`.env.example`** es la plantilla para instalaciones nuevas, no "lo que está corriendo ahora", salvo que pidan el archivo de ejemplo.
+
+---
+
+## 3. Expansión de alcance prohibida (salvo que la pidan)
+
+| No hagas | Por qué |
+|----------|---------|
+| Grepear el repo o abrir documentación **antes** de los archivos nombrados | Esconde la respuesta real |
+| Convertir una **revisión** en una auditoría, un diagrama o una oferta de sincronizar docs | No lo pidieron |
+| Agregar "¿quieres que actualice el README o las rules?" | No es parte de una pregunta factual |
+| Ampliar a sistemas relacionados que no nombraron | El alcance es el del mismo turno |
+
+Las **tareas de implementación** siguen **`documentation-first-and-doc-code-sync.mdc`**; eso **no** significa saltarse un `.env` que el usuario nombró cuando quiere hechos de ahí.
+
+---
+
+## 4. Forma de la respuesta
+
+- **Pregunta simple → respuesta corta primero.**
+- **Varios elementos nombrados** (por ejemplo Dockerfile y env) → una sección por elemento, sin capítulos extra.
+- **Profundidad, diagramas, tablas** → solo si los pidieron o si hace falta comparar.
+
+**En el chat:** leer el `.env` es obligatorio cuando es relevante; repetir cada secreto no lo es. Lista los **nombres** de las variables; da **valores** cuando importan para la respuesta; oculta tokens largos si basta un sí/no o una lista de nombres.
+
+---
+
+## 5. Falla real (no repetir)
+
+| El usuario | Mal | Bien |
+|------------|-----|------|
+| "Según el .env" | Responder desde `.env.example` | Leer su `.env` |
+| "Checa X y Y" | Ensayo + diagrama + huecos de configuración | Leer X y Y, responder, detenerse |
+| Cualquier pregunta estrecha | Miedo o workaround en lugar de abrir el archivo | Leer el archivo nombrado |
+
+---
+
+## 6. Relación
+
+- **`agent-explicit-request-only.mdc`** — sin ediciones no pedidas.
+- **`agent-implementation-discipline.mdc`** — radio de impacto mínimo; esta regla es el lado de **leer y responder**.

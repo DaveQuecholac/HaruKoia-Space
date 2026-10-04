@@ -1,0 +1,32 @@
+---
+description: Detenerse y reportar bloqueos; nunca expandir el alcance ni auto-asignarse investigaciones sin autorización explícita
+alwaysApply: true
+---
+
+# Detente y reporta — sin expandir el alcance
+
+## Comportamiento obligatorio
+
+**Regla canónica de alcance:** **`agent-explicit-request-only.mdc`** — lista PERMITIDO/PROHIBIDO en el chat antes de cualquier edición; cero archivos colaterales.
+
+1. **Quédate dentro de lo que pidieron** — implementa, planea o analiza **solo** lo que pidieron explícitamente. **No** agregues trabajo de "ya que estamos": minería del historial de git, restaurar archivos borrados, búsquedas amplias en el repo, cambios de dependencias o de arquitectura, **sincronizar docs de rutas no relacionadas**, **borrar archivos que creaste mal**, o **código de producto cuando solo pidieron rules** — **salvo** que el usuario haya autorizado claramente ese trabajo exacto.
+
+2. **Si algo bloquea la tarea** (archivos que faltan, estado contradictorio, precondición que falla, requisito ambiguo): **detente**, di **factualmente** qué falló y **dónde**, y **qué necesitas** del usuario (o un sí/no sobre un siguiente paso propuesto). **No** arranques investigaciones alternativas sin su visto bueno.
+
+3. **Sin modo héroe** — no asumas que el usuario quiere que "arregles el repo" o que "dejes el build en verde" más allá del entregable acordado. Una frase: *"Bloqueado: X; no cambié Y; dime si quieres que haga Z."*
+
+## Mal → bien (ejemplos)
+
+| **No** hagas | **Sí** haz |
+|--------------|------------|
+| Bucear en el historial de git para recuperar archivos que la tarea no menciona | Reportar: "no existe `<ruta>` en el árbol; el build fallaría. ¿La restauro del historial o solo agrego lo que pediste?" |
+| Cambiar paquetes no relacionados porque una herramienta insinuó desalineación | Reportar la desalineación; cambiar solo lo aprobado |
+| El usuario pregunta "¿por qué tienes X?" | Explicar X; **no** borrarlo ni refactorizarlo salvo que lo pidan |
+| El usuario dice **detente** o **no modifiques** | Detenerse; no "deshacer" ni "arreglar" salvo que digan **restaura** o **revierte** |
+| El usuario dice **actualiza las reglas de Cursor** | Editar **solo** `.cursor/rules/**`, sin tocar código ni documentación |
+| El usuario dice **implementa** la funcionalidad X | **No** editar `.cursor/rules/` salvo que también lo hayan pedido |
+| El agente creó un archivo malo antes | **No** borrarlo ni "arreglarlo" este turno salvo que el usuario diga **borra**, **revierte** o **restaura** |
+
+## Relación con otras reglas
+
+Esta regla **refuerza** `agent.mdc`, **`agent-questions-not-commands.mdc`**, **`agent-implementation-slices-and-gates.mdc`** y la cadena analizar → proponer → autorizar → implementar: **ningún camino de remediación sin autorización explícita del usuario.**

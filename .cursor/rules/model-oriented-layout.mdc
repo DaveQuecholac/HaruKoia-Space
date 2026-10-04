@@ -1,0 +1,33 @@
+---
+description: Layout universal — organizar por modelo, funcionalidad o dominio; los árboles transversales (utils/, hooks/, types/, archivos dios) nunca se permiten
+alwaysApply: true
+---
+
+# Layout orientado a modelo — sin árboles transversales
+
+Aplica a **todo** el código del repositorio, no solo a una capa. Organizar por tipo técnico en lugar de por dueño **nunca** es aceptable.
+
+## Principio universal
+
+1. **Una carpeta por modelo, funcionalidad, componente u operación dueña.** Todos los artefactos de ese dueño viven **dentro** de esa carpeta (tipos, esquemas, pruebas, componentes, documentación).
+2. **Prohibido en todas partes:** árboles paralelos o archivos dios que agrupan por **tipo técnico** entre dueños no relacionados. Por ejemplo:
+   - `types/`, `schemas/`, `utils/`, `helpers/`, `constants/` en la raíz de un paquete
+   - `hooks/` o `components/` mezclando funcionalidades no relacionadas
+   - Un solo archivo que define **varias** operaciones, componentes o modelos sin relación entre sí
+   - Lógica de dominio en los paquetes de composición en lugar de en su paquete dueño
+3. **Un archivo, un asunto** dentro de la carpeta del dueño.
+
+Si una ruta no deja obvio **qué funcionalidad o modelo es su dueño**, rechaza el layout.
+
+## Mecanismo contra variante
+
+Un comportamiento recurrente entre funcionalidades (por ejemplo la exportación de documentos, o los adjuntos de una versión) es dueño de sus tipos **genéricos** en su **carpeta de mecanismo**; cada variante es un **plugin** en su propia carpeta. Ver **`agent-extensible-capability-design.mdc`**.
+
+**Prohibido:** poner los tipos genéricos de un mecanismo dentro del módulo de una sola variante.
+
+## Comportamiento del agente
+
+- Antes de agregar archivos, **nombra al dueño** (funcionalidad, operación, componente).
+- Si el usuario o un boceto implica un bucket transversal nuevo (`utils/`, `all-hooks.ts`, `types/index.ts` compartido entre dominios) → **detente**, propón colocarlo junto a su dueño, o pregunta.
+- Los nombres de los modelos compartidos describen el concepto de **producto** (sala, versión, documento), no el motor de almacenamiento ni el detalle de transporte.
+- La estructura de paquetes y procesos de este motor está decidida en `docs/fijos/arquitectura/`. No inventes una distinta ni muevas código entre paquetes sin autorización — ver **`arquitectura-harukoia.mdc`** y **`design-first.mdc`**.

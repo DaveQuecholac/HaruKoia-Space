@@ -1,0 +1,62 @@
+---
+description: Dónde vive el diseño vigente del motor colaborativo HaruKoia y qué documento manda sobre qué
+alwaysApply: true
+---
+
+# Diseño vigente del motor HaruKoia
+
+Este repositorio es el **motor colaborativo HaruKoia**, construido desde cero. IOKOIA Space **no se modifica desde aquí**: sus módulos se traerán hacia este motor, uno por uno, cuando el motor funcione.
+
+## Fuentes de verdad
+
+| Documento | Qué manda |
+|-----------|-----------|
+| `docs/fijos/arquitectura/analisis-arquitectura-v2.md` | **Documento vigente.** Decisión de arquitectura, componentes, flujo de sesión, modelo de datos, errores y plan de pruebas |
+| `docs/fijos/arquitectura/arquitectura-recomendada.md` | Vigente **solo** en lo que la v2 no cambió. Su encabezado dice qué quedó superado |
+| `docs/fijos/arquitectura/por-que-no-microservicios.md` | Criterio para decidir si una capacidad se convierte en proceso propio |
+| `docs/fijos/inicial/contexto-inicial.md` | Contexto del producto y alcance |
+| `docs/fijos/inicial/acuerdos-junta-fase2.md` | Acuerdos de la junta que originaron la v2 |
+| `docs/fijos/estructura-del-proyecto.md` | Paquetes, procesos y arranque con PM2 y portless |
+| `docs/fijos/fases/fase-1-modulos-y-tareas.md` | Módulos de la fase 1, dependencias y reparto |
+
+Layout de la documentación y puerta de las ramas: **`docs-layout.mdc`**.
+
+Ante una contradicción entre documentos, **detente y repórtalo** — **`documentation-first-and-doc-code-sync.mdc`**. No elijas tú cuál gana.
+
+## Decisiones cerradas (no reabrir por iniciativa propia)
+
+El agente **no** propone un stack alternativo, **no** reabre estas decisiones y **no** implementa contra ellas:
+
+- El motor es **host-autoritativo**: cada sesión tiene un host dueño de los datos y del commit.
+- El servidor en la nube es **orquestador y relay**: registra salas, genera links y enruta. **No guarda el tablero**.
+- **No hay maestro central de documentos.** El host persiste.
+- Solo el **host** comitea y empuja a git.
+- El markdown se genera **al hacer push**, no mientras se dibuja.
+- La pizarra tiene **staging, commit, historial y checkout**. Ramificación queda fuera de la v1.
+- **Dos contenedores**: orquestador y contenedor host genérico (sala de usuario o sala global).
+- Identidad de la v1: **link de invitación y nombre**. El control de acceso viene después.
+
+Si el usuario pide algo que choca con una de estas decisiones, **dilo** y pregunta si quiere cambiar el diseño. Cambiar el diseño es editar el documento, no improvisar en el código.
+
+## Puntos abiertos
+
+El análisis v2 tiene una sección de **puntos abiertos** (entre otros: proveedor de IA, secciones exactas del markdown, qué entra en staging, alcance del CLI en la v1, cuándo entra autenticación, si git está en el alcance inicial).
+
+Un punto abierto **no** se cierra implementando. Se cierra preguntando al usuario y actualizando el documento — **`design-first.mdc`**.
+
+## Vocabulario
+
+Usa estos términos tal cual en código, documentación y conversación, para que no se dupliquen conceptos:
+
+| Término | Significado |
+|---------|-------------|
+| **Sala** | Sesión de pizarra con su host y sus invitados |
+| **Host** | Dueño de los datos y del commit de esa sala |
+| **Orquestador** | Proceso en la nube que registra salas y hace de relay |
+| **Contenedor host** | Proceso con la sala en vivo, la base local y la copia de trabajo del repo |
+| **Commit** | Versión oficial de la pizarra, con padre, autor y participantes |
+| **Push** | Comitear y empujar al remoto git lo generado a partir de la pizarra |
+| **Sync en vivo** | Los cambios de la sesión entre participantes. **No** es git |
+| **Sala de usuario** y **sala global** | Host en la máquina del developer, o host en servidor |
+
+Nombres oficiales: **HaruKoia** y **IOKOIA** (Space). No los mezcles ni los abrevies de otra forma.

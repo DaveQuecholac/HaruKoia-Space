@@ -1,0 +1,30 @@
+---
+description: PM2 + portless — identidad de las apps de este repo
+alwaysApply: true
+---
+
+# PM2 — identidad de este repo
+
+Operación global (humano, agente, requisitos del proxy): **`pm2-dev.mdc`**.
+
+## Apps
+
+| Paquete | `APP_NAME` | `PORTLESS_NAME` | URL | Logs |
+|---------|------------|-----------------|-----|------|
+| `apps/orchestrator` | `harukoia-orchestrator-dev` | `orquestador.harukoia.local.iokoia` | `https://orquestador.harukoia.local.iokoia.dev/` | `apps/orchestrator/logs/pm2/*.log` |
+| `apps/host` | `harukoia-host-dev` | `host.harukoia.local.iokoia` | `https://host.harukoia.local.iokoia.dev/` | `apps/host/logs/pm2/*.log` |
+| `apps/web` | `harukoia-web-dev` | `web.harukoia.local.iokoia` | `https://web.harukoia.local.iokoia.dev/` | `apps/web/logs/pm2/*.log` |
+
+`apps/cli` no es un proceso de PM2: es un binario que se corre a mano.
+
+## Convención de hosts
+
+Vigente desde el 2026-10-02 en las máquinas IOKOIA: el sufijo de desarrollo es **`.local.iokoia`** en `PORTLESS_NAME`, con el TLD del proxy en **`dev`**. La URL queda `https://<PORTLESS_NAME>.dev/`.
+
+No uses `.localhost` en apps nuevas de este repo.
+
+## Al agregar una app
+
+1. `APP_NAME`, `PORTLESS_NAME` y la URL deben coincidir **en los tres lugares**: `ecosystem.config.cjs`, `scripts/pm2-dev.mjs` y esta tabla.
+2. Agregar el paquete a `APPS` en `scripts/pm2-root-dev.mjs`.
+3. Copiar los scripts `dev:*` al `package.json` de la app.

@@ -1,0 +1,23 @@
+{
+  "name": "@harukoia/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CLI space — arranca el host, reporta estado y materializa el markdown en el repo",
+  "type": "module",
+  "bin": {
+    "space": "./bin/space.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "space": "node bin/space.js"
+  },
+  "dependencies": {
+    "@harukoia/domain": "workspace:*",
+    "@harukoia/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3"
+  }
+}

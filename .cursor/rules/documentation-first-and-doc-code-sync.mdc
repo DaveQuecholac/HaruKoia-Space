@@ -1,0 +1,56 @@
+---
+description: Documentación antes y después del código; sincronía doc–código; detenerse ante contradicciones
+alwaysApply: true
+---
+
+# Documentación primero y sincronía doc–código
+
+## Alcance
+
+Aplica cuando se **cambia código** o cuando el usuario pregunta **qué documenta este repositorio** (tipos C y D en **`agent-answer-first.mdc`**). **No** exige leer el repo ni los docs antes de responder preguntas genéricas de **cómo, por qué o procedimiento** (tipos A y B). La documentación es parte del entregable, no un seguimiento opcional.
+
+## Orden de trabajo
+
+1. **Descubre la documentación primero** — cuando te pidan **implementar** o **analizar el código de este repo** (con autorización para usar herramientas), lee los documentos relevantes de `docs/` antes de cambiar código, salvo que el usuario apunte a un solo archivo y el alcance sea obviamente local.
+2. **Después** inspecciona el código para que coincida con lo que dicen las fuentes de verdad.
+3. Si **falta documentación** para el área que se va a cambiar, **dilo**: qué está sin documentar y qué convendría agregar y dónde. **No** entregues código saltándote los docs en silencio.
+
+Tener las rutas mencionadas en las reglas de Cursor **sin leer los archivos en la sesión** **no** cumple este paso.
+
+**Alcance de las actualizaciones de docs:** aplican **solo** a la documentación que describe el código que el usuario **autorizó cambiar** este turno — ver **`agent-explicit-request-only.mdc`**. Si pidió **solo** reglas de Cursor, **no** uses la sincronía de docs como excusa para editar `docs/`.
+
+**Documentos de plan:** son normativos para la **intención**, no un permiso automático para implementar cada renglón. El usuario confirma cada rebanada — ver **`agent-implementation-slices-and-gates.mdc`**.
+
+## Antes de cambiar código
+
+- Identifica **qué** documentos deberían describir la funcionalidad o la superficie que vas a tocar.
+- Si existen, planea sus actualizaciones **en el mismo cambio**, no "para después".
+
+## Después de cambiar código
+
+- **Actualiza** la documentación que identificaste. En este proyecto, código actualizado sin documentación actualizada no es trabajo aceptable.
+- Si **no** hay documento que actualizar, **no** cambies solo el código: **propón** (o agrega, si el usuario ya pidió docs) la documentación que falta.
+
+## Contradicción doc–código (parada obligatoria)
+
+Si al leer encuentras que la documentación **contradice claramente** el código (API, comportamiento, ubicación de archivos o contratos):
+
+1. **Detén** la implementación o el refactor amplio que asume que el documento es verdad.
+2. **Reporta** el desajuste: qué dice el documento, qué hace el código y dónde.
+3. **Propón** reconciliar actualizando la documentación primero, o decidir explícitamente qué lado está mal, antes de continuar. No "arregles" siguiendo documentación desactualizada ni sobrescribas código correcto sin una decisión explícita del usuario.
+
+Esto incluye las contradicciones **entre documentos**: si dos documentos de `docs/fijos/arquitectura/` dicen cosas distintas, detente y repórtalo.
+
+## Anti-patrones (no hacer)
+
+- Presentar cambios **solo de código** en áreas que ya están documentadas, sin las ediciones de documentación correspondientes.
+- Tratar las actualizaciones de documentación como limpieza opcional.
+- Bucear en la implementación antes de **al menos** hojear la intención documentada y los límites de esa área.
+
+## Resumen
+
+| Situación | Acción |
+|-----------|--------|
+| El usuario pide agregar, cambiar o quitar | Encuentra los docs relacionados; actualízalos **con** el código, o señala los que faltan |
+| Implementar o analizar | **Docs primero**, luego código |
+| Doc y código no coinciden | **Detente**; expón la contradicción; alinea el documento (o pide la decisión) antes de seguir |

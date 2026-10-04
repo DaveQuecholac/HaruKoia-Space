@@ -1,0 +1,27 @@
+{
+  "name": "@harukoia/orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Orquestador — registro de salas, links de invitación y relay por roomId. No guarda el tablero.",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/pm2-dev.mjs start && node scripts/pm2-dev.mjs logs",
+    "dev:start": "node scripts/pm2-dev.mjs start",
+    "dev:stop": "node scripts/pm2-dev.mjs stop",
+    "dev:restart": "node scripts/pm2-dev.mjs restart",
+    "dev:logs": "node scripts/pm2-dev.mjs logs",
+    "dev:status": "node scripts/pm2-dev.mjs status",
+    "dev:plain": "node --watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@harukoia/domain": "workspace:*",
+    "@harukoia/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3"
+  }
+}

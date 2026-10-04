@@ -1,0 +1,82 @@
+---
+description: Obligatorio — generalizar antes de especializar; mecanismo extensible con variantes como plugins; sin tuberías paralelas con nombre de la feature
+alwaysApply: true
+---
+
+# Diseño de capacidades extensibles (obligatorio)
+
+**Precedencia:** junto con **`design-first.mdc`**, **`agent-feature-proposal-e2e.mdc`** y **`model-oriented-layout.mdc`**. Aplica a **toda** capacidad nueva o extendida.
+
+Esto importa de forma particular en este motor: el alcance declarado es traer los módulos de IOKOIA Space hacia acá poco a poco. Una capacidad diseñada alrededor de la variante de hoy obliga a rehacerla con cada módulo que entre.
+
+---
+
+## 1. Ley central — mecanismo antes que instancia
+
+Cuando el usuario nombra una **cosa concreta** (un tipo de documento, un formato de exportación, un tipo de sala, una fuente de contenido):
+
+| Marco equivocado | Marco requerido |
+|------------------|-----------------|
+| "¿Cómo cableamos **esto**?" | "¿Qué **mecanismo** usa? Esto es **una variante**." |
+| API con el nombre de la feature de punta a punta | **Mecanismo genérico** + **plugin** de la feature en los bordes |
+| Una tubería paralela nueva por funcionalidad | **Una** tubería; variante nueva = miembro de la unión + manejador |
+
+**Prohibido:** codificar el requerimiento **actual** como la forma del **sistema entero** (nombres, campos de estado, serializadores y métodos bautizados con la feature de hoy).
+
+---
+
+## 2. Puerta de análisis obligatoria (antes de diseñar o codear)
+
+Para cualquier capacidad que pueda ganar **variantes** (tipos, fuentes, formatos, modos) — **detente** hasta escribir este bloque en el plan y repetirlo en la **`Propuesta`** del chat:
+
+```
+Mecanismo de la capacidad: <una frase — la acción recurrente>
+Variantes de hoy: <lista>
+Variantes probables siguientes: <al menos una hipotética — fuerza la extensibilidad>
+Módulo dueño: <dónde viven los tipos genéricos y la orquestación>
+Plugins: <qué agrega cada variante solo para sí>
+Prueba de extensión: agregar la variante X = <solo miembro de la unión | campo nuevo en el contrato — debe ser miembro de la unión>
+Patrón existente a extender: <ruta, o "ninguno — el usuario debe elegir">
+```
+
+Si la respuesta a **prueba de extensión** es "un campo nuevo, un formateador nuevo o un método nuevo por variante" → **detente**; rediseña antes de implementar.
+
+---
+
+## 3. Reglas de diseño (cómo mantenerse extensible)
+
+1. **Unión discriminada** — un campo de tipo en los contratos compartidos; los manejadores se resuelven por ese campo. Variante nueva = miembro nuevo más un manejador, **no** un segundo grafo de tipos en paralelo.
+2. **Abierto a extensión, cerrado a modificación** — el orquestador, el serializador y el constructor del artefacto se quedan **genéricos**; los módulos de cada variante solo emiten o consumen la suya.
+3. **Busca el modelo existente primero** — tipos compartidos, componentes y documentos de diseño ya escritos. **Extiende** antes de inventar un segundo modelo.
+4. **Datos estructurados antes que trucos de texto** — nada de delimitadores dentro de texto visible como transporte principal de metadatos o adjuntos. El texto se queda texto; los adjuntos viven en campos tipados.
+5. **El nombre refleja el mecanismo** — nombres genéricos para la capa genérica. **Prohibido** bautizar la capa genérica con la variante de hoy, salvo que esa variante vaya a ser la única para siempre (nunca lo es).
+6. **Propiedad de capa** — el contrato genérico vive en el **módulo dueño del mecanismo**. El módulo de la variante es dueño de su catálogo y de su interfaz, y devuelve el contrato genérico.
+
+---
+
+## 4. Patrones prohibidos (tolerancia cero en código nuevo)
+
+| No hagas | Por qué |
+|----------|---------|
+| Formateadores o parsers bautizados con una variante en la capa genérica | Tubería paralela por funcionalidad |
+| Campos de estado y métodos por variante en el modelo compartido | Explosión de estado; no hay orquestador genérico |
+| Campos específicos de una variante en el contrato compartido | La siguiente variante necesita otro campo |
+| Serialización del contrato transversal dentro del módulo de una variante | Capa equivocada; bloquea la reutilización |
+| Codificar datos como texto en el cuerpo de un mensaje de usuario | No es extensible; rompe la separación entre lo que se muestra y lo que se procesa |
+
+---
+
+## 5. Definición de hecho
+
+Antes de marcar una rebanada de una capacidad extensible:
+
+1. Agregar una **variante hipotética documentada** no requiere **ningún** formateador nuevo de nivel superior, método nuevo en el modelo compartido ni truco en el cuerpo del contenido: solo un miembro de la unión y su manejador o interfaz.
+2. Los nombres genéricos viven en el **dueño del mecanismo**; los nombres de variante solo dentro de la carpeta de la variante.
+
+---
+
+## 6. Relación
+
+- **`model-oriented-layout.mdc`** — una carpeta por dueño del **mecanismo**; las variantes son plugins.
+- **`design-first.mdc`** — si el diseño no fija el mecanismo, **detente** y pide al usuario que lo confirme antes de codear.
+- **`agent-feature-proposal-e2e.mdc`** — la fila de modelo extensible es obligatoria en la propuesta.

@@ -1,0 +1,48 @@
+---
+description: Al reemplazar lo simulado por el camino real — sin arrastrar fallbacks, literales ni fuentes de datos paralelas
+alwaysApply: true
+---
+
+# De simulado a real — cero arrastre
+
+**Precedencia:** refuerza **`agent.mdc`** (sin caminos de fallback) y **`agent-implementation-slices-and-gates.mdc`** (superficies simuladas contra reales). Aplica cuando una rebanada cablea el camino real de un flujo que antes usaba datos de ejemplo, un doble de prueba o un modelo simulado.
+
+En este motor hay piezas simuladas a propósito durante el desarrollo: el modelo de IA en las pruebas, un remoto de git local, datos de ejemplo en pantallas que todavía no tienen su camino real.
+
+## 1. Ley central
+
+Cuando el usuario autoriza un camino **real**, implementa **solo** el contrato de ese camino. **No** preserves el comportamiento simulado "para que nada se rompa".
+
+| Costumbre del simulado | En el camino **real** **no** debes |
+|------------------------|------------------------------------|
+| Leer el primer elemento de una lista como si fuera el campo correcto | Leer y escribir únicamente el campo acordado |
+| Valores literales por defecto cuando el dato viene vacío | Exponer el valor vacío o nulo; la interfaz muestra vacío |
+| Varias fuentes para el mismo campo según de dónde venga | Una sola fuente: el campo acordado |
+| Cadenas de `||` entre campos no relacionados | Una primitiva por campo; el relleno de datos previos va en una migración, no en la lectura |
+
+El código simulado **puede quedarse** en el repo para las superficies que siguen en modo de ejemplo, pero los **servicios y mapeadores reales no deben importar ni replicar sus fallbacks**.
+
+## 2. Antes de declarar la rebanada terminada
+
+Revisa los archivos tocados del camino real y confirma que no quedó ningún rastro del simulado: literales de ejemplo, lecturas alternativas del mismo campo, o imports del módulo de datos de ejemplo.
+
+Cualquier rastro en código **nuevo o editado** del camino real = **detente**; quítalo, o pregunta al usuario si ese archivo sigue siendo solo de ejemplo.
+
+## 3. Cuando conviven simulado y real
+
+| Superficie | Regla |
+|------------|-------|
+| Sigue en modo de ejemplo (el usuario no nombró su cableado) | **No** la cambies; **no** copies sus fallbacks al código real |
+| Ya es real (el usuario autorizó persistir en una superficie nombrada) | **Quita el arrastre** en mapeadores y servicios; **reemplaza** la implementación anterior en esa superficie, salvo que hayan elegido convivencia |
+
+Los **huérfanos** de lo reemplazado (componentes sin ruta, exports sin consumidor, props que solo servían al camino anterior) se retiran en la misma rebanada autorizada, salvo que el usuario haya dicho **mantener**.
+
+## 4. Pruebas
+
+Un doble de prueba (modelo de IA simulado, remoto de git local) es legítimo **en las pruebas**. Lo prohibido es que el camino de producción tenga una rama que se comporte como el doble. Si una prueba necesita un comportamiento que el camino real no tiene, eso es un hueco de diseño: **detente y pregunta**.
+
+## 5. Relación
+
+- **`no-assumption-priority-over-rules.mdc`** — sin compatibilidad por supuesto.
+- **`agent-feature-proposal-e2e.mdc`** — reemplazar, solo datos, o convivir se ofrece en el chat; el usuario autoriza.
+- **`agent-explicit-request-only.mdc`** — cablear una pantalla de ejemplo es una autorización **aparte**, salvo que estuviera en lo que eligieron.

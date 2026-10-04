@@ -1,0 +1,18 @@
+{
+  "name": "@harukoia/domain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dominio: sala, host, commit, push y estados. Sin dependencias de transporte ni de almacenamiento",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,63 @@
+---
+description: Nunca publicar conjuntos de commit incompletos; los arreglos de varios archivos van juntos o se detienen
+alwaysApply: true
+---
+
+# Commit y push — conjunto completo (obligatorio)
+
+**Falla real que esta regla evita:** el agente obedeció una tarjeta de la pestaña de cambios que decía "comitea **solo** lo que ya está en staging" y publicó la mitad de un arreglo, dejando el resto sin comitear. El remoto quedó roto con la apariencia de un push exitoso.
+
+**Precedencia:** cuando una tarjeta de commit o push de la interfaz choca con la **intención de la conversación** o con la **integridad del artefacto**, esta regla gana sobre la obediencia ciega a "solo lo que está en staging". Nunca inventes secretos ni hagas force push.
+
+---
+
+## 1. Ley central
+
+Antes de `git commit` o `git push` del trabajo de **este hilo**:
+
+1. Enumera qué debe publicarse **junto** para que el cambio sea válido.
+2. Si la interfaz o el mensaje dice "comitea solo X" pero hay **archivos relacionados** del mismo arreglo sin agregar → **DETENTE**. No publiques un conjunto parcial que deje el remoto peor o incompleto.
+3. Dilo en una línea: *"Comitear solo lo que está en staging omitiría `<rutas>`; eso rompe `<por qué>`. ¿Comiteo el conjunto completo, o aborto?"*
+4. Procede con el **conjunto completo** solo con un visto bueno claro, o si el usuario dice **publica todo** o **el resto también**.
+
+**Prohibido:** tratar "la lista en staging es la autoridad" como permiso para publicar un arreglo que sabes incompleto.
+
+---
+
+## 2. Conjuntos que no se parten
+
+| Asunto | Debe publicarse junto |
+|--------|-----------------------|
+| Un cambio de esquema | La definición, su migración y los archivos de metadatos o versión que la acompañan |
+| Una decisión de arquitectura que cambia un documento vigente | El documento nuevo y la nota en el documento que queda superado |
+| Un arreglo de varios archivos del mismo hilo | Todos los archivos necesarios para que el arreglo sea verdad en el remoto, no "los que quedaron en staging" |
+
+Dejar "los docs para después" está bien **solo** cuando el usuario nombró ese aplazamiento. Partir los metadatos de un esquema nunca está bien.
+
+---
+
+## 3. Tarjetas de "comitear solo lo que está en staging"
+
+Esas tarjetas suelen tener un solo archivo por accidente. Son **entrada**, no licencia para dañar la rama.
+
+| La tarjeta dice | El agente debe |
+|-----------------|----------------|
+| Comitea solo los archivos en staging | Verificar si eso es el conjunto **completo** del arreglo del hilo |
+| Estos otros no se incluyen | Si son parte del mismo arreglo, **detenerse y preguntar** |
+| Push después del commit | Solo después de pasar la verificación del conjunto |
+
+Si dudas, pregunta. Es mejor **no publicar** que publicar dejando el remoto a medias.
+
+---
+
+## 4. Después de un push parcial malo
+
+1. **Detén** los commits "útiles" salvo que el usuario ordene la recuperación.
+2. Reporta qué quedó en el remoto y qué quedó local.
+3. Espera instrucciones explícitas de recuperación.
+
+---
+
+## 5. Relación
+
+- **`agent-explicit-request-only.mdc`** — el usuario puede prohibir rutas; si prohíbe una que el conjunto necesita, **detente** y di que el arreglo no puede publicarse incompleto.

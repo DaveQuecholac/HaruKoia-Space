@@ -1,0 +1,38 @@
+---
+description: Las preguntas y las críticas no son órdenes de implementación — responder, no cambiar código, salvo orden explícita
+alwaysApply: true
+---
+
+# Las preguntas no son órdenes
+
+## Clasifica primero el mensaje del usuario
+
+| Tipo de mensaje | Acción del agente |
+|-----------------|-------------------|
+| **Pregunta** — por qué, qué, cómo, es, deberíamos, explica, "por qué tienes…", "qué significa…" | **Solo responder.** Sin ediciones, sin borrados, sin "limpieza", sin "ya que estoy aquí". |
+| **Detente / no** — detente, no modifiques, no quites, déjalo, no te pedí eso | **Detente de inmediato.** No "arregles" ni reviertas salvo que digan **explícitamente** restaurar o deshacer. |
+| **Implementación** — implementa, agrega, cambia, arregla, quita, borra, actualiza, cablea, crea, edita la regla, restaura, revierte, "hazlo", "aplica eso" | Puedes editar código **solo** para lo que nombraron. Nada más. |
+
+Si dudas: **trátalo como pregunta** y pregunta: *"¿quieres solo la explicación, o que cambie el repo?"*
+
+## Malas lecturas prohibidas (fallas reales)
+
+| El usuario dijo | **No** hagas |
+|-----------------|--------------|
+| "¿Por qué tienes el script X?" | Borrar el script X, renombrar variables o refactorizar "para simplificar" |
+| "Esto está mal / es una tontería" | Quitar o reemplazar lo que criticaron **sin** un "quítalo" o "arréglalo" |
+| "Deja de modificar código" | Seguir editando para "deshacer" o "mejorar" sin que digan **restaura** o **revierte** |
+| Pidió editar **rules** | Cambiar también código, documentación o borrar archivos de producto |
+| Pidió **cualquier cosa** | Hacer rutas extra "porque otra regla hablaba de sincronizar docs o limpiar" |
+
+**Alcance:** **`agent-explicit-request-only.mdc`** — muestra las rutas PERMITIDO/PROHIBIDO antes de la primera edición.
+
+## Puerta de implementación (se repite a propósito)
+
+1. El mensaje del usuario debe pedir **explícitamente** cambios en el repo (mismo turno o aprobación previa clara: "sí", "hazlo", "implementa", "aplica", "restaura").
+2. **Enumera** los archivos y acciones exactos; espera si solo preguntaron **por qué** o **si conviene**.
+3. **Diff mínimo** — solo lo autorizado. Sin docs, scripts ni extras de paso.
+
+## Relación con otras reglas
+
+Refuerza **`agent-answer-first.mdc`**, **`agent.mdc`**, **`agent-stop-report-no-unauthorized-scope.mdc`** y la cadena analizar → proponer → autorizar → implementar. Si hay conflicto, **`agent-answer-first.mdc`** y **esta regla** ganan para decidir pregunta contra implementación y para el uso de herramientas.

@@ -1,0 +1,29 @@
+{
+  "name": "@harukoia/motor-colaborativo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Motor colaborativo HaruKoia — pizarra en tiempo real, publicación a markdown y réplica al repositorio",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/pm2-root-dev.mjs start && node scripts/pm2-root-dev.mjs logs",
+    "dev:start": "node scripts/pm2-root-dev.mjs start",
+    "dev:stop": "node scripts/pm2-root-dev.mjs stop",
+    "dev:restart": "node scripts/pm2-root-dev.mjs restart",
+    "dev:status": "node scripts/pm2-root-dev.mjs status",
+    "dev:logs": "node scripts/pm2-root-dev.mjs logs",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d --build",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "pm2": "^6.0.5",
+    "typescript": "^5.7.3"
+  }
+}

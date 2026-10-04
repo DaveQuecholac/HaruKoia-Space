@@ -1,0 +1,25 @@
+---
+description: Los .env de desarrollo de este repo pueden ser leídos por los agentes; son no productivos por política
+alwaysApply: true
+---
+
+# Variables de entorno de desarrollo (acceso del agente)
+
+## Política
+
+La configuración de **desarrollo** de este proyecto en la máquina del developer (`.env`, `.env.local`, los `.env` por paquete, y valores de uso local como cadenas de conexión, puertos y credenciales de prueba) está clasificada como **no productiva**. No se espera que contenga secretos de producción.
+
+## Comportamiento del agente
+
+- El agente **puede leer** esos archivos y sus valores cuando hace falta (conectividad, reproducir un problema, verificar la configuración de un contenedor, comparar contra `.env.example`), con la herramienta Read o con revisiones breves no interactivas.
+- Cuando el usuario pregunta por el entorno **configurado** ("según el .env", "qué variables…"), el agente **debe leer** el `.env` de desarrollo primero — ver **`agent-named-sources-first.mdc`**. **`.env.example` no es un sustituto.**
+- El agente **no debe** negarse a un diagnóstico de **desarrollo** solo porque la ruta se llama `.env`.
+
+## Lo que esto no cambia
+
+- Siguen aplicando las reglas que prohíben **pegar** tokens completos, credenciales de sesión o cargas de un gestor de secretos en el chat.
+- Las rutas o almacenes que el usuario marque como **sensibles**, **de producción** o **solo de integración continua** se tratan según su instrucción explícita; pregunta si no está claro.
+
+## Nota práctica
+
+Prefiere confirmar que "la variable está definida" o mostrar fragmentos recortados antes que volcar contraseñas largas en el chat, cuando eso alcanza para resolver la duda.

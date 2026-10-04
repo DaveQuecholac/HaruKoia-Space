@@ -1,0 +1,42 @@
+---
+description: La instalación y la operación viven en migraciones, docs o herramientas de desarrollo — nunca en scripts ad hoc mezclados con el código de producto
+alwaysApply: true
+---
+
+# Nada de instalación improvisada en el código de producto
+
+## Principio
+
+**Código de sistema** = lo que corre en los caminos de producción (servicios, orquestación, esquemas, migraciones, definiciones de dominio).
+
+**Instalación y operación** = tareas de una sola vez o poco frecuentes (crear un usuario, sembrar datos, levantar un túnel, notas de despliegue).
+
+**No** inventes **ayudantes de instalación** como hermanos permanentes del código de sistema (`ensure-*.ts`, `setup-*.ts`, nombres de variables extra) cuando el mismo trabajo cabe en una **migración más documentación** o en un camino **claramente separado** de desarrollo.
+
+## Prohibido en los árboles de producto
+
+| No agregues | Por qué |
+|-------------|---------|
+| `scripts/ensure-*.ts` o `setup-*.ts` para una sola sentencia | Usa una migración más una línea documentada, o un documento de operación |
+| Abstracciones paralelas de entorno cuando una sola variable por paquete alcanza | Dos archivos de entorno y tres esquemas de nombres |
+| Scripts "de conveniencia" que solo arreglan una desalineación puntual | Documéntalo en el README del paquete |
+| Refactors disparados por **preguntas** o **quejas** del usuario | Responde; espera **implementa**, **quita** o **restaura** |
+
+## Lugares permitidos para la instalación
+
+| Qué | Dónde |
+|-----|-------|
+| Estructura de datos (colecciones, esquemas, versiones de esquema) | El paquete dueño del esquema, con su migración versionada |
+| Cómo terminar de preparar el entorno de desarrollo | README del paquete y `.env.example` |
+| Levantar los contenedores de desarrollo | El archivo de composición del repo, no un script paralelo |
+| Herramientas opcionales de desarrollo | Carpeta de desarrollo u operación, **etiquetada como no productiva**, no junto a los servicios |
+
+## Cuando la instalación es necesaria
+
+1. Prefiere la **migración versionada** para la estructura.
+2. Para **secretos y contraseñas**: no comitees secretos de producción; la credencial de desarrollo va a un paso del README o a la decisión explícita del usuario.
+3. Si de verdad hace falta un script: **propón** ruta y nombre; obtén el **sí**; colócalo en la zona de desarrollo u operación, no en los módulos de dominio.
+
+## Relación
+
+Funciona con **`agent-questions-not-commands.mdc`** (preguntas ≠ ediciones) y **`agent-stop-report-no-unauthorized-scope.mdc`**. Si el usuario dice **detente**, detente. Si pregunta **por qué**, solo explica.

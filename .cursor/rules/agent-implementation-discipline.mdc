@@ -1,0 +1,55 @@
+---
+description: Herramientas externas, verificación y costo — docs oficiales y usuario primero; sin arqueología en node_modules; diffs mínimos
+alwaysApply: true
+---
+
+# Disciplina de implementación (alcance, verificación, costo)
+
+Estas reglas **refuerzan** `agent.mdc`, `agent-stop-report-no-unauthorized-scope.mdc` y `documentation-first-and-doc-code-sync.mdc`. Ante conflicto, este archivo **no** anula las reglas normativas de producto o arquitectura; aprieta **cómo** ejecuta el agente cuando cablea herramientas y cambia el repo.
+
+## Herramientas y librerías de terceros
+
+Este motor se apoya en librerías externas con comportamiento propio (pizarra, CRDT de sesión, base local y réplica, generación de documentos, contenedores). Para todas ellas:
+
+1. **Orden de autoridad sobre el comportamiento** (API, opciones, almacenamiento, eventos): **documentación oficial** del proyecto → **declaración explícita del usuario** → **scripts y configuración de este repo**.
+2. **Prohibido:** inferir o "demostrar" el comportamiento de un tercero **grepeando o leyendo `node_modules`**, `dist/` u otros árboles de dependencias, salvo para alinear rutas de import o tipos de **este** repo cuando el usuario ya eligió la API. Para "cómo funciona X", usa **documentación oficial o web**, no espeleología en el código del paquete.
+3. Si el **usuario corrige** cómo funciona una herramienta: trátalo como **alta confianza**; reconcilia una vez con la documentación oficial; aplica **un arreglo mínimo**. **Sin** mecanismos paralelos nuevos (variables, scripts o banderas extra) salvo que los pidan.
+4. **No** pases banderas de CLI que **anulen** el comportamiento documentado de un envoltorio, salvo que el usuario o los docs oficiales exijan ese override.
+
+## Puerta de comportamiento de UI de terceros (obligatoria)
+
+Aplica cuando un bug o un problema de layout involucra un componente externo (lienzo, visor, editor, widget).
+
+1. **Frontera de propiedad primero:** di en el chat si el nodo problemático lo controla el código de la app o las internas de la librería.
+2. **Docs antes de editar:** lee la documentación oficial de la librería sobre tamaño, estilo y configuración antes del primer write.
+3. **Orden de arreglo (estricto):** API del componente (props, estilo, configuración documentada) → estilos del contenedor existente → solo entonces, envoltorios estructurales.
+4. **Envoltorio primero está prohibido** salvo que la documentación oficial lo defina como la superficie de control, o que el usuario pida agregar el contenedor.
+5. **Checkpoint antes de editar (en el chat):** frontera de propiedad, puntos de control confirmados por docs, camino de parche mínimo.
+6. **Checkpoint después de editar (en el chat):** archivo exacto tocado, razón del cambio mínimo, y confirmación de que no se introdujo envoltorio (o por qué fue necesario).
+
+## Verifica antes de quitar o "arreglar" integraciones
+
+1. **Muestra evidencia** (archivo y símbolo) de que un proxy, middleware, puente o configuración **existe** antes de cambiarlo. Si **no** existe, dilo y pregunta qué **síntoma** hay que arreglar, en lugar de refactorizar por suposición.
+2. **No** elimines ni rediseñes "la integración con Y" cuando la configuración versionada no tiene tal cosa: reporta la ausencia y pregunta.
+
+## Una rebanada, radio de impacto mínimo
+
+1. Implementa el conjunto **más pequeño** de ediciones que satisface la petición **literal**; por defecto, **un asunto por conjunto de cambios**.
+2. **No** te expandas a varios READMEs, `.cursor/rules` y configuración en un lote no pedido. Para las actualizaciones de docs que exigen las reglas, limítate a **las rutas que describen el código que realmente cambiaste**, y hazlo **después** de que el comportamiento esté estable, salvo que el usuario haya pedido docs primero.
+3. Trabajo de varios archivos o transversal: **enumera los archivos** en el chat y obtén **aprobación explícita** antes de editar (salvo que el usuario ya los haya enumerado).
+
+## Costo y disciplina de tokens
+
+1. Prefiere **una** consulta puntual a la documentación oficial antes que greps amplios repetidos y builds completos iterativos "para ver".
+2. Evita sesiones exploratorias largas en **`node_modules`**; usa documentación oficial para los contratos de comportamiento.
+
+## Cuando el usuario dice que el último enfoque estuvo mal
+
+1. **Detén** los refactors exploratorios y la excavación defensiva.
+2. **Reconoce**; revierte el patrón equivocado con un diff **mínimo**.
+3. **No** apiles un patrón nuevo sin validar en el mismo turno sin el visto bueno del usuario.
+
+## Relación con otras reglas
+
+- **`agent.mdc`:** la puerta de claridad y la prohibición de elegir arquitectura; este archivo agrega el **origen de la verdad sobre terceros** y la **evidencia antes de borrar**.
+- **`documentation-first-and-doc-code-sync.mdc`:** actualiza docs **con** código estable, no persigas cambios mientras el comportamiento todavía oscila.

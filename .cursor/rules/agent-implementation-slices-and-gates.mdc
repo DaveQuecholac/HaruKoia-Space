@@ -1,0 +1,62 @@
+---
+description: Una rebanada a la vez; propuesta en chat antes del trabajo de feature; los documentos de plan no son autorización
+alwaysApply: true
+---
+
+# Rebanadas y puertas de implementación (obligatorio)
+
+Refuerza `agent-stop-report-no-unauthorized-scope.mdc`, `agent-questions-not-commands.mdc` y la cadena analizar → proponer → autorizar → implementar.
+
+## 1. Los documentos de plan no son una orden de construcción
+
+| Fuente | Autoridad |
+|--------|-----------|
+| Mensaje del usuario en el chat ("implementa X", "hazlo") | **Puede** autorizar código, una vez que el diseño define el comportamiento |
+| Documentos de análisis, arquitectura y plan en `docs/` | **Propuesta** hasta que el usuario confirme esa rebanada |
+
+- Un documento que dice "sala global con el mismo contenedor host" **no** es permiso para construirla.
+- Si el documento de plan y el chat **no coinciden**, **gana el chat**; actualiza el documento o pregunta.
+- Si el diseño no define el comportamiento de la rebanada, **detente** — **`design-first.mdc`**.
+
+## 2. Una rebanada vertical → detenerse → checkpoint del usuario
+
+**Prohibido:** un conjunto de cambios que mezcla **funcionalidades no relacionadas** o **varias rebanadas** que el usuario no autorizó de una vez.
+
+**Orden requerido:**
+
+1. El diseño (documentos de arquitectura y el plan de la funcionalidad) cubre la rebanada.
+2. **`Propuesta`** en el chat según **`agent-feature-proposal-e2e.mdc`**; esperar que el usuario elija.
+3. Implementar **solo** esa rebanada autorizada.
+4. Reportar: archivos tocados, cómo verificar, qué sigue montado de lo anterior (si la rebanada fue parcial), y qué **queda** pendiente.
+5. Esperar "siguiente" o una continuación explícita antes de la siguiente rebanada.
+
+No escribas "implementación lista" después de un typecheck en una funcionalidad **visible para el usuario**, salvo que haya elegido explícitamente una rebanada sin interfaz.
+
+## 3. Simulado contra real — no los cambies sin nombrar la superficie
+
+Este motor va a tener piezas simuladas a propósito durante el desarrollo (por ejemplo el modelo de IA en las pruebas, o datos de ejemplo en una pantalla).
+
+- Una superficie en **modo simulado** se cambia a real **solo** cuando el usuario nombra esa superficie.
+- Al cablear el camino real: **`agent-mock-to-real-no-carryover.mdc`** — sin arrastrar fallbacks del simulado a los mapeadores y servicios reales.
+- Si el usuario autorizó **reemplazar** en una superficie, reemplaza: no dejes la implementación anterior montada en paralelo sin que lo hayan pedido.
+
+## 4. Definición de hecho (mínimo)
+
+Antes de declarar una rebanada terminada:
+
+1. **Typecheck** de los paquetes afectados.
+2. **Build** de la aplicación afectada, si cambió su superficie.
+3. **Pruebas** del nivel que corresponda a la rebanada, incluidas las de varios participantes cuando la rebanada toca sesión o réplica (ver el plan de pruebas del análisis de arquitectura).
+4. **Humo** del camino que le importa al usuario, o reportar **bloqueado** con la razón.
+5. Declarar **casos límite** conocidos que quedan fuera.
+6. Si el usuario autorizó **reemplazo**, reportar los **huérfanos retirados** o conservados por excepción.
+
+## 5. Fallas a evitar
+
+| **No** hagas | **Sí** haz |
+|--------------|------------|
+| Construir algo porque un documento de arquitectura lo enumera | Proponer en el chat y esperar que elijan la rebanada |
+| Implementar varias rebanadas de corrido porque "ya estaba ahí" | Una rebanada, checkpoint, esperar |
+| Marcar la funcionalidad como lista sin que el usuario la haya probado | Detenerse con los pasos de verificación |
+| Tratar un documento de modelo de datos como esquema físico ya decidido | Preguntar qué colecciones y campos entran en **esta** tarea |
+| Dejar la implementación anterior montada después de un reemplazo autorizado | Retirarla y reportarlo |

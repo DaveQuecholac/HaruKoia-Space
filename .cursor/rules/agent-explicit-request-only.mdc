@@ -1,0 +1,76 @@
+---
+description: TOLERANCIA CERO — hacer SOLO lo que el usuario pidió explícitamente; sin ediciones, borrados ni extras colaterales
+alwaysApply: true
+---
+
+# Solo lo pedido explícitamente — tolerancia cero
+
+**Precedencia:** inmediatamente después del **mensaje literal** del usuario (mismo turno). Gana sobre planes de documentación, velocidad del agente, "definición de hecho", sincronía de docs, y **tus propios errores previos** ("voy a limpiar lo que rompí").
+
+**Funciona con:** **`agent-feature-proposal-e2e.mdc`** — el agente **propone** el alcance en chat antes de implementar; la **autorización posterior** del usuario (o un mensaje ya estrecho) define lo PERMITIDO en este turno. **Proponer un alcance no es permiso para implementarlo.**
+
+Esta regla **no** es "las actualizaciones de rules se quedan en `.cursor/rules/`" solamente. Aplica a **toda** tarea: código, docs, rules, git.
+
+---
+
+## 1. Ley central
+
+**Haz solo lo que el usuario nombró explícitamente** en el mensaje actual (o una autorización clara del mismo hilo: "sí", "hazlo", "aplica eso", "rebanada 1").
+
+| Si el usuario **no** lo dijo | **No** debes hacerlo |
+|------------------------------|----------------------|
+| implementa / arregla / agrega / cablea | `Write`, `StrReplace`, `Delete` en código de producto |
+| alcance completo / UI / retiro de lo anterior / limpieza | Solo si el usuario lo **autorizó después** de la propuesta de **`agent-feature-proposal-e2e.mdc`** o lo nombró explícitamente este turno |
+| borra / quita / revierte / restaura | `Delete`, `git checkout`, "deshacer" tus ediciones |
+| actualiza docs / README / documentación | Editar `docs/`, READMEs, etc. |
+| actualiza las reglas de Cursor | Tocar **solo** `.cursor/rules/**` — **nada** de código, docs ni otras carpetas |
+| corre build / typecheck / pruebas | Correr esos comandos |
+
+**Lo "útil" está prohibido:** sin arreglos de paso, sin borrar archivos que creaste mal, sin refactors "ya que estoy aquí", sin sincronizar docs porque otra regla lo dice **salvo** que la petición del usuario incluyera esa ruta.
+
+**Commits:** si la lista de archivos a comitear **omite** archivos que son parte del **mismo arreglo del hilo**, **no** publiques el set incompleto — detente y pregunta. Ver **`agent-commit-complete-related-set.mdc`**.
+
+---
+
+## 2. Antes de cualquier edición (checklist obligatorio)
+
+1. **Cita** la petición del usuario en una línea.
+2. **Lista PERMITIDO** — rutas o globs exactos que autorizó.
+3. **Lista PROHIBIDO este turno** — todo lo demás (por defecto: el repo entero).
+4. Si PERMITIDO queda vacío → **no** hay `Write` / `StrReplace` / `Delete` / `Shell` que mute archivos.
+
+Muestra ese bloque en el chat **antes** de la primera edición. Saltárselo es una violación de regla.
+
+---
+
+## 3. Fallas reales (nunca repetir)
+
+| El usuario dijo | Lo que el agente hizo (prohibido) |
+|-----------------|-----------------------------------|
+| "Actualiza las reglas de Cursor" | Editó código de producto, borró archivos, cambió índices, editó documentación |
+| "Implementa X" | Actualizó `.cursor/rules/` sin que se lo pidieran |
+| "Explica por qué…" | Tocó el repo para "demostrar" o "arreglar" |
+| Crítica / "detente" | Siguió codeando para deshacer, sin que dijeran **restaura** o **revierte** |
+| El turno anterior autorizó solo la rebanada 1 | Corrió las rebanadas 2 a 5 en silencio |
+
+**Después de un error:** **detente**. Reporta lo que hiciste. **No** "arregles" el daño colateral salvo que el usuario ordene ese arreglo.
+
+---
+
+## 4. Puerta de herramientas
+
+| Herramienta | Permitida cuando |
+|-------------|------------------|
+| `Write` / `StrReplace` / `Delete` | La ruta destino está en **PERMITIDO** para este turno |
+| `Shell` (git, build, pruebas) | El usuario pidió ese comando explícitamente **o** es la verificación acordada de una rebanada **ya autorizada** |
+| `Read` / `Grep` | Acotado al área PERMITIDA o para responder una **pregunta**, no para preparar ediciones no autorizadas |
+
+Cuando el usuario pidió **solo rules**: `Read` puede inspeccionar código para obtener hechos; **`Write`/`StrReplace`/`Delete` solo bajo `.cursor/rules/**`**.
+
+---
+
+## 5. Definición de hecho (esta regla)
+
+- Toda ruta modificada estaba en la lista **PERMITIDO** de este turno.
+- Cero archivos fuera de esa lista fueron modificados.
+- El usuario puede revisar el diff de exactamente lo que pidió.

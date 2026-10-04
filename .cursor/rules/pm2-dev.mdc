@@ -1,0 +1,56 @@
+---
+description: PM2 + portless — desarrollo transparente para el humano y operación sin follow para el agente
+alwaysApply: true
+---
+
+# PM2 en desarrollo
+
+Patrón canónico IOKOIA: **`pm2_portless`**. El kit vive en `scripts/` de este repo, copiado del bundle del CLI (`@iokoia/devcli` → `templates/pm2_portless/`).
+
+Identidad de las apps de **este** repo (nombres PM2, rutas portless, URLs y logs): **`pm2-app.mdc`**.
+
+## Criterio
+
+El mismo gesto siempre: **`pnpm dev`**. Debajo hace `pnpm install`, arranca o reinicia PM2, registra la ruta en el proxy y **deja los logs en seguimiento**. Ctrl+C solo corta el seguimiento de logs: para apagar es **`dev:stop`**.
+
+El proxy de la máquina se instala una vez con **`iokoia install portless`** (servicio del sistema). No se reinstala desde este repo.
+
+## Humano
+
+| Comando | Efecto |
+|---------|--------|
+| `pnpm dev` (raíz) | Arranca las tres apps y sigue sus logs |
+| `pnpm dev:stop` (raíz) | Apaga **todas** las apps |
+| `pnpm dev:restart` / `dev:status` / `dev:logs` (raíz) | Sobre todas las apps |
+| `pnpm dev` (dentro de una app) | Solo esa app, con sus logs |
+| `pnpm dev:start` / `dev:stop` / `dev:restart` / `dev:status` / `dev:logs` (app) | Control de **esa** app |
+| `pnpm dev:plain` (app) | Crudo: sin PM2 ni portless |
+
+## Agente (obligatorio)
+
+- **Prohibido:** `pnpm dev` y `pnpm dev:logs`. Dejan la terminal en seguimiento y bloquean el turno.
+- **Usar:** `pnpm dev:start`, `dev:restart`, `dev:stop`, `dev:status`, en la raíz o en el paquete de la app.
+- **Diagnóstico:** leer `apps/<app>/logs/pm2/*.log`, o `pm2 logs <APP_NAME> --nostream`.
+- Ctrl+C en el seguimiento **no** es apagar → `dev:stop`.
+- Un solo demonio PM2 por máquina: este repo fija **un** `pm2` en la raíz. Después de instalar, `pnpm exec pm2 update` una vez.
+- Si `jlist` dice que no está y `describe` dice que sí, es desalineación entre cliente y demonio de PM2: alinear versiones y reintentar, no asumir que el proceso está caído.
+
+## Requisitos de la máquina
+
+| Requisito | Comprobación |
+|-----------|--------------|
+| Proxy portless corriendo | Existe `~/.portless/proxy.port` |
+| Estado de portless escribible por el usuario de PM2 | Escritura en `~/.portless/routes.json`; si el proxy se levantó como root en el puerto 443, corregir propiedad |
+| Node | `node -v` ≥ 22. Las apps de servidor ejecutan TypeScript directo, lo que pide Node ≥ 23.6 |
+| `pnpm install` corrido en la raíz | `node_modules/pm2` resuelto desde la raíz |
+
+Si el proxy no está arriba, el helper se detiene con el mensaje y el comando para instalarlo. No lo rodees arrancando el proceso a mano en un puerto fijo.
+
+## Qué no hacer
+
+| No | Por qué |
+|----|---------|
+| Envolver la app con el CLI `portless` bajo PM2 | En Windows abre consolas visibles; cerrarlas mata el proceso. El camino correcto es `pm2-portless-run.mjs`, que registra la ruta y lanza el proceso |
+| Definir `PORT` en el `.env` de una app proxeada | `pm2-portless-run` asigna el puerto y lo registra en el proxy |
+| Pasar banderas de puerto al proceso | Mismo motivo |
+| Editar el kit de `scripts/` para un arreglo puntual | Es copia del bundle oficial; si hay que cambiarlo, se discute y se sincroniza |

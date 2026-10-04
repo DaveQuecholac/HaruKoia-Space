@@ -1,0 +1,41 @@
+# Dos contenedores, como fija el análisis de arquitectura v2:
+#   orquestador  — registra salas, genera links, hace de relay. No guarda el tablero.
+#   host         — sala en vivo, base local, copia de trabajo del repo, markdown y exportación.
+#
+# En desarrollo del día a día se usa PM2 + portless (pnpm dev). Este compose sirve para
+# probar la separación real de contenedores y para la sala global (host en servidor).
+
+services:
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: docker/orchestrator.Dockerfile
+    environment:
+      PORT: 8080
+      HOST: 0.0.0.0
+    expose:
+      - "8080"
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+  host:
+    build:
+      context: ..
+      dockerfile: docker/host.Dockerfile
+    environment:
+      PORT: 8081
+      HOST: 0.0.0.0
+      # Sala global: el repositorio se clona por identificador dentro del contenedor.
+      ORCHESTRATOR_URL: http://orchestrator:8080
+    expose:
+      - "8081"
+    volumes:
+      # Datos del host: base local y copia de trabajo del repo.
+      - host-data:/data
+    depends_on:
+      - orchestrator
+    restart: unless-stopped
+
+volumes:
+  host-data:

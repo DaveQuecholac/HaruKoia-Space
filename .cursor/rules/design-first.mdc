@@ -1,0 +1,60 @@
+---
+description: Metodología IOKOIA — diseño primero, luego plan, luego implementación o tareas. Prohibido implementar por supuesto.
+alwaysApply: true
+---
+
+# Diseño primero (cadena IOKOIA)
+
+```text
+diseño (análisis y decisiones de arquitectura en docs/fijos/)
+        ↓
+plan (rebanadas ordenadas, criterios de aceptación)
+        ↓
+implementación  ·  asignación de tareas
+```
+
+El diseño vigente de este repositorio vive en **`docs/`** — ver **`arquitectura-harukoia.mdc`** para qué documento manda sobre qué.
+
+## PROHIBIDÍSIMO — implementar por supuesto (prohibición absoluta)
+
+**Está prohibido** implementar, cablear, "resolver" o avanzar código a partir de **supuestos** cuando el diseño **no** define el comportamiento.
+
+Si algo **no está claro** en el diseño:
+
+1. **Detente.** No codees. No "completes" el hueco con inventiva.
+2. **Modifica el plan** dejando explícito que ese paso requiere aclaración.
+3. **Pregunta al usuario** cómo lo quiere. Ayudar de verdad es pedir certeza, no inventar una solución "por el cliente".
+
+**Umbral de certeza:** si no tienes claro el detalle técnico hasta el fondo (contrato de datos, forma del esquema, API, qué capa es dueña, camino de persistencia, forma del artefacto), **no sirve**. No implementes. Anota el hueco y para.
+
+**Consecuencia:** si un agente implementa por supuesto, **todo** su trabajo — y el de los agentes que siguieron ese plan — queda **desperdiciado**. Se **rechaza** y se **vuelve a empezar**. Eso no es un avance mínimo viable; es basura que echa a perder el proyecto.
+
+**Ley:** cuanto más supone un agente, más inútil se vuelve y más daño hace. La utilidad está en **detenerse y clarificar**, no en "entregar algo".
+
+### Caso de abuso (incidente real — no repetir)
+
+Un agente trató prosa, layout de carpetas y código existente como si fueran **requerimientos**. Implementó y explicó jerarquías y comportamientos **que no estaban en ningún documento de diseño**. El usuario lo confrontó: en el diseño oficial no decía eso. El trabajo quedó inválido y lo construido encima hubo que tirarlo. **No vuelvas a hacer eso.**
+
+## Cuando el usuario quiere un cambio
+
+Si el mensaje implica funcionalidad, módulo, proceso, requerimiento, "implementa" o "asigna tarea de…":
+
+1. **Clasifica** en una línea qué es (capacidad nueva, cambio de una decisión existente, ajuste de alcance).
+2. **Localiza** el diseño en `docs/`. No inventes layout; si no hay documento para eso, dilo y propón el mínimo alineado al resto.
+3. **Orienta** al usuario: antes de codear, bajar el pedido al diseño.
+4. **Registra o actualiza** la decisión en el documento que corresponda. **Pregunta** los huecos: alcance, límites, dependencias, lo no considerado.
+5. **Propón** las rebanadas a partir de lo que falta respecto a ese diseño.
+6. **Solo** con diseño claro, certeza técnica suficiente y el OK del usuario → implementar o crear tareas **ancladas** a ese diseño.
+
+Orientar por esta cadena **no** es inflar el pedido: es **cómo** cumplirlo. No inventes funcionalidades extra; sí enruta el pedido.
+
+## Decisiones ya tomadas
+
+Las decisiones de arquitectura de este motor ya están tomadas y justificadas en `docs/fijos/arquitectura/`. El agente **no** las reabre por iniciativa propia, **no** propone un stack alternativo y **no** implementa contra ellas. Si detecta una contradicción entre dos documentos o entre un documento y el código, **detente y repórtalo** — ver **`documentation-first-and-doc-code-sync.mdc`**.
+
+## Excepciones (puedes proceder sin reabrir diseño)
+
+- Pregunta de **solo lectura**, explicación o diagnóstico sin cambio.
+- Un paso de un plan vigente que ya está en etapa de implementación y con las puertas previas cumplidas — completa **solo** ese paso, y **solo** lo que el diseño ya fija. Si el paso pide algo no anclado al diseño, **para** y comenta el hueco.
+- Corrección trivial ya acotada en el diseño (una línea, sin comportamiento nuevo de producto).
+- El usuario **ordena explícitamente** saltarse el diseño en este mensaje ("codea ya", "sin docs") — obedece esa vez; no lo conviertas en hábito.
