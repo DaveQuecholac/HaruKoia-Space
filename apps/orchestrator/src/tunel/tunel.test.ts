@@ -8,8 +8,11 @@
 
 import { randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 
 import {
+  CODIGO_DE_SALA_CERRADA,
   type IdentidadDeSala,
   type IdentificadorDeConexion,
   type MensajeDeControl,
@@ -84,6 +87,12 @@ function siguienteBinario(socket: WebSocket): Promise<Buffer> {
 
 function cierre(socket: WebSocket): Promise<number> {
   return new Promise((resolver) => socket.once('close', (codigo) => resolver(codigo)));
+}
+
+function cierreConRazon(socket: WebSocket): Promise<{ codigo: number; razon: string }> {
+  return new Promise((resolver) =>
+    socket.once('close', (codigo, razon: Buffer) => resolver({ codigo, razon: razon.toString('utf8') })),
+  );
 }
 
 /** Host simulado: se registra y queda esperando avisos de invitados. */
@@ -440,7 +449,108 @@ describe('cierres', () => {
     });
     expect(tunel.salas.salasVivas()).toBe(0);
   });
+
+  it('cerrar la sala cierra a los invitados unidos con el código propio y la causa', async () => {
+    const identidad = generarIdentidadDeSala();
+    const { control, invitado, datos } = await salaConUnInvitado(identidad);
+
+    const cerrado = cierreConRazon(invitado);
+    const datosCerrados = cierre(datos);
+    control.send(serializarControl({ tipo: 'cerrar-sala' }));
+
+    expect(await cerrado).toEqual({ codigo: CODIGO_DE_SALA_CERRADA, razon: 'host-cerro-la-sala' });
+    expect(await datosCerrados).toBe(1000);
+    expect(tunel.conexionesUnidas()).toBe(0);
+  });
+
+  it('cerrar la sala no toca a los invitados de otra sala', async () => {
+    const una = generarIdentidadDeSala();
+    const otra = generarIdentidadDeSala();
+    const primera = await salaConUnInvitado(una);
+    const segunda = await salaConUnInvitado(otra);
+
+    const cerrado = cierre(primera.invitado);
+    primera.control.send(serializarControl({ tipo: 'cerrar-sala' }));
+    await cerrado;
+
+    expect(segunda.invitado.readyState).toBe(WebSocket.OPEN);
+    expect(tunel.conexionesUnidas()).toBe(1);
+  });
+
+  it('el apagado cierra todos los sockets con 1001', async () => {
+    const identidad = generarIdentidadDeSala();
+    const { control, invitado, datos } = await salaConUnInvitado(identidad);
+
+    const cierres = Promise.all([cierre(control), cierre(invitado), cierre(datos)]);
+    tunel.cerrarConexiones();
+
+    expect(await cierres).toEqual([1001, 1001, 1001]);
+  });
 });
+
+/**
+ * Cien ciclos de entrar y salir. Lo que se mide son los contadores: si algo
+ * queda colgado en un mapa, aquí no vuelve a cero. La memoria se mide con un
+ * margen amplio, solo para atrapar un crecimiento que escala con los ciclos.
+ */
+describe('cien ciclos sin fugas', () => {
+  const CICLOS = 100;
+  const MARGEN_DE_MEMORIA = 8 * 1024 * 1024;
+
+  async function cicloCompleto(): Promise<void> {
+    const identidad = generarIdentidadDeSala();
+    const { control, invitado } = await salaConUnInvitado(identidad);
+
+    const salio = siguienteControl(control);
+    invitado.close(1000);
+    await salio;
+
+    const cerrado = cierre(control);
+    control.send(serializarControl({ tipo: 'cerrar-sala' }));
+    await cerrado;
+  }
+
+  it('salas, emparejamientos, pares y sockets vuelven a cero', async () => {
+    const recolectar = recolectorDeBasura();
+
+    // Calentar: la primera vuelta carga código y llena cachés que no son fuga.
+    for (let i = 0; i < 10; i++) await cicloCompleto();
+    await esperarCeros();
+    abiertos = [];
+    recolectar();
+    const antes = process.memoryUsage().heapUsed;
+
+    for (let i = 0; i < CICLOS; i++) await cicloCompleto();
+    await esperarCeros();
+    abiertos = [];
+    recolectar();
+    const despues = process.memoryUsage().heapUsed;
+
+    expect(tunel.salas.salasVivas()).toBe(0);
+    expect(tunel.emparejamientosPendientes()).toBe(0);
+    expect(tunel.conexionesUnidas()).toBe(0);
+    expect(tunel.socketsAbiertos()).toBe(0);
+    expect(despues - antes).toBeLessThan(MARGEN_DE_MEMORIA);
+  }, 60_000);
+
+  async function esperarCeros(): Promise<void> {
+    const limite = Date.now() + 5_000;
+    while (Date.now() < limite) {
+      if (tunel.socketsAbiertos() === 0 && tunel.conexionesUnidas() === 0) return;
+      await new Promise((listo) => setTimeout(listo, 20));
+    }
+  }
+});
+
+/** `gc` sin pedir banderas al lanzar vitest: se habilita en tiempo de ejecución. */
+function recolectorDeBasura(): () => void {
+  setFlagsFromString('--expose-gc');
+  const gc = runInNewContext('gc') as () => void;
+  return () => {
+    gc();
+    gc();
+  };
+}
 
 describe('el latido mantiene la sala', () => {
   it('un latido por la conexión de control no la tira', async () => {

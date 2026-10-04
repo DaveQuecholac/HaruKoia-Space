@@ -48,6 +48,10 @@ export {
   type TipoDeMensaje,
 } from './relay/mensaje-de-control/mensaje-de-control.ts';
 
+export { CODIGO_DE_SALA_CERRADA, causaDelCierreDeSala } from './relay/cierre-de-sala/cierre-de-sala.ts';
+
+export { TAMANO_MAXIMO_DE_MENSAJE } from './relay/limites/limites.ts';
+
 export {
   type Interpretacion,
   interpretarControl,

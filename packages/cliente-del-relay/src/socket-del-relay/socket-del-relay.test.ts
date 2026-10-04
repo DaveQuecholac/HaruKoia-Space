@@ -2,6 +2,8 @@ import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
 
 import {
+  CODIGO_DE_SALA_CERRADA,
+  type CausaDeCierre,
   RUTAS,
   generarIdentidadDeSala,
   generarIdentificadorDeConexion,
@@ -15,6 +17,10 @@ import { CIERRE_POR_RECHAZO, type CausaDeRechazoDeEntrada, claseDelSocketDelRela
 
 const { sala, tokenDeInvitacion } = generarIdentidadDeSala();
 const tokenEquivocado = generarIdentidadDeSala().tokenDeInvitacion;
+
+/** Bytes que le piden al orquestador falso cerrar como lo haría el real. */
+const CERRAR_LA_SALA = 0xff;
+const CORTAR = 0xfe;
 
 const servidores: WebSocketServer[] = [];
 
@@ -36,7 +42,11 @@ async function orquestadorFalso(): Promise<{ base: string; primeros: string[]; r
       const leido = interpretarControl(texto);
       if (leido.ok && leido.mensaje.tipo === 'entrar' && leido.mensaje.tokenDeInvitacion === tokenDeInvitacion) {
         socket.send(serializarControl({ tipo: 'entrada-aceptada', conexion: generarIdentificadorDeConexion() }));
-        socket.on('message', (datos: Buffer) => socket.send(datos));
+        socket.on('message', (datos: Buffer) => {
+          if (datos[0] === CERRAR_LA_SALA) socket.close(CODIGO_DE_SALA_CERRADA, 'host-cerro-la-sala');
+          else if (datos[0] === CORTAR) socket.close(1000);
+          else socket.send(datos);
+        });
         return;
       }
       socket.send(serializarControl({ tipo: 'entrada-rechazada', causa: 'token-de-invitacion-invalido' }));
@@ -94,6 +104,39 @@ describe('socket del relay', () => {
     expect(cierre.code).toBe(CIERRE_POR_RECHAZO);
     expect(cierre.reason).toBe('token-de-invitacion-invalido');
     expect(socket.readyState).toBe(3);
+  });
+
+  it('ya dentro, un cierre de sala se reporta con su causa', async () => {
+    const { base } = await orquestadorFalso();
+    const causas: CausaDeCierre[] = [];
+    const socket = new (claseDelSocketDelRelay({
+      sala,
+      tokenDeInvitacion,
+      alCerrarseLaSala: (causa) => causas.push(causa),
+    }))(base);
+    await once(socket, 'open');
+
+    socket.send(new Uint8Array([CERRAR_LA_SALA]));
+    const [cierre] = (await once(socket, 'close')) as [Event & { code: number }];
+
+    expect(causas).toEqual(['host-cerro-la-sala']);
+    expect(cierre.code).toBe(CODIGO_DE_SALA_CERRADA);
+  });
+
+  it('un cierre cualquiera no es un cierre de sala', async () => {
+    const { base } = await orquestadorFalso();
+    const causas: CausaDeCierre[] = [];
+    const socket = new (claseDelSocketDelRelay({
+      sala,
+      tokenDeInvitacion,
+      alCerrarseLaSala: (causa) => causas.push(causa),
+    }))(base);
+    await once(socket, 'open');
+
+    socket.send(new Uint8Array([CORTAR]));
+    await once(socket, 'close');
+
+    expect(causas).toEqual([]);
   });
 
   it('no deja enviar antes de entrar', async () => {

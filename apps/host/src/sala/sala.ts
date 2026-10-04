@@ -41,6 +41,10 @@ export type SalaEnVivo = {
   /** El manejador del canal `sesion`. */
   readonly manejador: ManejadorDeCanal;
   participantes(): Participante[];
+  /** Conexiones de invitados vivas en Hocuspocus. La directa del host no cuenta. */
+  conexiones(): number;
+  /** Documentos cargados en memoria. Siempre uno: el de la sala. */
+  documentos(): number;
   cerrar(): Promise<void>;
 };
 
@@ -94,6 +98,9 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
   return {
     manejador,
     participantes,
+    // Hocuspocus cuenta también la conexión directa del host.
+    conexiones: () => hocuspocus.getConnectionsCount() - 1,
+    documentos: () => hocuspocus.getDocumentsCount(),
     async cerrar() {
       hocuspocus.closeConnections();
       await directa.disconnect();

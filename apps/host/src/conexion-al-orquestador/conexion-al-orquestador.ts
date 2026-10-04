@@ -19,6 +19,7 @@
 import {
   type IdentidadDeSala,
   RUTAS,
+  TAMANO_MAXIMO_DE_MENSAJE,
   interpretarControl,
   serializarControl,
   urlDelRelay,
@@ -75,7 +76,9 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
 
   function abrir(): void {
     estado = 'conectando';
-    const socket = new WebSocket(urlDelRelay(opciones.url, RUTAS.control));
+    const socket = new WebSocket(urlDelRelay(opciones.url, RUTAS.control), {
+      maxPayload: TAMANO_MAXIMO_DE_MENSAJE,
+    });
     control = socket;
 
     socket.on('open', () => {
@@ -216,12 +219,18 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
         estado = 'detenida';
         clearTimeout(reintento);
         detenerLatido();
-        for (const datos of datosAbiertos) datos.close(1001);
+
+        // Los datos se cierran al final: si se cerraran antes de `cerrar-sala`,
+        // el invitado vería una caída y no "el host cerró la sala" (B7).
+        const terminar = (): void => {
+          for (const datos of datosAbiertos) datos.close(1001);
+          listo();
+        };
 
         const socket = control;
         if (!socket || socket.readyState !== WebSocket.OPEN) {
           socket?.terminate();
-          listo();
+          terminar();
           return;
         }
 
@@ -230,11 +239,11 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
 
         const rendirse = setTimeout(() => {
           socket.terminate();
-          listo();
+          terminar();
         }, ESPERA_DEL_CIERRE);
         socket.once('close', () => {
           clearTimeout(rendirse);
-          listo();
+          terminar();
         });
         socket.close(1000);
       }),

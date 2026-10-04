@@ -1,4 +1,5 @@
 import type { CausaDeRechazoDeEntrada } from '@harukoia/cliente-del-relay';
+import type { CausaDeCierre } from '@harukoia/domain';
 import { useEffect, useState } from 'react';
 
 import { type Invitacion, crearEnlace } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
@@ -20,10 +21,18 @@ const POR_QUE_NO_ENTRASTE: Record<CausaDeRechazoDeEntrada, string> = {
   'respuesta-inesperada': 'El servidor respondió algo inesperado. Vuelve a intentar.',
 };
 
+/** Por qué se cerró una sala en la que ya estabas. */
+const POR_QUE_SE_CERRO: Record<CausaDeCierre, string> = {
+  'host-cerro-la-sala': 'El host cerró la sala.',
+  'host-sin-latido': 'El host dejó de responder y la sala se cerró.',
+  'host-reemplazado': 'Otro host tomó la sala.',
+};
+
 const ESTADO_VISIBLE = {
   conectando: 'Conectando…',
   conectada: 'Conectado',
   reconectando: 'Reconectando…',
+  'esperando-al-host': 'Esperando al host…',
 } as const;
 
 export function PantallaDeSala(props: {
@@ -58,13 +67,15 @@ export function PantallaDeSala(props: {
     <>
       <h2>Sala {invitacion.sala}</h2>
 
-      {estado.tipo === 'rechazada' ? (
+      {estado.tipo === 'rechazada' || estado.tipo === 'sin-host' ? (
         <p role="alert">
-          {POR_QUE_NO_ENTRASTE[estado.causa]}{' '}
+          {estado.tipo === 'rechazada' ? POR_QUE_NO_ENTRASTE[estado.causa] : 'La sala se cerró.'}{' '}
           <button type="button" onClick={() => setIntento((n) => n + 1)}>
             Reintentar
           </button>
         </p>
+      ) : estado.tipo === 'cerrada' ? (
+        <p role="alert">{POR_QUE_SE_CERRO[estado.causa]}</p>
       ) : (
         <p aria-live="polite">Estado: {ESTADO_VISIBLE[estado.tipo]}</p>
       )}
@@ -82,7 +93,10 @@ export function PantallaDeSala(props: {
         </section>
       )}
 
-      {estado.tipo !== 'rechazada' && (
+      {(estado.tipo === 'conectando' ||
+        estado.tipo === 'conectada' ||
+        estado.tipo === 'reconectando' ||
+        estado.tipo === 'esperando-al-host') && (
         <section>
           <h3>Participantes ({participantes.length})</h3>
           <ul>

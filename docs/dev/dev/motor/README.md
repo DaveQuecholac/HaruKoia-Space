@@ -33,8 +33,8 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | B3 | Túnel del orquestador | Hecho — checkpoint 2 pasado entre dos redes |
 | B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
 | B5 | Sala en vivo y presencia | Hecho — sin interfaz: la pantalla llega en B6 |
-| B6 | Web: nombre, volverme host, unirme | Hecho — falta la prueba a mano de una persona y el checkpoint 3 |
-| B7 | Resistencia y reconexión | Pendiente |
+| B6 | Web: nombre, volverme host, unirme | Hecho — **checkpoint 3 pasado** el 2026-10-04: dos máquinas en redes distintas por Makino Hara |
+| B7 | Resistencia y reconexión | Hecho — falta probarlo a mano en la web, con el orquestador de Makino Hara redesplegado |
 | B8 | Roles mínimos | Pendiente |
 | B9 | Varios participantes y cierre | Pendiente |
 
@@ -176,7 +176,8 @@ Fijado en B5, con **D2 confirmada**: sala Yjs real desde H1, con su presencia.
 | Sala vacía | El host abre el documento con una **conexión directa** y lo mantiene. Sin ella, Hocuspocus lo descarga al irse el último invitado. Reiniciar el host sí la vacía (H3) |
 | Salida limpia | El participante desaparece **enseguida** |
 | Caída sucia | Tiempo de espera de **30 s** (decisión de B5; Hocuspocus trae 60). Hocuspocus no hace ping: cierra la conexión que pasa 30 s sin mandar nada, y lo revisa cada 30 s. Una conexión sana renueva su presencia cada ~15 s. En la práctica, los demás dejan de ver al caído **entre 15 y 33 s** después (caduca su presencia) y el host suelta la conexión muerta **entre 30 y 60 s** después |
-| Rechazo de entrada | El socket del relay cierra con código `4403` y la causa como razón, y la avisa por `alSerRechazado`. El proveedor por sí solo reintentaría para siempre; la web de B6 corta los reintentos y muestra la causa |
+| Rechazo de entrada | El socket del relay cierra con código `4403` y la causa como razón, y la avisa por `alSerRechazado`. El proveedor por sí solo reintentaría para siempre; la web decide si espera o se detiene (ver **Resistencia**) |
+| Sala cerrada a propósito | Con `cerrar-sala`, el orquestador cierra a los invitados unidos de esa sala con el código **`4410`** y la causa como razón (`packages/domain/src/relay/cierre-de-sala/`). El socket del relay la avisa por `alCerrarseLaSala`. Una caída nunca trae ese código |
 
 **Con un socket propio hay que llamar `attach()`** en el proveedor. Sin eso el socket abre, pero el documento nunca se engancha y no viaja ni un mensaje.
 
@@ -192,7 +193,7 @@ Fijado en B6, con **D7** y **D9** confirmadas. Sin router: la ruta `/s/<sala>` e
 | Nombre | `apps/web/src/entrada/nombre-recordado/` | Se pide la primera vez y queda en `localStorage`. Viaja solo en la presencia |
 | Volverme host | `apps/web/src/host/` y `apps/host/src/invitacion/` | La web le pide `GET /invitacion` al host de **su máquina**: sala y token de invitación, nunca el token de host |
 | Rol | `apps/web/src/host/rol-en-la-pestana/` | Host si la pestaña llegó por "Volverme host", invitado si llegó por link. Va en la presencia. **Falsificable hasta B8** |
-| Sala | `apps/web/src/sala/` | Estado visible (conectando, conectado, reconectando o la causa del rechazo), link para copiar si eres host, y la lista de participantes con su rol |
+| Sala | `apps/web/src/sala/` | Estado visible (conectando, conectado, reconectando, esperando al host, sala cerrada o la causa del rechazo), link para copiar si eres host, y la lista de participantes con su rol |
 
 `GET /invitacion` tiene dos candados: solo atiende peticiones de **loopback** (el proxy de portless en desarrollo; detrás del proxy de un servidor viene de otra dirección y se rechaza) y solo al **origen** `WEB_ORIGEN`. Sin `WEB_ORIGEN` la ruta no existe.
 
@@ -203,6 +204,28 @@ Variables nuevas: `WEB_ORIGEN` en `apps/host/.env`; `VITE_ORQUESTADOR_URL` y `VI
 Cada reinicio del host crea una sala nueva (vive en memoria hasta H3): los links anteriores dejan de servir y hay que volver a pulsar "Volverme host".
 
 Dos pestañas de la misma persona son dos participantes con el mismo nombre: se acepta y se muestra tal cual. Para probar con dos nombres en una sola máquina, usa una ventana de incógnito (otro `localStorage`).
+
+## Resistencia
+
+Fijado en B7. Qué ve la persona en la sala según lo que falló:
+
+| Qué pasó | Estado en la web | Qué hace |
+|---|---|---|
+| Se cayó la red o el orquestador | Reconectando… | El proveedor reintenta solo: 1 s, doblando, tope de 30 s, con variación aleatoria. Sin límite |
+| Ya estabas dentro y la sala "no se encuentra" (el host está volviendo) | Esperando al host… | Sigue intentando hasta **2 minutos**. Si el host no vuelve: "La sala se cerró" y Reintentar |
+| El host cerró la sala (apagó su proceso) | El host cerró la sala. | Se detiene. No hay botón: esa sala ya no existe |
+| Link inválido, versión que no coincide, o cualquier rechazo en la primera entrada | La causa | Se detiene, con Reintentar |
+
+Qué rechazo es temporal y cuál definitivo está en `packages/cliente-del-relay/src/naturaleza-del-rechazo/`, con un `Record`: una causa nueva no compila sin decidirlo.
+
+| Proceso | Cierre limpio |
+|---|---|
+| Orquestador | Con SIGTERM o SIGINT cierra todos los sockets con `1001`, para que hosts e invitados reconecten de inmediato, y sale con `0` (tope de 2 s) |
+| Host | Manda `cerrar-sala`, espera a que el orquestador cierre el control, y **solo después** cierra sus conexiones de datos. Al revés, el invitado vería una caída. El orden no se puede probar de forma fiable entre procesos: en local el aviso casi siempre gana la carrera |
+
+El tope de **1 MB** por mensaje pasó a `packages/domain`: el orquestador lo aplica al reenviar, y ahora el host también al recibir (control y datos).
+
+Pruebas: cien ciclos dentro del orquestador (`tunel.test.ts`) y del host (`sala.test.ts`), con contadores en cero y memoria dentro de un margen, y siete casos entre procesos en `packages/pruebas-entre-procesos/src/resistencia/`, con un proxy TCP que mete latencia, parte la red o la corta.
 
 ## Registro de salas
 

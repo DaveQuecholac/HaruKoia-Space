@@ -18,9 +18,12 @@ import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 
 import {
+  CODIGO_DE_SALA_CERRADA,
+  type CausaDeCierre,
   type IdentificadorDeConexion,
   type MensajeDeControl,
   RUTAS,
+  TAMANO_MAXIMO_DE_MENSAJE,
   interpretarControl,
   serializarControl,
 } from '@harukoia/domain';
@@ -29,7 +32,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 import { crearRegistroDeSalas, type RegistroDeSalas } from '../registro-de-salas/registro-de-salas.ts';
 import { crearEmparejador, type Emparejador } from './emparejamiento/emparejamiento.ts';
-import { COLA_MAXIMA_POR_CONEXION, TAMANO_MAXIMO_DE_MENSAJE } from './limites/limites.ts';
+import { COLA_MAXIMA_POR_CONEXION } from './limites/limites.ts';
 
 export type OpcionesDelTunel = {
   readonly registro: Registro;
@@ -40,7 +43,23 @@ export type OpcionesDelTunel = {
 export type Tunel = {
   readonly salas: RegistroDeSalas;
   readonly emparejamientosPendientes: () => number;
+  /** Pares invitado–host vivos. */
+  readonly conexionesUnidas: () => number;
+  /** Sockets abiertos en el orquestador, de cualquier ruta. */
+  readonly socketsAbiertos: () => number;
+  /**
+   * Apagado limpio: cierra todos los sockets con 1001 ("el servidor se va")
+   * para que hosts e invitados reconecten de inmediato, sin esperar a que
+   * venza un latido.
+   */
+  readonly cerrarConexiones: () => void;
   readonly desmontar: () => void;
+};
+
+/** Un par unido, visto desde fuera de `unirPuntas`. */
+type Puntas = {
+  /** El host cerró la sala: el invitado recibe el código propio y la causa. */
+  readonly cerrarPorSalaCerrada: (causa: CausaDeCierre) => void;
 };
 
 function enviarControl(socket: WebSocket, mensaje: MensajeDeControl): void {
@@ -63,16 +82,18 @@ function unirPuntas(
   datos: WebSocket,
   registroDeLaConexion: Registro,
   alCerrar: () => void,
-): void {
+): Puntas {
   let cerrado = false;
 
-  const cerrarTodo = (motivo: string): void => {
+  const cerrarTodo = (motivo: string, causaDeSala?: CausaDeCierre): void => {
     if (cerrado) return;
     cerrado = true;
     registroDeLaConexion.info('puntas separadas', { motivo });
-    for (const socket of [invitado, datos]) {
-      if (socket.readyState === WebSocket.OPEN) socket.close(1000);
+    if (invitado.readyState === WebSocket.OPEN) {
+      if (causaDeSala === undefined) invitado.close(1000);
+      else invitado.close(CODIGO_DE_SALA_CERRADA, causaDeSala);
     }
+    if (datos.readyState === WebSocket.OPEN) datos.close(1000);
     alCerrar();
   };
 
@@ -105,6 +126,10 @@ function unirPuntas(
 
   copiar(invitado, datos, 'invitado');
   copiar(datos, invitado, 'host');
+
+  return {
+    cerrarPorSalaCerrada: (causa) => cerrarTodo('sala cerrada', causa),
+  };
 }
 
 export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel {
@@ -129,8 +154,11 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
     maxPayload: TAMANO_MAXIMO_DE_MENSAJE,
   });
 
-  /** Conexiones unidas, para avisarle al host cuando un invitado se va. */
-  const unidas = new Map<IdentificadorDeConexion, { sala: string }>();
+  /**
+   * Conexiones unidas: para avisarle al host cuando un invitado se va, y para
+   * cerrar a los invitados de una sala cuando su host la cierra.
+   */
+  const unidas = new Map<IdentificadorDeConexion, { sala: string; puntas: Puntas }>();
 
   const alUpgrade = (peticion: IncomingMessage, socket: Duplex, cabecera: Buffer): void => {
     const ruta = new URL(peticion.url ?? '/', 'http://interno').pathname;
@@ -230,6 +258,9 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
             causa: 'sala-no-encontrada',
           });
         }
+        for (const unida of [...unidas.values()]) {
+          if (unida.sala === sala) unida.puntas.cerrarPorSalaCerrada('host-cerro-la-sala');
+        }
         salas.cerrar(sala, tokenDeHost);
         return;
       }
@@ -302,17 +333,22 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
     // ninguna de las dos vuelve a ver control.
     enviarControl(socket, { tipo: 'emparejamiento-aceptado', conexion });
     enviarControl(invitado, { tipo: 'entrada-aceptada', conexion });
-    unidas.set(conexion, { sala });
 
-    unirPuntas(invitado, socket, registroDeLaConexion, () => {
+    const puntas = unirPuntas(invitado, socket, registroDeLaConexion, () => {
       unidas.delete(conexion);
       salas.resolver(sala)?.enlace.enviar(serializarControl({ tipo: 'sale-invitado', conexion }));
     });
+    unidas.set(conexion, { sala, puntas });
   }
 
   return {
     salas,
     emparejamientosPendientes: emparejador.pendientes,
+    conexionesUnidas: () => unidas.size,
+    socketsAbiertos: () => servidorDeSockets.clients.size,
+    cerrarConexiones: () => {
+      for (const socket of servidorDeSockets.clients) socket.close(1001);
+    },
     desmontar: () => {
       servidor.off('upgrade', alUpgrade);
       servidorDeSockets.close();

@@ -293,6 +293,17 @@ Qué entra: espera creciente con variación en host y en web, límites de cola y
 
 **Verificación.** Matar el orquestador, matar el host, partir la red del invitado, inyectar latencia.
 
+**Decisiones, confirmadas el 2026-10-04:**
+
+| # | Decisión |
+|---|----------|
+| 1 | La web distingue rechazos **definitivos** (token inválido, versión que no coincide) de **temporales**. "Sala no encontrada" después de haber estado dentro es temporal: sigue intentando con espera creciente **hasta 2 minutos**, mostrando "Esperando al host…", y luego "La sala se cerró" con Reintentar. En la primera entrada sigue siendo inmediato |
+| 2 | El cierre **a propósito** se distingue de una caída: con `cerrar-sala`, el orquestador cierra a los invitados de esa sala con un **código de cierre propio** y la causa. La web muestra "El host cerró la sala" y no reintenta. El host suelta la sala **antes** de cerrar sus conexiones de datos |
+| 3 | Fugas: prueba **dentro** del orquestador y del host. Cien ciclos, luego salas, emparejamientos y conexiones en cero y memoria dentro de un margen |
+| 4 | Red cortada y latencia: un **proxy TCP** dentro de `packages/pruebas-entre-procesos`, sin dependencias nuevas |
+
+**Archivos.** `packages/domain/src/relay/cierre-de-sala/` y `relay/limites/` (el tope de 1 MB pasa a ser del contrato), `packages/cliente-del-relay/src/naturaleza-del-rechazo/`, el túnel y `main.ts` del orquestador, la conexión al orquestador y la sala del host, `apps/web/src/sala/`, y `packages/pruebas-entre-procesos/src/proxy-de-red/` y `src/resistencia/`.
+
 **Hecho cuando.**
 1. Después de cada caída, el sistema vuelve solo, sin recargar la página.
 2. Ningún caso termina en un error genérico sin causa.

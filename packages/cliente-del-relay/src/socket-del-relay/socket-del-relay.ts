@@ -15,10 +15,12 @@
  */
 
 import {
+  type CausaDeCierre,
   type CausaDeRechazo,
   type IdentificadorDeSala,
   type TokenDeInvitacion,
   RUTAS,
+  causaDelCierreDeSala,
   interpretarControl,
   serializarControl,
   urlDelRelay,
@@ -30,6 +32,11 @@ export type EntradaALaSala = {
   readonly tokenDeInvitacion: TokenDeInvitacion;
   /** Para mostrar la causa. El proveedor solo ve un cierre con `CIERRE_POR_RECHAZO`. */
   readonly alSerRechazado?: (causa: CausaDeRechazoDeEntrada) => void;
+  /**
+   * Ya dentro, el host cerró la sala a propósito (B7). Distinto de una caída:
+   * reintentar no la va a traer de vuelta.
+   */
+  readonly alCerrarseLaSala?: (causa: CausaDeCierre) => void;
 };
 
 /** Las del orquestador, más una respuesta que no es control válido. */
@@ -103,7 +110,12 @@ export class SocketDelRelay extends EventTarget {
     });
 
     socket.addEventListener('close', (evento) => {
+      const estabaDentro = this.readyState === OPEN;
       this.readyState = CLOSED;
+
+      const causaDelCierre = estabaDentro ? causaDelCierreDeSala(evento.code, evento.reason) : undefined;
+      if (causaDelCierre !== undefined) entrada.alCerrarseLaSala?.(causaDelCierre);
+
       const causa = this.#causaDelRechazo;
       this.dispatchEvent(
         Object.assign(new Event('close'), {

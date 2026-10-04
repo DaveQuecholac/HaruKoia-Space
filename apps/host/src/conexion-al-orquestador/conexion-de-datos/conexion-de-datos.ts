@@ -14,6 +14,7 @@ import {
   type IdentificadorDeConexion,
   type MensajeDelOrquestador,
   RUTAS,
+  TAMANO_MAXIMO_DE_MENSAJE,
   interpretarControl,
   serializarControl,
   urlDelRelay,
@@ -48,7 +49,9 @@ export type OpcionesDeConexionDeDatos = {
 export function abrirConexionDeDatos(opciones: OpcionesDeConexionDeDatos): void {
   const { aviso, manejadores, abiertas } = opciones;
   const registro = opciones.registro.con({ conexion: aviso.conexion, canal: aviso.canal });
-  const socket = new WebSocket(urlDelRelay(opciones.base, RUTAS.datos));
+  const socket = new WebSocket(urlDelRelay(opciones.base, RUTAS.datos), {
+    maxPayload: TAMANO_MAXIMO_DE_MENSAJE,
+  });
   abiertas.add(socket);
 
   socket.on('open', () => {
