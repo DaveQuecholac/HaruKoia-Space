@@ -1,3 +1,4 @@
+import type { TokenDeWebDelHost } from '@harukoia/domain';
 import { useState } from 'react';
 
 import type { Invitacion } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
@@ -8,7 +9,10 @@ const MENSAJES = {
   'host-rechazo': 'El host de esta máquina no le dio la invitación a esta web. Revisa WEB_ORIGEN en apps/host/.env.',
 } as const;
 
-export function VolvermeHost(props: { readonly urlDelHost: string; readonly alObtener: (invitacion: Invitacion) => void }) {
+export function VolvermeHost(props: {
+  readonly urlDelHost: string;
+  readonly alObtener: (invitacion: Invitacion, tokenDeWebDelHost: TokenDeWebDelHost) => void;
+}) {
   const [pidiendo, setPidiendo] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -17,7 +21,7 @@ export function VolvermeHost(props: { readonly urlDelHost: string; readonly alOb
     setError(undefined);
     const resultado = await pedirInvitacion(props.urlDelHost);
     setPidiendo(false);
-    if (resultado.ok) props.alObtener(resultado.invitacion);
+    if (resultado.ok) props.alObtener(resultado.invitacion, resultado.tokenDeWebDelHost);
     else setError(MENSAJES[resultado.causa]);
   }
 

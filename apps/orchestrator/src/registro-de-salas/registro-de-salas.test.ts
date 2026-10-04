@@ -216,6 +216,45 @@ describe('latido', () => {
   });
 });
 
+describe('cambio de invitación — B8', () => {
+  function salaRegistrada() {
+    const registro = nuevoRegistro();
+    registro.registrar({
+      sala: identidad.sala,
+      tokenDeHost: identidad.tokenDeHost,
+      tokenDeInvitacion: identidad.tokenDeInvitacion,
+      enlace: enlaceDePrueba().enlace,
+    });
+    return registro;
+  }
+
+  it('el link anterior deja de servir y el nuevo entra', () => {
+    const registro = salaRegistrada();
+    const nuevo = generarIdentidadDeSala().tokenDeInvitacion;
+
+    expect(registro.cambiarInvitacion(identidad.sala, identidad.tokenDeHost, nuevo)).toEqual({
+      ok: true,
+      reemplazo: false,
+    });
+    expect(registro.validarInvitacion(identidad.sala, identidad.tokenDeInvitacion)).toEqual({
+      ok: false,
+      causa: 'token-de-invitacion-invalido',
+    });
+    expect(registro.validarInvitacion(identidad.sala, nuevo).ok).toBe(true);
+  });
+
+  it('sin el token de host no se cambia nada', () => {
+    const registro = salaRegistrada();
+    const intruso = generarIdentidadDeSala();
+
+    expect(registro.cambiarInvitacion(identidad.sala, intruso.tokenDeHost, intruso.tokenDeInvitacion)).toEqual({
+      ok: false,
+      causa: 'token-de-host-invalido',
+    });
+    expect(registro.validarInvitacion(identidad.sala, identidad.tokenDeInvitacion).ok).toBe(true);
+  });
+});
+
 describe('expiración por falta de latido', () => {
   it('la sala desaparece y el contador vuelve a cero', () => {
     const registro = nuevoRegistro();

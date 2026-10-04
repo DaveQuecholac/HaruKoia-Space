@@ -8,6 +8,8 @@ import { RUTA_DE_INVITACION, atenderInvitacion, esDeLaPropiaMaquina } from './in
 
 const identidad = generarIdentidadDeSala();
 const origenDeLaWeb = 'https://web.harukoia.local.iokoia.dev';
+let vigente = identidad.tokenDeInvitacion;
+const invitacionVigente = () => vigente;
 
 let servidor: Server | undefined;
 
@@ -19,7 +21,7 @@ afterEach(async () => {
 
 async function hostConInvitacion(): Promise<string> {
   servidor = createServer((req, res) => {
-    if (atenderInvitacion(req, res, { identidad, origenDeLaWeb })) return;
+    if (atenderInvitacion(req, res, { identidad, invitacionVigente, origenDeLaWeb })) return;
     res.writeHead(404).end();
   });
   await new Promise<void>((listo) => servidor?.listen(0, '127.0.0.1', listo));
@@ -34,8 +36,22 @@ describe('invitación del host', () => {
     expect(respuesta.headers.get('access-control-allow-origin')).toBe(origenDeLaWeb);
     expect(respuesta.headers.get('cache-control')).toBe('no-store');
     const cuerpo = await respuesta.text();
-    expect(JSON.parse(cuerpo)).toEqual({ sala: identidad.sala, tokenDeInvitacion: identidad.tokenDeInvitacion });
+    expect(JSON.parse(cuerpo)).toEqual({
+      sala: identidad.sala,
+      tokenDeInvitacion: identidad.tokenDeInvitacion,
+      tokenDeWebDelHost: identidad.tokenDeWebDelHost,
+    });
     expect(cuerpo).not.toContain(identidad.tokenDeHost);
+  });
+
+  it('entrega la invitación vigente, no la del arranque', async () => {
+    const url = await hostConInvitacion();
+    vigente = generarIdentidadDeSala().tokenDeInvitacion;
+
+    const respuesta = await fetch(url, { headers: { origin: origenDeLaWeb } });
+
+    expect(((await respuesta.json()) as { tokenDeInvitacion: string }).tokenDeInvitacion).toBe(vigente);
+    vigente = identidad.tokenDeInvitacion;
   });
 
   it('rechaza otro origen o una petición sin origen', async () => {

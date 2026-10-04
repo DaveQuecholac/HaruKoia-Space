@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 
 import { generarIdentidadDeSala } from '@harukoia/domain';
 
+import { cambiarInvitacion } from './acciones-de-sala/cambiar-invitacion/cambiar-invitacion.ts';
 import { conectarAlOrquestador } from './conexion-al-orquestador/conexion-al-orquestador.ts';
 import { atenderInvitacion } from './invitacion/invitacion.ts';
 import { registro } from './registro-del-proceso/registro-del-proceso.ts';
@@ -31,7 +32,13 @@ registro.aviso('solo desarrollo: invitación de la sala', {
   tokenDeInvitacion: identidad.tokenDeInvitacion,
 });
 
-const sala = await abrirSalaEnVivo({ sala: identidad.sala, registro });
+const sala = await abrirSalaEnVivo({
+  sala: identidad.sala,
+  tokenDeWebDelHost: identidad.tokenDeWebDelHost,
+  // La acción corre después del arranque: para entonces `conexion` ya existe.
+  acciones: { 'cambiar-invitacion': cambiarInvitacion(identidad, (nuevo) => conexion.cambiarInvitacion(nuevo)) },
+  registro,
+});
 
 const conexion = conectarAlOrquestador({
   url: urlDelOrquestador,
@@ -41,9 +48,10 @@ const conexion = conectarAlOrquestador({
 });
 
 const origenDeLaWeb = process.env.WEB_ORIGEN;
+const invitacionVigente = conexion.invitacionVigente;
 
 const server = createServer((req, res) => {
-  if (origenDeLaWeb && atenderInvitacion(req, res, { identidad, origenDeLaWeb })) return;
+  if (origenDeLaWeb && atenderInvitacion(req, res, { identidad, invitacionVigente, origenDeLaWeb })) return;
   if (req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ service: 'host', status: 'ok' }));

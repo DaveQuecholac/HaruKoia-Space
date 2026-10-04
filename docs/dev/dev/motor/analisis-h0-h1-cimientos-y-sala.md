@@ -143,7 +143,7 @@ El v2 dice que el orquestador sirve la web. En desarrollo no: cada app tiene su 
 Decisiones que salieron al aterrizarla en B6:
 
 - **"Volverme host" le pide la invitación al host de mi máquina.** El navegador no arranca procesos: el host se sigue arrancando con `pnpm dev` (más adelante `space host`). El host expone `GET /invitacion` con sala y token de invitación, **nunca** el token de host. Solo responde a peticiones desde la propia máquina y al origen de la web configurado; sin eso, cualquier página abierta en el navegador podría leer el token.
-- **El rol viaja en la presencia** (host o invitado) y se muestra en la lista. **Es falsificable hasta B8**, que lo resuelve donde no se puede falsificar.
+- **El rol viaja en la presencia** (host o invitado) y se muestra en la lista. **Es falsificable hasta B8**, que lo resuelve donde no se puede falsificar. *Resuelto en B8:* el host decide el rol por el token de la web del host y lo sella en la presencia; el invitado pasó a llamarse espectador. Ver "Roles" en el README de la rama.
 
 ### D8 — Runner de pruebas
 

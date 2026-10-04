@@ -9,6 +9,9 @@
  *   después de una caída (decisión **D5**). No se comparte nunca.
  * - El **token de invitación** da acceso a entrar. Se comparte en el link y se
  *   puede revocar sin cambiar la sala.
+ * - El **token de la web del host** (B8) hace host a la pestaña que lo
+ *   presenta. Solo lo entrega el host a la web de su propia máquina; el
+ *   orquestador no lo ve en ningún mensaje de control.
  *
  * Confundir el primero con los otros dos es exactamente lo que D4 evita: un
  * identificador visible en un log no debe abrir la puerta.
@@ -23,6 +26,7 @@ import {
 export type IdentificadorDeSala = Identificador<'sala'>;
 export type TokenDeHost = Identificador<'token-de-host'>;
 export type TokenDeInvitacion = Identificador<'token-de-invitacion'>;
+export type TokenDeWebDelHost = Identificador<'token-de-web-del-host'>;
 
 /** 16 caracteres, 80 bits. Viaja en el link y en los logs; no es secreto. */
 export const LONGITUD_DEL_IDENTIFICADOR = 16;
@@ -37,6 +41,7 @@ export type IdentidadDeSala = {
   readonly sala: IdentificadorDeSala;
   readonly tokenDeHost: TokenDeHost;
   readonly tokenDeInvitacion: TokenDeInvitacion;
+  readonly tokenDeWebDelHost: TokenDeWebDelHost;
 };
 
 export function generarIdentidadDeSala(): IdentidadDeSala {
@@ -44,6 +49,7 @@ export function generarIdentidadDeSala(): IdentidadDeSala {
     sala: generarIdentificador<'sala'>(LONGITUD_DEL_IDENTIFICADOR),
     tokenDeHost: generarIdentificador<'token-de-host'>(LONGITUD_DEL_TOKEN),
     tokenDeInvitacion: generarIdentificador<'token-de-invitacion'>(LONGITUD_DEL_TOKEN),
+    tokenDeWebDelHost: generarIdentificador<'token-de-web-del-host'>(LONGITUD_DEL_TOKEN),
   };
 }
 
@@ -68,4 +74,8 @@ export function comoTokenDeHost(valor: unknown): TokenDeHost {
 
 export function comoTokenDeInvitacion(valor: unknown): TokenDeInvitacion {
   return comoIdentificador<'token-de-invitacion'>(valor, LONGITUD_DEL_TOKEN);
+}
+
+export function comoTokenDeWebDelHost(valor: unknown): TokenDeWebDelHost {
+  return comoIdentificador<'token-de-web-del-host'>(valor, LONGITUD_DEL_TOKEN);
 }

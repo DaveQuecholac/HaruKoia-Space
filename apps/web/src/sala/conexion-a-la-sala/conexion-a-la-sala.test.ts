@@ -57,8 +57,9 @@ function conectar(esperaMaximaDelHost?: number) {
     orquestador: base,
     invitacion: { sala, tokenDeInvitacion },
     nombre: 'Prueba',
-    rol: 'invitado',
+    tokenDeWebDelHost: undefined,
     alCambiar: ({ estado }) => estados.push(estado),
+    alCambiarLaInvitacion: () => {},
     ...(esperaMaximaDelHost === undefined ? {} : { esperaMaximaDelHost }),
   });
   conexiones.push(conexion);

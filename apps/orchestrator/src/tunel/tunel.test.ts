@@ -563,6 +563,26 @@ describe('el latido mantiene la sala', () => {
     expect(tunel.salas.salasVivas()).toBe(1);
   });
 
+  it('cambiar la invitación se confirma, y el link anterior ya no entra', async () => {
+    const identidad = generarIdentidadDeSala();
+    const control = await hostRegistrado(identidad);
+    const nuevo = generarIdentidadDeSala().tokenDeInvitacion;
+
+    const confirmacion = siguienteControl(control);
+    control.send(serializarControl({ tipo: 'cambiar-invitacion', tokenDeInvitacion: nuevo }));
+    expect(await confirmacion).toEqual({ tipo: 'invitacion-cambiada' });
+
+    const viejo = await invitadoEntrando(identidad);
+    expect(await siguienteControl(viejo)).toEqual({
+      tipo: 'entrada-rechazada',
+      causa: 'token-de-invitacion-invalido',
+    });
+
+    const avisoAlHost = siguienteControl(control);
+    await invitadoEntrando(identidad, nuevo);
+    expect((await avisoAlHost).tipo).toBe('entra-invitado');
+  });
+
   it('un mensaje desconocido por control se rechaza con causa, sin cerrar la sala', async () => {
     const identidad = generarIdentidadDeSala();
     const control = await hostRegistrado(identidad);

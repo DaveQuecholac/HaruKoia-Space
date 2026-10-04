@@ -1,10 +1,13 @@
 import type { CausaDeRechazoDeEntrada } from '@harukoia/cliente-del-relay';
-import type { CausaDeCierre } from '@harukoia/domain';
-import { useEffect, useState } from 'react';
+import type { CausaDeAccionRechazada, CausaDeCierre, Rol, TokenDeInvitacion, TokenDeWebDelHost } from '@harukoia/domain';
+import { useEffect, useRef, useState } from 'react';
 
 import { type Invitacion, crearEnlace } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
-import type { Rol } from '../../host/rol-en-la-pestana/rol-en-la-pestana.ts';
-import { type InstantaneaDeLaSala, conectarALaSala } from '../conexion-a-la-sala/conexion-a-la-sala.ts';
+import {
+  type ConexionALaSala,
+  type InstantaneaDeLaSala,
+  conectarALaSala,
+} from '../conexion-a-la-sala/conexion-a-la-sala.ts';
 
 /** Lo que ve la persona por cada causa. Una causa nueva no compila sin su mensaje. */
 const POR_QUE_NO_ENTRASTE: Record<CausaDeRechazoDeEntrada, string> = {
@@ -28,6 +31,17 @@ const POR_QUE_SE_CERRO: Record<CausaDeCierre, string> = {
   'host-reemplazado': 'Otro host tomó la sala.',
 };
 
+/** Por qué el host no aceptó una acción. */
+const POR_QUE_NO_SE_PUDO: Record<CausaDeAccionRechazada, string> = {
+  'rol-insuficiente': 'Solo el host puede hacer eso.',
+  'orquestador-no-disponible': 'El orquestador no respondió y el link no cambió. Vuelve a intentar.',
+};
+
+const NOMBRE_DEL_ROL: Record<Rol, string> = {
+  host: 'host',
+  espectador: 'espectador',
+};
+
 const ESTADO_VISIBLE = {
   conectando: 'Conectando…',
   conectada: 'Conectado',
@@ -39,28 +53,58 @@ export function PantallaDeSala(props: {
   readonly orquestador: string;
   readonly invitacion: Invitacion;
   readonly nombre: string;
-  readonly rol: Rol;
+  readonly tokenDeWebDelHost: TokenDeWebDelHost | undefined;
+  readonly alCambiarLaInvitacion: (tokenDeInvitacion: TokenDeInvitacion) => void;
   readonly alSalir: () => void;
 }) {
-  const { orquestador, invitacion, nombre, rol } = props;
+  const { orquestador, invitacion, nombre, tokenDeWebDelHost } = props;
   const [instantanea, setInstantanea] = useState<InstantaneaDeLaSala>({
     estado: { tipo: 'conectando' },
     participantes: [],
+    miRol: undefined,
+    accionRechazada: undefined,
   });
   const [intento, setIntento] = useState(0);
   const [copiado, setCopiado] = useState(false);
+  const [cambiando, setCambiando] = useState(false);
+  const [linkCambiado, setLinkCambiado] = useState(false);
+  const conexion = useRef<ConexionALaSala>(undefined);
+  const alCambiarLaInvitacion = useRef(props.alCambiarLaInvitacion);
+  alCambiarLaInvitacion.current = props.alCambiarLaInvitacion;
 
   useEffect(() => {
-    const conexion = conectarALaSala({ orquestador, invitacion, nombre, rol, alCambiar: setInstantanea });
-    return () => conexion.salir();
-  }, [orquestador, invitacion.sala, invitacion.tokenDeInvitacion, nombre, rol, intento]);
+    const abierta = conectarALaSala({
+      orquestador,
+      invitacion,
+      nombre,
+      tokenDeWebDelHost,
+      alCambiar: (nueva) => {
+        setInstantanea(nueva);
+        if (nueva.accionRechazada) setCambiando(false);
+      },
+      alCambiarLaInvitacion: (nuevo) => {
+        setCambiando(false);
+        setCopiado(false);
+        setLinkCambiado(true);
+        alCambiarLaInvitacion.current(nuevo);
+      },
+    });
+    conexion.current = abierta;
+    return () => abierta.salir();
+  }, [orquestador, invitacion.sala, invitacion.tokenDeInvitacion, nombre, tokenDeWebDelHost, intento]);
 
-  const { estado, participantes } = instantanea;
+  const { estado, participantes, miRol, accionRechazada } = instantanea;
   const enlace = crearEnlace(window.location.origin, invitacion);
 
   async function copiar() {
     await navigator.clipboard.writeText(enlace);
     setCopiado(true);
+  }
+
+  function cambiarLink() {
+    setCambiando(true);
+    setLinkCambiado(false);
+    conexion.current?.cambiarInvitacion();
   }
 
   return (
@@ -83,13 +127,22 @@ export function PantallaDeSala(props: {
         <small>Orquestador: {new URL(orquestador).host}</small>
       </p>
 
-      {rol === 'host' && (
+      {miRol === 'host' && (
         <section>
           <h3>Invitar</h3>
           <input readOnly value={enlace} size={70} onFocus={(e) => e.target.select()} />{' '}
           <button type="button" onClick={copiar}>
             {copiado ? 'Copiado' : 'Copiar link'}
+          </button>{' '}
+          <button type="button" onClick={cambiarLink} disabled={cambiando || estado.tipo !== 'conectada'}>
+            {cambiando ? 'Cambiando…' : 'Cambiar link'}
           </button>
+          {linkCambiado && (
+            <p aria-live="polite">
+              Link nuevo. El anterior ya no deja entrar; quienes ya están en la sala siguen dentro.
+            </p>
+          )}
+          {accionRechazada && <p role="alert">{POR_QUE_NO_SE_PUDO[accionRechazada.causa]}</p>}
         </section>
       )}
 
@@ -102,7 +155,7 @@ export function PantallaDeSala(props: {
           <ul>
             {participantes.map((p) => (
               <li key={p.cliente}>
-                {p.nombre ?? '(sin nombre)'} — {p.rol ?? 'sin rol'}
+                {p.nombre ?? '(sin nombre)'} — {p.rol ? NOMBRE_DEL_ROL[p.rol] : 'sin rol'}
                 {p.soyYo && ' (tú)'}
               </li>
             ))}

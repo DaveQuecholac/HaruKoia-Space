@@ -2,10 +2,11 @@
  * Invitación del host para la web de su máquina. Fijado en el paso B6.
  *
  * "Volverme host" en la web no arranca nada: le pide aquí la invitación al
- * host que ya corre en la máquina. Devuelve sala y token de invitación,
- * **nunca** el token de host.
+ * host que ya corre en la máquina. Devuelve sala, el token de invitación
+ * **vigente** (cambia con la acción de B8) y el token de la web del host, que
+ * hace host a la pestaña que lo presenta. **Nunca** el token de host.
  *
- * Dos candados, porque el token de invitación da acceso a la sala:
+ * Dos candados, porque estos tokens dan acceso a la sala y al rol de host:
  *
  *   - **Solo desde la propia máquina.** En desarrollo el proxy de portless
  *     llega por loopback. En un servidor, detrás de su proxy, la petición viene
@@ -19,7 +20,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { IdentidadDeSala } from '@harukoia/domain';
+import type { IdentidadDeSala, TokenDeInvitacion } from '@harukoia/domain';
 
 export const RUTA_DE_INVITACION = '/invitacion';
 
@@ -31,6 +32,7 @@ export function esDeLaPropiaMaquina(direccion: string | undefined): boolean {
 
 export type OpcionesDeLaInvitacion = {
   readonly identidad: IdentidadDeSala;
+  readonly invitacionVigente: () => TokenDeInvitacion;
   readonly origenDeLaWeb: string;
 };
 
@@ -62,7 +64,8 @@ export function atenderInvitacion(
   res.end(
     JSON.stringify({
       sala: opciones.identidad.sala,
-      tokenDeInvitacion: opciones.identidad.tokenDeInvitacion,
+      tokenDeInvitacion: opciones.invitacionVigente(),
+      tokenDeWebDelHost: opciones.identidad.tokenDeWebDelHost,
     }),
   );
   return true;

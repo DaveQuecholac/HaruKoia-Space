@@ -1,3 +1,4 @@
+import type { TokenDeWebDelHost } from '@harukoia/domain';
 import { type FormEvent, useState } from 'react';
 
 import { VolvermeHost } from '../../host/volverme-host/volverme-host.tsx';
@@ -7,7 +8,7 @@ export function Inicio(props: {
   readonly nombre: string;
   readonly urlDelHost: string;
   readonly alCambiarNombre: () => void;
-  readonly alSerHost: (invitacion: Invitacion) => void;
+  readonly alSerHost: (invitacion: Invitacion, tokenDeWebDelHost: TokenDeWebDelHost) => void;
   readonly alUnirse: (enlace: string) => void;
 }) {
   const [enlace, setEnlace] = useState('');

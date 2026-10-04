@@ -32,7 +32,12 @@ beforeEach(async () => {
   const registro = crearRegistro({ proceso: 'host', destino: () => {} });
   const identidad = generarIdentidadDeSala();
   nombreDeLaSala = identidad.sala;
-  sala = await abrirSalaEnVivo({ sala: identidad.sala, registro });
+  sala = await abrirSalaEnVivo({
+    sala: identidad.sala,
+    tokenDeWebDelHost: identidad.tokenDeWebDelHost,
+    acciones: { 'cambiar-invitacion': async () => ({ ok: true, avisos: [] }) },
+    registro,
+  });
 
   servidor = createServer();
   sockets = new WebSocketServer({ server: servidor });

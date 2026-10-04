@@ -250,6 +250,14 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
         salas.latido(sala, tokenDeHost);
         return;
       }
+      if (leido.mensaje.tipo === 'cambiar-invitacion') {
+        const cambio = salas.cambiarInvitacion(sala, tokenDeHost, leido.mensaje.tokenDeInvitacion);
+        enviarControl(
+          socket,
+          cambio.ok ? { tipo: 'invitacion-cambiada' } : { tipo: 'registro-rechazado', causa: cambio.causa },
+        );
+        return;
+      }
       if (leido.mensaje.tipo === 'cerrar-sala') {
         for (const pendiente of emparejador.deLaSala(sala)) {
           emparejador.cancelar(pendiente.conexion);

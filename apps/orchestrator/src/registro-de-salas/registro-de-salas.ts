@@ -74,6 +74,12 @@ export type RegistroDeSalas = {
     tokenDeInvitacion: TokenDeInvitacion,
   ) => Resultado;
   readonly latido: (sala: IdentificadorDeSala, tokenDeHost: TokenDeHost) => Resultado;
+  /** B8: el link anterior deja de servir para entrar. Quien ya entró sigue dentro. */
+  readonly cambiarInvitacion: (
+    sala: IdentificadorDeSala,
+    tokenDeHost: TokenDeHost,
+    tokenDeInvitacion: TokenDeInvitacion,
+  ) => Resultado;
   readonly cerrar: (sala: IdentificadorDeSala, tokenDeHost: TokenDeHost) => Resultado;
   readonly resolver: (sala: IdentificadorDeSala) => SalaRegistrada | undefined;
   readonly barrer: () => IdentificadorDeSala[];
@@ -180,6 +186,18 @@ export function crearRegistroDeSalas(opciones: OpcionesDelRegistro): RegistroDeS
       }
 
       salas.set(sala, { ...encontrado.entrada, ultimoLatido: ahora() });
+      return { ok: true, reemplazo: false };
+    },
+
+    cambiarInvitacion: (sala, tokenDeHost, tokenDeInvitacion) => {
+      const encontrado = conToken(sala, tokenDeHost);
+      if ('causa' in encontrado) {
+        registro.con({ sala }).aviso('cambio de invitación rechazado', { causa: encontrado.causa });
+        return { ok: false, causa: encontrado.causa };
+      }
+
+      salas.set(sala, { ...encontrado.entrada, tokenDeInvitacion });
+      registro.con({ sala }).info('invitación cambiada por su host');
       return { ok: true, reemplazo: false };
     },
 

@@ -64,6 +64,8 @@ export type MensajeDelHost =
     }
   | { readonly tipo: 'latido' }
   | { readonly tipo: 'cerrar-sala' }
+  /** El link anterior deja de servir; quien ya entró sigue dentro. Añadido en B8. */
+  | { readonly tipo: 'cambiar-invitacion'; readonly tokenDeInvitacion: TokenDeInvitacion }
   | {
       readonly tipo: 'emparejar';
       readonly conexion: IdentificadorDeConexion;
@@ -86,6 +88,8 @@ export type MensajeDelInvitado = {
 export type MensajeDelOrquestador =
   | { readonly tipo: 'registro-aceptado'; readonly sala: IdentificadorDeSala }
   | { readonly tipo: 'registro-rechazado'; readonly causa: CausaDeRechazo }
+  /** Confirmación de `cambiar-invitacion`: desde aquí solo vale el token nuevo. */
+  | { readonly tipo: 'invitacion-cambiada' }
   | {
       readonly tipo: 'entra-invitado';
       readonly conexion: IdentificadorDeConexion;
@@ -108,13 +112,14 @@ export type MensajeDeControl = MensajeDelHost | MensajeDelInvitado | MensajeDelO
 
 export type TipoDeMensaje = MensajeDeControl['tipo'];
 
-export const TIPOS_DEL_HOST = ['registrar', 'latido', 'cerrar-sala', 'emparejar'] as const;
+export const TIPOS_DEL_HOST = ['registrar', 'latido', 'cerrar-sala', 'cambiar-invitacion', 'emparejar'] as const;
 
 export const TIPOS_DEL_INVITADO = ['entrar'] as const;
 
 export const TIPOS_DEL_ORQUESTADOR = [
   'registro-aceptado',
   'registro-rechazado',
+  'invitacion-cambiada',
   'entra-invitado',
   'sale-invitado',
   'sala-cerrada',

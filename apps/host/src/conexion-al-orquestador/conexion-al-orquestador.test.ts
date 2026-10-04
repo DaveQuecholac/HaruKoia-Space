@@ -124,6 +124,11 @@ async function esperarQue(condicion: () => boolean, limite = 3_000): Promise<voi
 
 const pausa = (milisegundos: number) => new Promise((listo) => setTimeout(listo, milisegundos));
 
+/** El registro lleva sala, token de host e invitación vigente; nada más. */
+function registroDe(identidad: IdentidadDeSala, tokenDeInvitacion = identidad.tokenDeInvitacion): MensajeDeControl {
+  return { tipo: 'registrar', sala: identidad.sala, tokenDeHost: identidad.tokenDeHost, tokenDeInvitacion };
+}
+
 afterEach(async () => {
   await Promise.all(conexiones.map((conexion) => conexion.detener()));
   conexiones.length = 0;
@@ -141,7 +146,17 @@ describe('registro', () => {
     await esperarQue(() => conexion.estado() === 'registrada');
     const [registro] = orquestador.deTipo('registrar');
     expect(registro?.ruta).toBe(RUTAS.control);
-    expect(registro?.mensaje).toEqual({ tipo: 'registrar', ...identidad });
+    expect(registro?.mensaje).toEqual(registroDe(identidad));
+  });
+
+  it('el token de la web del host nunca viaja al orquestador', async () => {
+    const orquestador = await orquestadorFalso();
+    const identidad = generarIdentidadDeSala();
+
+    const conexion = conectar(orquestador.url, identidad);
+
+    await esperarQue(() => conexion.estado() === 'registrada');
+    expect(JSON.stringify(orquestador.recibidos.map((r) => r.mensaje))).not.toContain(identidad.tokenDeWebDelHost);
   });
 
   it('late mientras está registrada', async () => {
@@ -177,7 +192,7 @@ describe('reconexión', () => {
 
     const segundo = await orquestadorFalso({ puerto: primero.puerto });
     await esperarQue(() => conexion.estado() === 'registrada');
-    expect(segundo.deTipo('registrar')[0]?.mensaje).toEqual({ tipo: 'registrar', ...identidad });
+    expect(segundo.deTipo('registrar')[0]?.mensaje).toEqual(registroDe(identidad));
   });
 
   it('una conexión que deja de responder en silencio se da por muerta y se rehace', async () => {
@@ -330,6 +345,59 @@ describe('invitados', () => {
     await esperarQue(() => orquestador.deTipo('emparejar').length === 1);
     await pausa(100);
     expect(llamadas).toBe(0);
+  });
+});
+
+describe('cambiar la invitación — B8', () => {
+  const confirmarCambio: Respuesta = (recibido) => {
+    aceptarRegistro(recibido);
+    if (recibido.mensaje.tipo === 'cambiar-invitacion') {
+      recibido.socket.send(serializarControl({ tipo: 'invitacion-cambiada' }));
+    }
+  };
+
+  it('con la confirmación, la invitación vigente cambia y se usa al volver a registrarse', async () => {
+    const primero = await orquestadorFalso({ responder: confirmarCambio });
+    const identidad = generarIdentidadDeSala();
+    const conexion = conectar(primero.url, identidad);
+    await esperarQue(() => conexion.estado() === 'registrada');
+    const nuevo = generarIdentidadDeSala().tokenDeInvitacion;
+
+    expect(await conexion.cambiarInvitacion(nuevo)).toBe(true);
+    expect(conexion.invitacionVigente()).toBe(nuevo);
+
+    await primero.apagar();
+    const segundo = await orquestadorFalso({ puerto: primero.puerto });
+    await esperarQue(() => segundo.deTipo('registrar').length === 1);
+    expect(segundo.deTipo('registrar')[0]?.mensaje).toEqual(registroDe(identidad, nuevo));
+  });
+
+  it('si el orquestador no lo conoce, falla sin soltar la sala ni cambiar nada', async () => {
+    const orquestador = await orquestadorFalso({
+      responder: (recibido) => {
+        aceptarRegistro(recibido);
+        if (recibido.mensaje.tipo === 'cambiar-invitacion') {
+          recibido.socket.send(serializarControl({ tipo: 'registro-rechazado', causa: 'mensaje-no-reconocido' }));
+        }
+      },
+    });
+    const identidad = generarIdentidadDeSala();
+    const conexion = conectar(orquestador.url, identidad);
+    await esperarQue(() => conexion.estado() === 'registrada');
+
+    expect(await conexion.cambiarInvitacion(generarIdentidadDeSala().tokenDeInvitacion)).toBe(false);
+    expect(conexion.invitacionVigente()).toBe(identidad.tokenDeInvitacion);
+    await pausa(100);
+    expect(conexion.estado()).toBe('registrada');
+  });
+
+  it('sin registro no se intenta', async () => {
+    const puerto = await puertoLibre();
+    const identidad = generarIdentidadDeSala();
+    const conexion = conectar(`ws://127.0.0.1:${puerto}`, identidad);
+
+    expect(await conexion.cambiarInvitacion(generarIdentidadDeSala().tokenDeInvitacion)).toBe(false);
+    expect(conexion.invitacionVigente()).toBe(identidad.tokenDeInvitacion);
   });
 });
 

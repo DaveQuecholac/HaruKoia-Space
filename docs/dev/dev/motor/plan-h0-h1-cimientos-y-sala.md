@@ -313,6 +313,25 @@ Qué entra: espera creciente con variación en host y en web, límites de cola y
 
 **Objetivo.** Host y espectador, resueltos donde no se pueden falsificar.
 
+**Decisiones, confirmadas el 2026-10-04 (rebanada B: host, web y pruebas):**
+
+| # | Decisión |
+|---|----------|
+| 1 | **Quién es host.** El host genera un tercer token, el **token de la web del host**, que solo entrega `GET /invitacion` (loopback y origen de la web). La pestaña de "Volverme host" lo manda en la autenticación de Hocuspocus (`onAuthenticate`). Con él, la conexión es **host**; sin él, o con otro, **espectador**. El orquestador no lo ve en ningún mensaje de control |
+| 2 | **Primera acción de host: cambiar el link de invitación.** El host genera un token de invitación nuevo, se lo manda al orquestador por control (`cambiar-invitacion`) y, cuando el orquestador confirma, el link anterior deja de servir para entrar. Quien ya estaba dentro sigue dentro |
+| 3 | **Los roles visibles los publica el host.** A cada conexión le dice su rol al conectarse, y sella el campo `rol` de la presencia con el rol de la conexión que la mandó (`beforeHandleAwareness`). Cada participante de la presencia queda amarrado a la conexión que lo anunció primero: otra conexión no puede escribir en su nombre |
+| 4 | Los espectadores **sí editan** el tablero (v2, flujo de sesión). El rol solo restringe las acciones de host |
+
+Mecanismo de la capacidad: un participante pide una **acción de sala** y el host la acepta o la rechaza según el rol de su conexión.
+Variantes de hoy: cambiar el link de invitación.
+Variantes probables siguientes: marcar staging, commit, push.
+Módulo dueño: `packages/domain/src/sala/` (roles, acciones y el rol que exige cada una, y los mensajes entre participante y host) y `apps/host/src/acciones-de-sala/` (validación genérica).
+Plugins: cada acción aporta su miembro de la unión, el rol que exige y su manejador en el host.
+Prueba de extensión: agregar "commit" = un miembro de la unión, su fila en el `Record` del rol exigido y su manejador.
+Patrón existente a extender: ninguno; los mensajes siguen la forma del codec de control (un lector por tipo).
+
+**Archivos.** `packages/domain/src/sala/rol/`, `sala/accion-de-sala/`, `sala/identidad-de-sala/` (el token nuevo), el mensaje de control nuevo en `relay/`; el registro de salas y el túnel del orquestador; `apps/host/src/rol-de-la-conexion/`, `apps/host/src/acciones-de-sala/`, la sala, la invitación y la conexión al orquestador; `apps/web/src/host/` y `apps/web/src/sala/`; y una prueba entre procesos que manda la acción a mano.
+
 **Hecho cuando.**
 1. El rol lo determina el servidor, no el cliente.
 2. Una acción de host enviada a mano por un espectador se rechaza.

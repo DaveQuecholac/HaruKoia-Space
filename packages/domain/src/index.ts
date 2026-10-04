@@ -14,12 +14,37 @@ export {
   type IdentificadorDeSala,
   type TokenDeHost,
   type TokenDeInvitacion,
+  type TokenDeWebDelHost,
   comoIdentificadorDeSala,
   comoTokenDeHost,
   comoTokenDeInvitacion,
+  comoTokenDeWebDelHost,
   generarIdentidadDeSala,
   rotarTokenDeInvitacion,
 } from './sala/identidad-de-sala/identidad-de-sala.ts';
+
+export { ROLES, type Rol, esRol } from './sala/rol/rol.ts';
+
+export {
+  ACCIONES_DE_SALA,
+  CAUSAS_DE_ACCION_RECHAZADA,
+  type AccionDeSala,
+  type CausaDeAccionRechazada,
+  puedePedir,
+} from './sala/accion-de-sala/accion-de-sala.ts';
+
+export type {
+  MensajeDeSala,
+  MensajeDelHostDeLaSala,
+  MensajeDelParticipante,
+  TipoDeMensajeDeSala,
+} from './sala/mensaje-de-sala/mensaje-de-sala.ts';
+
+export {
+  type InterpretacionDeSala,
+  interpretarMensajeDeSala,
+  serializarMensajeDeSala,
+} from './sala/mensaje-de-sala/codec-de-sala.ts';
 
 export { CANALES, type Canal, esCanal } from './relay/canal/canal.ts';
 

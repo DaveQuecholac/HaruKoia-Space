@@ -19,6 +19,7 @@
 import {
   type IdentidadDeSala,
   RUTAS,
+  type TokenDeInvitacion,
   TAMANO_MAXIMO_DE_MENSAJE,
   interpretarControl,
   serializarControl,
@@ -36,6 +37,9 @@ export const INTERVALO_DE_LATIDO = 10_000;
 
 /** Lo que tarda `detener` en rendirse si el orquestador no contesta el cierre. */
 const ESPERA_DEL_CIERRE = 2_000;
+
+/** Lo que se espera la confirmación de `cambiar-invitacion` antes de darlo por fallido. */
+const ESPERA_DEL_CAMBIO_DE_INVITACION = 5_000;
 
 export type EstadoDeLaConexion =
   | 'conectando'
@@ -56,6 +60,14 @@ export type OpcionesDeConexion = {
 
 export type ConexionAlOrquestador = {
   readonly estado: () => EstadoDeLaConexion;
+  /** El token con el que se entra ahora. Cambia con `cambiarInvitacion`. */
+  readonly invitacionVigente: () => TokenDeInvitacion;
+  /**
+   * B8: pide al orquestador que solo acepte `nuevo`. Resuelve `true` cuando lo
+   * confirma; `false` si no está registrada, no contesta o lo rechaza. Solo
+   * con `true` cambia la invitación vigente.
+   */
+  readonly cambiarInvitacion: (nuevo: TokenDeInvitacion) => Promise<boolean>;
   /** Suelta la sala en el orquestador y cierra todo. No vuelve a conectar. */
   readonly detener: () => Promise<void>;
 };
@@ -71,6 +83,8 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
   let control: WebSocket | undefined;
   let latido: ReturnType<typeof setInterval> | undefined;
   let reintento: ReturnType<typeof setTimeout> | undefined;
+  let tokenDeInvitacion = identidad.tokenDeInvitacion;
+  let cambioPendiente: { readonly nuevo: TokenDeInvitacion; readonly terminar: (ok: boolean) => void } | undefined;
 
   const terminal = (): boolean => estado === 'detenida' || estado === 'rechazada';
 
@@ -87,7 +101,7 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
           tipo: 'registrar',
           sala: identidad.sala,
           tokenDeHost: identidad.tokenDeHost,
-          tokenDeInvitacion: identidad.tokenDeInvitacion,
+          tokenDeInvitacion,
         }),
       );
     });
@@ -104,6 +118,7 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
       if (control !== socket) return;
       detenerLatido();
       control = undefined;
+      cambioPendiente?.terminar(false);
       if (!terminal()) programarReintento(codigo);
     });
   }
@@ -130,7 +145,24 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
         registro.info('sala registrada en el orquestador');
         return;
 
+      case 'invitacion-cambiada':
+        if (!cambioPendiente) {
+          registro.aviso('confirmación de cambio de invitación que nadie pidió');
+          return;
+        }
+        tokenDeInvitacion = cambioPendiente.nuevo;
+        cambioPendiente.terminar(true);
+        registro.info('invitación cambiada en el orquestador');
+        return;
+
       case 'registro-rechazado':
+        // Ya registrada, el rechazo es de un mensaje posterior, no del registro:
+        // la sala sigue en pie y no hay que soltar la conexión.
+        if (estado === 'registrada' && cambioPendiente) {
+          registro.aviso('el orquestador rechazó el cambio de invitación', { causa: mensaje.causa });
+          cambioPendiente.terminar(false);
+          return;
+        }
         if (esRechazoDefinitivo(mensaje.causa)) {
           estado = 'rechazada';
           registro.error('el orquestador rechazó la sala; no se reintenta', { causa: mensaje.causa });
@@ -211,8 +243,32 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
 
   abrir();
 
+  function cambiarInvitacion(nuevo: TokenDeInvitacion): Promise<boolean> {
+    const socket = control;
+    if (estado !== 'registrada' || !socket || cambioPendiente) return Promise.resolve(false);
+
+    return new Promise((resolver) => {
+      const rendirse = setTimeout(() => {
+        registro.aviso('el orquestador no confirmó el cambio de invitación');
+        cambioPendiente?.terminar(false);
+      }, ESPERA_DEL_CAMBIO_DE_INVITACION);
+
+      cambioPendiente = {
+        nuevo,
+        terminar: (ok) => {
+          clearTimeout(rendirse);
+          cambioPendiente = undefined;
+          resolver(ok);
+        },
+      };
+      socket.send(serializarControl({ tipo: 'cambiar-invitacion', tokenDeInvitacion: nuevo }));
+    });
+  }
+
   return {
     estado: () => estado,
+    invitacionVigente: () => tokenDeInvitacion,
+    cambiarInvitacion,
     detener: () =>
       new Promise<void>((listo) => {
         const estabaRegistrada = estado === 'registrada';

@@ -28,6 +28,8 @@ const TODOS: MensajeDeControl[] = [
   },
   { tipo: 'latido' },
   { tipo: 'cerrar-sala' },
+  { tipo: 'cambiar-invitacion', tokenDeInvitacion: identidad.tokenDeInvitacion },
+  { tipo: 'invitacion-cambiada' },
   { tipo: 'emparejar', conexion, ticket },
   { tipo: 'entrar', sala: identidad.sala, tokenDeInvitacion: identidad.tokenDeInvitacion },
   { tipo: 'registro-aceptado', sala: identidad.sala },

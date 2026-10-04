@@ -1,3 +1,4 @@
+import type { TokenDeWebDelHost } from '@harukoia/domain';
 import { useEffect, useState } from 'react';
 
 import { leerConfiguracion } from './configuracion/configuracion.ts';
@@ -5,7 +6,7 @@ import { type Invitacion, crearEnlace, esRutaDeSala, leerEnlace } from './entrad
 import { Inicio } from './entrada/inicio/inicio.tsx';
 import { guardarNombre, leerNombre } from './entrada/nombre-recordado/nombre-recordado.ts';
 import { PedirNombre } from './entrada/pedir-nombre/pedir-nombre.tsx';
-import { marcarComoHost, rolEnLaPestana } from './host/rol-en-la-pestana/rol-en-la-pestana.ts';
+import { guardarCredencialDeHost, leerCredencialDeHost } from './host/credencial-de-host/credencial-de-host.ts';
 import { PantallaDeSala } from './sala/pantalla-de-sala/pantalla-de-sala.tsx';
 
 const configuracion = leerConfiguracion();
@@ -32,9 +33,15 @@ export function App() {
     setCambiandoNombre(false);
   }
 
-  function serHost(invitacion: Invitacion) {
-    marcarComoHost(sessionStorage, invitacion.sala);
+  function serHost(invitacion: Invitacion, tokenDeWebDelHost: TokenDeWebDelHost) {
+    guardarCredencialDeHost(sessionStorage, invitacion.sala, tokenDeWebDelHost);
     navegar(crearEnlace(window.location.origin, invitacion));
+  }
+
+  /** El link viejo ya no sirve: se reemplaza en la barra, sin dejarlo en el historial. */
+  function cambiarElLinkEnLaBarra(invitacion: Invitacion) {
+    window.history.replaceState(null, '', crearEnlace(window.location.origin, invitacion));
+    setUbicacion(window.location.href);
   }
 
   return (
@@ -67,7 +74,8 @@ export function App() {
           orquestador={configuracion.orquestador}
           invitacion={invitacion}
           nombre={nombre}
-          rol={rolEnLaPestana(sessionStorage, invitacion.sala)}
+          tokenDeWebDelHost={leerCredencialDeHost(sessionStorage, invitacion.sala)}
+          alCambiarLaInvitacion={(tokenDeInvitacion) => cambiarElLinkEnLaBarra({ sala: invitacion.sala, tokenDeInvitacion })}
           alSalir={() => navegar('/')}
         />
       );

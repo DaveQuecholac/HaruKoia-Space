@@ -81,6 +81,11 @@ const LECTORES: Record<TipoDeMensaje, (datos: Record<string, unknown>) => Mensaj
   }),
   latido: () => ({ tipo: 'latido' }),
   'cerrar-sala': () => ({ tipo: 'cerrar-sala' }),
+  'cambiar-invitacion': (datos) => ({
+    tipo: 'cambiar-invitacion',
+    tokenDeInvitacion: comoTokenDeInvitacion(campoDeTexto(datos, 'tokenDeInvitacion')),
+  }),
+  'invitacion-cambiada': () => ({ tipo: 'invitacion-cambiada' }),
   emparejar: (datos) => ({
     tipo: 'emparejar',
     conexion: comoIdentificadorDeConexion(campoDeTexto(datos, 'conexion')),

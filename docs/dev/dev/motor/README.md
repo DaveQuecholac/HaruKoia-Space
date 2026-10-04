@@ -34,8 +34,8 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
 | B5 | Sala en vivo y presencia | Hecho — sin interfaz: la pantalla llega en B6 |
 | B6 | Web: nombre, volverme host, unirme | Hecho — **checkpoint 3 pasado** el 2026-10-04: dos máquinas en redes distintas por Makino Hara |
-| B7 | Resistencia y reconexión | Hecho — falta probarlo a mano en la web, con el orquestador de Makino Hara redesplegado |
-| B8 | Roles mínimos | Pendiente |
+| B7 | Resistencia y reconexión | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
+| B8 | Roles mínimos | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
 | B9 | Varios participantes y cierre | Pendiente |
 
 El esqueleto del monorepo y el arranque con PM2 y portless ya existen del trabajo previo a esta rama; A2 es verificarlo en las dos máquinas, no construirlo.
@@ -191,9 +191,9 @@ Fijado en B6, con **D7** y **D9** confirmadas. Sin router: la ruta `/s/<sala>` e
 |---|---|---|
 | Link | `apps/web/src/entrada/enlace-de-invitacion/` | `https://<web>/s/<sala>#<token>`. El token en el fragmento no llega a ningún servidor |
 | Nombre | `apps/web/src/entrada/nombre-recordado/` | Se pide la primera vez y queda en `localStorage`. Viaja solo en la presencia |
-| Volverme host | `apps/web/src/host/` y `apps/host/src/invitacion/` | La web le pide `GET /invitacion` al host de **su máquina**: sala y token de invitación, nunca el token de host |
-| Rol | `apps/web/src/host/rol-en-la-pestana/` | Host si la pestaña llegó por "Volverme host", invitado si llegó por link. Va en la presencia. **Falsificable hasta B8** |
-| Sala | `apps/web/src/sala/` | Estado visible (conectando, conectado, reconectando, esperando al host, sala cerrada o la causa del rechazo), link para copiar si eres host, y la lista de participantes con su rol |
+| Volverme host | `apps/web/src/host/` y `apps/host/src/invitacion/` | La web le pide `GET /invitacion` al host de **su máquina**: sala, token de invitación **vigente** y, desde B8, el token de la web del host. Nunca el token de host |
+| Credencial de host | `apps/web/src/host/credencial-de-host/` | Desde B8: el token de la web del host, por sala y por pestaña (`sessionStorage`). No va en el link |
+| Sala | `apps/web/src/sala/` | Estado visible (conectando, conectado, reconectando, esperando al host, sala cerrada o la causa del rechazo), link para copiar y "Cambiar link" si eres host, y la lista de participantes con el rol que decidió el host |
 
 `GET /invitacion` tiene dos candados: solo atiende peticiones de **loopback** (el proxy de portless en desarrollo; detrás del proxy de un servidor viene de otra dirección y se rechaza) y solo al **origen** `WEB_ORIGEN`. Sin `WEB_ORIGEN` la ruta no existe.
 
@@ -226,6 +226,22 @@ Qué rechazo es temporal y cuál definitivo está en `packages/cliente-del-relay
 El tope de **1 MB** por mensaje pasó a `packages/domain`: el orquestador lo aplica al reenviar, y ahora el host también al recibir (control y datos).
 
 Pruebas: cien ciclos dentro del orquestador (`tunel.test.ts`) y del host (`sala.test.ts`), con contadores en cero y memoria dentro de un margen, y siete casos entre procesos en `packages/pruebas-entre-procesos/src/resistencia/`, con un proxy TCP que mete latencia, parte la red o la corta.
+
+## Roles
+
+Fijado en B8. Dos roles: **host** y **espectador**. El espectador edita el tablero igual que el host; el rol solo limita las acciones de sala.
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Quién es host | `apps/host/src/rol-de-la-conexion/` | La pestaña presenta el token de la web del host al conectar (`onAuthenticate` de Hocuspocus). Con ese token es host; sin él, espectador. Comparación en tiempo constante |
+| Rol visible | `apps/host/src/sala/sala.ts` | El host le dice a cada conexión su rol (`tu-rol`) y **sella** el rol en la presencia de cada participante. Una presencia que otra conexión ya anunció se descarta: nadie habla a nombre de otro |
+| Acciones | `packages/domain/src/sala/accion-de-sala/` y `apps/host/src/acciones-de-sala/` | El rol que exige cada acción está en un `Record`: una acción nueva no compila sin decidirlo. Hoy: `cambiar-invitacion`, solo host |
+| Mensajes de sala | `packages/domain/src/sala/mensaje-de-sala/` | Viajan como *stateless* de Hocuspocus dentro del canal de datos: `pedir-accion`, `tu-rol`, `accion-rechazada`, `invitacion-cambiada`. El orquestador no los ve |
+| Cambiar link | `apps/host/src/conexion-al-orquestador/` y `apps/orchestrator/src/tunel/` | El host genera un token nuevo y lo manda por control (`cambiar-invitacion`); el orquestador contesta `invitacion-cambiada`. Desde ahí el link anterior no deja entrar; quienes ya están siguen dentro. Solo las pestañas del host reciben el token nuevo y cambian el link en la barra |
+
+**Hubo que redesplegar el orquestador:** uno anterior a B8 rechaza `cambiar-invitacion`. El host lo trata como "el orquestador no respondió": el link no cambia, la sala sigue abierta y la web lo dice.
+
+Pruebas: cuatro casos entre procesos en `packages/pruebas-entre-procesos/src/roles/`, incluido un intruso que se hace pasar por el host con su mismo identificador de presencia.
 
 ## Registro de salas
 
