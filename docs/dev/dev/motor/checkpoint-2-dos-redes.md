@@ -1,114 +1,121 @@
 # Checkpoint 2 — el túnel cruza entre dos redes
 
-El plan lo coloca **después de B3 y antes de B4**: se prueba con scripts en los dos extremos, porque el host real todavía no existe.
+El plan lo coloca **después de B3 y antes de B4**: se prueba con scripts, no con el navegador.
 
 > **Checkpoint 2.** El túnel cruza NAT. Si algo de la arquitectura iba a fallar, falla aquí. **No se sigue sin esta prueba hecha entre dos redes.**
 
-## Qué prueba, y qué no
+## Cómo funciona (en una frase)
 
-| Prueba | No prueba |
-|--------|-----------|
-| Que una máquina **sin puertos abiertos** queda alcanzable porque marca hacia fuera | Nada de pizarra: aquí no hay Yjs ni lienzo |
-| Que los bytes cruzan **íntegros** en los dos sentidos | Nada de navegador: eso es el checkpoint 3, después de B6 |
-| Que la conexión **aguanta abierta** y el TLS de en medio no la corta | Reconexión tras caídas: eso es B7 |
+Coolify en **Makino Hara** deja el orquestador en una URL pública con HTTPS. Tu laptop (atrás del NAT) abre una conexión **saliente** hacia esa URL. El “invitado” corre en otra red (el propio servidor o QA) y también marca hacia esa URL. El orquestador pega las dos puntas. **Nadie abre puertos en tu casa.**
 
-El tercer punto es el que más importa descubrir aquí. Un terminador de TLS que mata conexiones inactivas rompería H1 entero, y es mejor saberlo antes de construir cinco pasos encima.
+## Qué no es este checkpoint
 
-## Requisitos del servidor
+| No | Por qué |
+|----|---------|
+| Abrir la web HaruKoia en el navegador | Todavía no hay pantallas de sala (eso es B6) |
+| “Unirme a una sala” desde la UI | Checkpoint 3, después de B6 |
+| Pizarra / Yjs | Fuera de H1 |
 
-Son del código, no preferencias:
+Aquí solo demuestras: **túnel + TLS + dos redes**.
 
-| Requisito | Por qué |
-|-----------|---------|
-| Node **23.6 o más** | Los paquetes de servidor ejecutan TypeScript directo, sin compilar |
-| Nombre de dominio con **TLS real** | El navegador exigirá `wss://` desde una página `https://`. Se valida ya, aunque aquí no haya navegador |
-| TLS que **pase el upgrade** y no corte conexiones inactivas | Es el fallo clásico de esta arquitectura |
-| `80` y `443` abiertos | Para el certificado y para el tráfico |
+## Subir con Coolify (Makino Hara)
 
-El orquestador ya lee `HOST` y `PORT` del entorno, así que **no hace falta tocar código** para desplegarlo.
+Repo ya en `origin/dev/motor`. En Coolify:
 
-Con el contenedor, el requisito de Node lo cumple la imagen: en el servidor no hace falta instalar Node ni pnpm.
+1. Nueva aplicación en el servidor **Makino Hara**.
+2. Fuente: este repo, rama **`dev/motor`**.
+3. Build pack: **Docker Compose** (usa `docker-compose.yml` de la raíz)  
+   — o **Dockerfile** con Build Arg `APP=orchestrator`.
+4. **Ports Exposes / puerto interno: `8080`.**
+5. Dominio público con HTTPS (el que Coolify te asigne o el tuyo).
+6. Deploy.
 
-## Pasos
-
-### 1. En el servidor
+Comprobación mínima (esto **sí** se ve en el navegador o con curl):
 
 ```bash
-git clone <este repo> && cd motor-colaborativo && git checkout dev/motor
-
-docker build --build-arg APP=orchestrator -t harukoia-orquestador .
-docker run -d --name orquestador -p 8080:8080 --restart unless-stopped harukoia-orquestador
+curl https://<TU-DOMINIO-DEL-ORQUESTADOR>/health
+# debe responder exactamente:
+# {"service":"orchestrator","status":"ok"}
 ```
 
-Con Podman es el mismo comando cambiando `docker` por `podman`.
+Si eso falla, **no sigas**. Arregla Coolify / dominio / puerto.
 
-Delante va un proxy que termine TLS hacia `127.0.0.1:8080` y **no toque el upgrade**. Comprobación:
+Variables (si Coolify las pide a mano):
+
+| Variable | Valor |
+|----------|-------|
+| `HOST` | `0.0.0.0` |
+| `PORT` | `8080` |
+| Build Arg `APP` | `orchestrator` (solo si usas Dockerfile puro) |
+
+## Prueba del túnel (esto es el checkpoint)
+
+Necesitas Node en **tu PC** (para correr el arnés). El servidor ya tiene el contenedor.
+
+### A — En tu laptop (red de casa)
 
 ```bash
-curl https://<tu-dominio>/health     # {"service":"orchestrator","status":"ok"}
-```
-
-Sin contenedor, el camino directo también sirve y necesita Node 23.6 o más:
-
-```bash
-pnpm install && PORT=8080 HOST=0.0.0.0 node apps/orchestrator/src/main.ts
-```
-
-### 2. En tu máquina, detrás del NAT de casa
-
-```bash
+git clone <repo> && cd motor-colaborativo && git checkout dev/motor
+pnpm install
 cd apps/orchestrator/src/tunel
-node humo.mjs host wss://<tu-dominio>
+node humo.mjs host wss://<TU-DOMINIO-DEL-ORQUESTADOR>
 ```
 
-Imprime el comando del invitado, ya armado con la sala y el token. **Cópialo.**
+Copia el comando que imprime (lleva sala + token).
 
-### 3. En la otra red
+### B — En la otra red
 
-Pega el comando que imprimió el paso 2. Vale el propio servidor —está en una red distinta a tu casa— o la máquina de QA, que además valida una tercera red:
+Opciones válidas:
+
+- SSH al servidor Makino Hara y corre el comando ahí, **o**
+- la máquina de QA en otra red.
 
 ```bash
-SEGUNDOS=120 node humo.mjs invitado wss://<tu-dominio> <sala> <token>
+# dentro del repo, misma carpeta del arnés:
+SEGUNDOS=120 node humo.mjs invitado wss://<TU-DOMINIO> <sala> <token>
 ```
 
-Tiene que ir por `wss://`, no por el puerto local del servidor: el punto es atravesar el TLS.
+Tiene que ser **`wss://`** del dominio público, no `ws://localhost`.
 
-Si el TLS no es de una CA pública, añade `NODE_EXTRA_CA_CERTS=/ruta/ca.pem`.
-
-## Cómo se lee el resultado
-
-El invitado imprime el veredicto y sale con código `0` solo si todo pasó:
+### Qué debes ver (veredicto bueno)
 
 ```
   ── Veredicto del checkpoint 2 ──
 
     ✓  el invitado entra sin conocer al host
     ✓  bloque de 512 KB cruza íntegro
-    ✓  pulso 1 cruza íntegro
+    ✓  pulso … cruza íntegro
     ✓  la conexión aguanta 120 s sin cortes
 
   ✓ El túnel cruza entre las dos redes.
 ```
 
-Los rechazos salen **con causa**, nunca en silencio: `token-de-invitacion-invalido`, `sala-no-encontrada`, `ticket-invalido`.
+Código de salida del invitado: **`0`**.
 
-La sesión completa se sigue desde los registros del orquestador con el identificador de la sala:
+## Lista de verificación (si todo esto pasa, está bien)
 
-```bash
-grep "sala=<id>" <log del orquestador>
-```
+| # | Prueba | Resultado esperado |
+|---|--------|--------------------|
+| 1 | Coolify Deploy verde | Contenedor up |
+| 2 | `https://<dominio>/health` | `{"service":"orchestrator","status":"ok"}` |
+| 3 | Abrir `https://<dominio>/` en el navegador | JSON `not found` — **normal**, no hay página |
+| 4 | Modo host en tu laptop | Imprime el comando del invitado |
+| 5 | Modo invitado en otra red | Veredicto con todos los ✓ y exit 0 |
+| 6 | Aguanta ~2 minutos | No se cierra solo (si se cierra: Coolify/proxy corta idle) |
+
+Cuando **1–6** pasen → checkpoint 2 cerrado → se puede seguir con **B4**.
 
 ## Si falla
 
 | Síntoma | Qué significa |
 |---------|---------------|
-| `404` al conectar | La URL no llega al orquestador: revisa el proxy |
-| El invitado entra pero no vuelve ningún byte | El proxy rompe el upgrade de la conexión de datos |
-| Aguanta unos minutos y se cierra solo | El TLS corta conexiones inactivas. **Es el hallazgo que este checkpoint busca** y hay que resolverlo antes de B4 |
-| `sala-no-encontrada` con el token bien | El registro del host caducó por falta de latido, o el orquestador se reinició |
+| `/health` no responde | Dominio, puerto 8080 o build arg mal en Coolify |
+| Host no conecta por `wss://` | TLS / DNS / proxy de Coolify |
+| Entra pero no vuelven bytes | El proxy no pasa WebSocket upgrade |
+| Se corta a los N minutos | Idle timeout del proxy — hay que subir el timeout antes de B4 |
 
 ## Evidencia
 
-Al pasarlo, pegar aquí la salida del veredicto con la fecha, y marcar el checkpoint como hecho en el [README de la rama](README.md).
+Pega la salida del veredicto (con fecha) y márcalo hecho en el [README de la rama](README.md).
 
-**Estado: pendiente.** Lo verificado hasta ahora es local, incluido el paso por el proxy de desarrollo.
+**Estado: pendiente** hasta que corra contra Makino Hara + Coolify.

@@ -1,0 +1,31 @@
+# Coolify — servicio del orquestador para el checkpoint 2.
+#
+# En Coolify:
+#   1. Nueva aplicación → Docker Compose (o Dockerfile; este archivo es la vía
+#      con el build arg ya fijado).
+#   2. Rama: `dev/motor`
+#   3. Dominio público con HTTPS en el servicio `orquestador`
+#   4. **No** publiques un puerto del host: Coolify enruta por el dominio.
+#
+# El proxy de Coolify debe dejar pasar el upgrade de WebSocket. Si no, el
+# checkpoint 2 falla en el primer mensaje de datos aunque /health responda ok.
+
+services:
+  orquestador:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP: orchestrator
+    environment:
+      HOST: '0.0.0.0'
+      PORT: '8080'
+    expose:
+      - '8080'
+    healthcheck:
+      test: ['CMD', 'curl', '--fail', 'http://127.0.0.1:8080/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
