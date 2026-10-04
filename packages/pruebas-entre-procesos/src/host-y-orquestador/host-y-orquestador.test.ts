@@ -4,44 +4,14 @@
  * llega un invitado.
  */
 
-import {
-  type IdentificadorDeSala,
-  type MensajeDeControl,
-  type TokenDeInvitacion,
-  RUTAS,
-  comoIdentificadorDeSala,
-  comoTokenDeInvitacion,
-  interpretarControl,
-  serializarControl,
-} from '@harukoia/domain';
+import { type MensajeDeControl, RUTAS, interpretarControl, serializarControl } from '@harukoia/domain';
 import { afterAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 
-import {
-  type ProcesoLevantado,
-  apagar,
-  apagarTodos,
-  esperarQue,
-  levantar,
-  puertoLibre,
-} from '../levantar-proceso/levantar-proceso.ts';
+import { invitacionDelHost, registroDeLaSala } from '../invitacion-del-host/invitacion-del-host.ts';
+import { apagar, apagarTodos, esperarQue, levantar, puertoLibre } from '../levantar-proceso/levantar-proceso.ts';
 
 afterAll(apagarTodos);
-
-/** Lo que el host imprime al arrancar, solo en desarrollo (decisión de B4). */
-function invitacionDelHost(host: ProcesoLevantado): {
-  sala: IdentificadorDeSala;
-  token: TokenDeInvitacion;
-} {
-  const sala = /sala=(\w+)/.exec(host.salida())?.[1];
-  const token = /tokenDeInvitacion=(\w+)/.exec(host.salida())?.[1];
-  if (!sala || !token) throw new Error(`el host no imprimió su invitación:\n${host.salida()}`);
-  return { sala: comoIdentificadorDeSala(sala), token: comoTokenDeInvitacion(token) };
-}
-
-function registroDeLaSala(orquestador: ProcesoLevantado, sala: string): boolean {
-  return orquestador.salida().split('\n').some((linea) => linea.includes(`sala=${sala}`) && linea.includes('sala registrada'));
-}
 
 function primerControl(socket: WebSocket): Promise<MensajeDeControl> {
   return new Promise((resolver, rechazar) => {

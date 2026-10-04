@@ -15,7 +15,10 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "@harukoia/cliente-del-relay": "workspace:^",
     "@harukoia/domain": "workspace:^",
-    "ws": "^8.22.0"
+    "@hocuspocus/provider": "^4.7.0",
+    "ws": "^8.22.0",
+    "yjs": "^13.6.33"
   }
 }

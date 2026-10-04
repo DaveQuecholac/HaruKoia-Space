@@ -21,7 +21,9 @@
     "@harukoia/domain": "workspace:*",
     "@harukoia/registro": "workspace:*",
     "@harukoia/schema": "workspace:*",
-    "ws": "^8.22.0"
+    "@hocuspocus/server": "^4.7.0",
+    "ws": "^8.22.0",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

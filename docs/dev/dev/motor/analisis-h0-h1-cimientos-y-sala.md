@@ -35,7 +35,7 @@ El v2 define la topología, no el protocolo. Lo siguiente cambia el código y **
 | Decisión | Estado | Bloquea |
 |----------|--------|---------|
 | D1 Librería del servidor | **Confirmada:** `node:http` + `ws` | B2 |
-| D2 Cuándo entra la sala Yjs | Pendiente — recomendación (a) | B5 |
+| D2 Cuándo entra la sala Yjs | **Confirmada:** sala real desde H1, con su presencia | B5 |
 | D3 Forma del relay | **Confirmada:** túnel inverso | B1, B3, B4 |
 | D4 Token del link separado | **Confirmada:** token de invitación aparte del identificador de sala | B2 |
 | D5 Reconexión del host | **Confirmada:** el token de host correcto reemplaza el registro anterior | B2 |
@@ -64,8 +64,13 @@ La presencia de H1 puede construirse de dos formas.
 | **a** Montar la sala Yjs real desde H1 y usar su mecanismo de presencia | H1 ya levanta el servidor de sala sin lienzo. H2 solo agrega el lienzo encima |
 | **b** Canal propio de presencia en H1, sala Yjs hasta H2 | Se construye un mecanismo que se tira en H2 |
 
-**Recomendación: (a).** Es la diferencia entre H2 ser "conectar el lienzo" o ser "conectar el lienzo y además desmontar lo de presencia".
+**Decisión: (a)**, confirmada el 2026-10-04. Es la diferencia entre H2 ser "conectar el lienzo" o ser "conectar el lienzo y además desmontar lo de presencia".
 **Bloquea:** paso B5.
+
+Decisiones que salieron al aterrizarla en B5:
+
+- El lado invitado del túnel vive en un **paquete nuevo**, `packages/cliente-del-relay`: lo necesitan las pruebas de B5 y la web de B6, y es transporte, así que no cabe en `domain`. Se enchufa al proveedor de Hocuspocus como su clase WebSocket.
+- Un participante que se cae sucio desaparece a los **30 s**, la misma tolerancia que el latido del host. Hocuspocus trae 60 s por defecto.
 
 ### D3 — Forma del relay (la decisión más importante de la rama)
 

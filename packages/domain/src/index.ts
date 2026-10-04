@@ -29,7 +29,7 @@ export {
   generarIdentificadorDeConexion,
 } from './relay/conexion/conexion.ts';
 
-export { RUTAS, type Ruta, esRutaDelRelay } from './relay/rutas/rutas.ts';
+export { RUTAS, type Ruta, esRutaDelRelay, urlDelRelay } from './relay/rutas/rutas.ts';
 
 export { type Ticket, comoTicket, generarTicket } from './relay/ticket/ticket.ts';
 

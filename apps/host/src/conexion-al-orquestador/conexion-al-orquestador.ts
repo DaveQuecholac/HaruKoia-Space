@@ -21,6 +21,7 @@ import {
   RUTAS,
   interpretarControl,
   serializarControl,
+  urlDelRelay,
 } from '@harukoia/domain';
 import type { Registro } from '@harukoia/registro';
 import { WebSocket } from 'ws';
@@ -28,7 +29,6 @@ import { WebSocket } from 'ws';
 import { abrirConexionDeDatos, type ManejadoresDeCanal } from './conexion-de-datos/conexion-de-datos.ts';
 import { crearEsperaCreciente, type EsperaCreciente } from './espera-creciente/espera-creciente.ts';
 import { esCierreDefinitivo, esRechazoDefinitivo } from './rechazo-definitivo/rechazo-definitivo.ts';
-import { urlDelRelay } from './url-del-relay/url-del-relay.ts';
 
 /** Diez segundos: tres latidos caben en la tolerancia de 30 s del orquestador. */
 export const INTERVALO_DE_LATIDO = 10_000;

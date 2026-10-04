@@ -245,7 +245,7 @@ Qué hace: abre la conexión de control al arrancar, se registra con su token, r
 
 **Objetivo.** Un documento compartido vivo en el host, con la lista de participantes.
 
-**Archivos.** `apps/host/src/sala/` y `apps/host/src/participantes/`.
+**Archivos.** `apps/host/src/sala/`, `apps/host/src/participantes/` y `packages/cliente-del-relay/` (lado invitado del túnel, decidido al aterrizar D2).
 
 Qué hace, con la decisión **D2**: se monta el servidor de sala real y la presencia usa su mecanismo propio, no uno inventado. Cada conexión de datos del túnel entra como un cliente normal.
 

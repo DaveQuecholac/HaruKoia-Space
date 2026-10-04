@@ -16,11 +16,10 @@ import {
   RUTAS,
   interpretarControl,
   serializarControl,
+  urlDelRelay,
 } from '@harukoia/domain';
 import type { Registro } from '@harukoia/registro';
 import { WebSocket } from 'ws';
-
-import { urlDelRelay } from '../url-del-relay/url-del-relay.ts';
 
 /** Lo que recibe un manejador: el socket ya emparejado, solo con bytes. */
 export type ConexionDeDatos = {

@@ -4,6 +4,7 @@ import { generarIdentidadDeSala } from '@harukoia/domain';
 
 import { conectarAlOrquestador } from './conexion-al-orquestador/conexion-al-orquestador.ts';
 import { registro } from './registro-del-proceso/registro-del-proceso.ts';
+import { abrirSalaEnVivo } from './sala/sala.ts';
 
 const port = Number(process.env.PORT ?? 0);
 const host = process.env.HOST ?? '127.0.0.1';
@@ -29,17 +30,13 @@ registro.aviso('solo desarrollo: invitación de la sala', {
   tokenDeInvitacion: identidad.tokenDeInvitacion,
 });
 
+const sala = await abrirSalaEnVivo({ sala: identidad.sala, registro });
+
 const conexion = conectarAlOrquestador({
   url: urlDelOrquestador,
   identidad,
   registro,
-  manejadores: {
-    // B5 enchufa aquí la sala en vivo. Hasta entonces el invitado queda
-    // conectado y sus bytes no se procesan.
-    sesion: (datos) => {
-      datos.registro.info('sin sala en vivo todavía: los datos no se procesan hasta B5');
-    },
-  },
+  manejadores: { sesion: sala.manejador },
 });
 
 const server = createServer((req, res) => {
@@ -61,6 +58,7 @@ server.listen(port, host, () => {
 async function apagar(senal: string): Promise<void> {
   registro.info('apagando', { senal });
   await conexion.detener();
+  await sala.cerrar();
   server.close();
   process.exit(0);
 }

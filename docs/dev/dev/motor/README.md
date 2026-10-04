@@ -32,7 +32,7 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | B2 | Registro de salas | Hecho |
 | B3 | Túnel del orquestador | Hecho — checkpoint 2 pasado entre dos redes |
 | B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
-| B5 | Sala en vivo y presencia | Pendiente |
+| B5 | Sala en vivo y presencia | Hecho — sin interfaz: la pantalla llega en B6 |
 | B6 | Web: nombre, volverme host, unirme | Pendiente |
 | B7 | Resistencia y reconexión | Pendiente |
 | B8 | Roles mínimos | Pendiente |
@@ -142,7 +142,7 @@ Fijado en B4, en `apps/host/src/conexion-al-orquestador/`. El host **marca hacia
 | Invitados | Por cada `entra-invitado` abre una conexión de datos saliente con el ticket y, tras `emparejamiento-aceptado`, la entrega al **manejador de su canal** |
 | Apagado | Suelta la sala con `cerrar-sala` en lugar de dejarla caducar |
 
-**Mecanismo para B5:** un manejador por canal, `Record<Canal, ManejadorDeCanal>`. B5 enchufa la sala en vivo en el de `sesion`; un canal nuevo es un miembro de `CANALES` y su manejador, sin tocar la conexión. Hasta B5 el manejador de `sesion` solo registra la llegada: el invitado queda conectado y sus bytes no se procesan.
+**Mecanismo:** un manejador por canal, `Record<Canal, ManejadorDeCanal>`. El de `sesion` es la sala en vivo de B5; un canal nuevo es un miembro de `CANALES` y su manejador, sin tocar la conexión.
 
 ### Las cuatro decisiones de B4
 
@@ -151,13 +151,36 @@ Fijado en B4, en `apps/host/src/conexion-al-orquestador/`. El host **marca hacia
 | 1 | El orquestador se configura con **`ORQUESTADOR_URL`** en el `.env` del host. Sin ella el host **no arranca** | Falta de configuración no es fallo de red: es mejor un error claro que un host esperando a nadie |
 | 2 | La identidad de la sala se genera al arrancar y **vive en memoria** | La sala no persiste en esta rama. Reiniciar el host = sala y link nuevos. Persistir es H3 |
 | 3 | El token de invitación se **imprime una vez** en el log, marcado como solo desarrollo | Es la única forma de probar antes de que B6 dé la pantalla de invitar. El token de host no se imprime nunca |
-| 4 | Antes de B5, los datos del invitado **no se procesan** | Nada de comportamiento simulado en el camino real |
+| 4 | Antes de B5, los datos del invitado **no se procesan** | Nada de comportamiento simulado en el camino real. Superada por B5 |
 
 ### Operación
 
 - **`dev:restart` no relee el `.env`**: PM2 guarda el entorno del primer arranque. Tras cambiar el `.env` del host: `pnpm exec pm2 delete harukoia-host-dev && pnpm dev:start` dentro de `apps/host`.
 - El kit de portless le pasa a Node el certificado de portless, así que el host bajo PM2 llega por `wss://` al orquestador local. Fuera de PM2 hace falta `NODE_EXTRA_CA_CERTS=~/.portless/ca.pem`.
 - **Makino Hara hay que redesplegarlo**: el host de B4 espera `emparejamiento-aceptado`, que el orquestador desplegado antes de B4 no envía.
+- La invitación de desarrollo es un **aviso**, así que va a `apps/host/logs/pm2/error.log`, no a `out.log`. `logs/` está en el `.gitignore`: `rg` lo salta salvo con `--no-ignore`.
+
+## Sala en vivo
+
+Fijado en B5, con **D2 confirmada**: sala Yjs real desde H1, con su presencia.
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Sala | `apps/host/src/sala/` | Hocuspocus **sin servidor propio**: cada conexión de datos del túnel se le entrega ya abierta y se le pasan bytes y cierre |
+| Participantes | `apps/host/src/participantes/` | La lista sale de la **presencia de Yjs**, no de una lista aparte: no hay dos fuentes que se contradigan. El host registra cada cambio con el total |
+| Lado invitado | `packages/cliente-del-relay/` | Una clase con forma de WebSocket que hace la entrada de B3 (sala y token en el primer mensaje) y solo se declara abierta tras `entrada-aceptada`. Se le pasa al proveedor de Hocuspocus como `WebSocketPolyfill`. Usa el `WebSocket` nativo: la misma clase sirve en navegador y en Node |
+
+| Regla | Cómo quedó |
+|---|---|
+| Documento | **Uno**, con el nombre de la sala. Otro nombre se rechaza en `onConnect`: sin eso un invitado podría crear documentos en la memoria del host |
+| Sala vacía | El host abre el documento con una **conexión directa** y lo mantiene. Sin ella, Hocuspocus lo descarga al irse el último invitado. Reiniciar el host sí la vacía (H3) |
+| Salida limpia | El participante desaparece **enseguida** |
+| Caída sucia | Tiempo de espera de **30 s** (decisión de B5; Hocuspocus trae 60). Hocuspocus no hace ping: cierra la conexión que pasa 30 s sin mandar nada, y lo revisa cada 30 s. Una conexión sana renueva su presencia cada ~15 s. En la práctica, los demás dejan de ver al caído **entre 15 y 33 s** después (caduca su presencia) y el host suelta la conexión muerta **entre 30 y 60 s** después |
+| Rechazo de entrada | El socket del relay cierra con código `4403` y la causa como razón, y la avisa por `alSerRechazado`. **Pendiente para B6/B7:** el proveedor reintenta para siempre aunque el rechazo sea definitivo; la web tiene que dejar de reintentar y mostrar la causa |
+
+**Con un socket propio hay que llamar `attach()`** en el proveedor. Sin eso el socket abre, pero el documento nunca se engancha y no viaja ni un mensaje.
+
+`urlDelRelay` pasó del host a `packages/domain`, junto a `RUTAS`: ahora la usan el host y el cliente del invitado.
 
 ## Registro de salas
 
@@ -197,7 +220,7 @@ Decidido en el paso A4. El runner es **Vitest** en todo el monorepo.
 | Tipo de prueba | Dónde | Ejemplo |
 |----------------|-------|---------|
 | Una función, un módulo, un proceso contra sí mismo | **Junto al código que prueba**, misma carpeta | `apps/orchestrator/src/tunel/tunel.test.ts` |
-| Dos o más procesos vivos a la vez | `packages/pruebas-entre-procesos/` | `src/host-y-orquestador/host-y-orquestador.test.ts` |
+| Dos o más procesos vivos a la vez | `packages/pruebas-entre-procesos/` | `src/sala-en-vivo/sala-en-vivo.test.ts` |
 | Navegador real contra el motor | `packages/pruebas-entre-procesos/`, cuando exista | — |
 
 Reglas, iguales para las dos: cada prueba levanta y tumba lo suyo, **puerto cero** leído de la salida del proceso en vez de puertos fijos, y tiempo máximo explícito en todo lo que abra un socket o lance un proceso. Detalle en el [README del paquete de pruebas](../../../../packages/pruebas-entre-procesos/README.md).
@@ -216,12 +239,13 @@ Ninguna la toma quien implementa. Están en la sección 3 del análisis con sus 
 | # | Decisión |
 |---|----------|
 | D1 | Servidor con `node:http` y `ws`, sin framework |
+| D2 | **Sala Yjs real desde H1**, con su presencia (B5) |
 | D3 | **Relay por túnel inverso**: conexión de control permanente y una conexión de datos saliente por invitado |
 | D4 | **Token de invitación aparte** del identificador de sala: el identificador enruta, el token da acceso y se puede revocar |
 | D5 | El host que presenta el **token de host** correcto **reemplaza** el registro anterior; la conexión vieja se cierra |
 | D8 | Vitest como runner de todo el monorepo |
 
-**Pendientes:** D2 antes de B5; D6, D7 y D9 en el paso donde aparecen.
+**Pendientes:** D6, D7 y D9 en el paso donde aparecen (D9 en B6).
 
 Con D4 y D5 confirmadas, el **checkpoint 1 está cerrado** y la fase B puede empezar por B1.
 
