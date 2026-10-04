@@ -111,7 +111,22 @@ El plan exige probar el túnel **entre dos redes distintas**, y lo coloca **ante
 
 El arnés está listo en `apps/orchestrator/src/tunel/humo.mjs`, con modo host y modo invitado. Importa el contrato de `@harukoia/domain` en vez de copiarlo, así que si el protocolo cambia el arnés se rompe en vez de mentir.
 
-Lo único que falta es un orquestador con dirección alcanzable desde fuera. Decidido el 2026-10-04: **servidor con nombre público y TLS**, que además es el destino final según la arquitectura. Pasos exactos en [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
+Lo único que falta es un orquestador con dirección alcanzable desde fuera. Decidido el 2026-10-04: **servidor propio con nombre público y TLS**, que además es el destino final según la arquitectura. Pasos exactos en [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
+
+### Imagen de contenedor
+
+`Dockerfile` en la raíz, parametrizado con `APP`, porque la arquitectura pide un contenedor host **genérico** y bautizar la imagen con el orquestador de hoy construiría la tubería al revés. Añadir una variante no cuesta ningún archivo:
+
+```bash
+docker build --build-arg APP=orchestrator -t harukoia-orquestador .
+docker build --build-arg APP=host         -t harukoia-host .
+```
+
+No hay etapa de construcción porque no hay nada que construir: Node ejecuta el TypeScript quitándole los tipos. De ahí sale la única trampa de esta imagen, anotada también en el `Dockerfile`: **no se puede usar `pnpm deploy`**, porque copiaría los paquetes internos dentro de `node_modules`, y ahí Node no quita tipos. El enlace a `/motor/packages/*` es lo que hace que arranque.
+
+Verificado el 2026-10-04 con Podman: las dos variantes construyen, responden `/health`, corren como usuario sin privilegios, y el arnés del checkpoint 2 cruza el túnel contra el contenedor.
+
+**Hallazgos pendientes, sin tocar:** `engines.node` de la raíz dice `>=20` y las apps de servidor necesitan **≥23.6**; y el script `start` del orquestador apunta a `dist/main.js`, que ya no se produce.
 
 ## Registro de salas
 

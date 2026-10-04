@@ -27,24 +27,31 @@ Son del código, no preferencias:
 
 El orquestador ya lee `HOST` y `PORT` del entorno, así que **no hace falta tocar código** para desplegarlo.
 
-**Pendiente de decidir, aparte:** cómo se despliega el orquestador de forma definitiva. La arquitectura fija dos contenedores, y no hay `Dockerfile` en el repositorio todavía. Para este checkpoint alcanza un clon con el proceso corriendo; el contenedor merece su propio paso en el plan.
+Con el contenedor, el requisito de Node lo cumple la imagen: en el servidor no hace falta instalar Node ni pnpm.
 
 ## Pasos
 
 ### 1. En el servidor
 
 ```bash
-git clone <este repo> && cd motor-colaborativo
-git checkout dev/motor
-pnpm install
+git clone <este repo> && cd motor-colaborativo && git checkout dev/motor
 
-PORT=8080 HOST=0.0.0.0 node apps/orchestrator/src/main.ts
+docker build --build-arg APP=orchestrator -t harukoia-orquestador .
+docker run -d --name orquestador -p 8080:8080 --restart unless-stopped harukoia-orquestador
 ```
+
+Con Podman es el mismo comando cambiando `docker` por `podman`.
 
 Delante va un proxy que termine TLS hacia `127.0.0.1:8080` y **no toque el upgrade**. Comprobación:
 
 ```bash
 curl https://<tu-dominio>/health     # {"service":"orchestrator","status":"ok"}
+```
+
+Sin contenedor, el camino directo también sirve y necesita Node 23.6 o más:
+
+```bash
+pnpm install && PORT=8080 HOST=0.0.0.0 node apps/orchestrator/src/main.ts
 ```
 
 ### 2. En tu máquina, detrás del NAT de casa
