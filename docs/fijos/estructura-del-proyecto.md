@@ -74,6 +74,8 @@ PM2 → node → scripts/pm2-portless-run.mjs → apps/<app>/scripts/run-dev.mjs
                        y lo pasa al proceso en PORT
 ```
 
+Qué lleva cada `.env` y qué orquestador usar: [configuracion-del-entorno.md](./configuracion-del-entorno.md).
+
 El proceso **no elige puerto**: lo recibe en `PORT`. Por eso los `.env` de las apps no definen `PORT`. El proxy portless atiende el hostname público y enruta al puerto registrado.
 
 No se envuelve la app con el CLI `portless` bajo PM2: en Windows abre consolas visibles y cerrarlas mata el proceso. El camino es `pm2-portless-run.mjs`.

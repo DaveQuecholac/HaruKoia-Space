@@ -17,6 +17,7 @@ La documentación se divide en dos, y no se mezclan.
 | [`fijos/arquitectura/arquitectura-recomendada.md`](./fijos/arquitectura/arquitectura-recomendada.md) | Arquitectura previa; vigente solo en lo que la v2 no cambió |
 | [`fijos/arquitectura/por-que-no-microservicios.md`](./fijos/arquitectura/por-que-no-microservicios.md) | Criterio para convertir una capacidad en proceso propio |
 | [`fijos/estructura-del-proyecto.md`](./fijos/estructura-del-proyecto.md) | Paquetes, procesos, arranque con PM2 y portless |
+| [`fijos/configuracion-del-entorno.md`](./fijos/configuracion-del-entorno.md) | Cada `.env`, qué orquestador usar, y cómo actualizar una instalación anterior |
 | [`fijos/fases/fase-1-modulos-y-tareas.md`](./fijos/fases/fase-1-modulos-y-tareas.md) | Módulos de la fase 1, dependencias y reparto de tareas |
 
 ## Documentación de desarrollo

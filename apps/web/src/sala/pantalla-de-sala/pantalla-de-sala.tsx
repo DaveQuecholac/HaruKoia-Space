@@ -8,7 +8,8 @@ import { type InstantaneaDeLaSala, conectarALaSala } from '../conexion-a-la-sala
 /** Lo que ve la persona por cada causa. Una causa nueva no compila sin su mensaje. */
 const POR_QUE_NO_ENTRASTE: Record<CausaDeRechazoDeEntrada, string> = {
   'token-de-invitacion-invalido': 'El link no es válido o el host ya lo cambió. Pídele uno nuevo.',
-  'sala-no-encontrada': 'La sala está cerrada: su host no está conectado.',
+  'sala-no-encontrada':
+    'La sala no está abierta en este orquestador: su host no está conectado, o está registrado en otro orquestador.',
   'sala-ocupada-por-otro-host': 'No se pudo entrar: la sala tiene un conflicto de host.',
   'token-de-host-invalido': 'No se pudo entrar: el host de la sala no es válido.',
   'ticket-invalido': 'El host no pudo abrir tu conexión. Vuelve a intentar.',
@@ -67,6 +68,9 @@ export function PantallaDeSala(props: {
       ) : (
         <p aria-live="polite">Estado: {ESTADO_VISIBLE[estado.tipo]}</p>
       )}
+      <p>
+        <small>Orquestador: {new URL(orquestador).host}</small>
+      </p>
 
       {rol === 'host' && (
         <section>
@@ -78,17 +82,19 @@ export function PantallaDeSala(props: {
         </section>
       )}
 
-      <section>
-        <h3>Participantes ({participantes.length})</h3>
-        <ul>
-          {participantes.map((p) => (
-            <li key={p.cliente}>
-              {p.nombre ?? '(sin nombre)'} — {p.rol ?? 'sin rol'}
-              {p.soyYo && ' (tú)'}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {estado.tipo !== 'rechazada' && (
+        <section>
+          <h3>Participantes ({participantes.length})</h3>
+          <ul>
+            {participantes.map((p) => (
+              <li key={p.cliente}>
+                {p.nombre ?? '(sin nombre)'} — {p.rol ?? 'sin rol'}
+                {p.soyYo && ' (tú)'}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <button type="button" onClick={props.alSalir}>
         Salir de la sala

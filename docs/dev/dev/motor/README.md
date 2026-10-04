@@ -196,7 +196,11 @@ Fijado en B6, con **D7** y **D9** confirmadas. Sin router: la ruta `/s/<sala>` e
 
 `GET /invitacion` tiene dos candados: solo atiende peticiones de **loopback** (el proxy de portless en desarrollo; detrás del proxy de un servidor viene de otra dirección y se rechaza) y solo al **origen** `WEB_ORIGEN`. Sin `WEB_ORIGEN` la ruta no existe.
 
+**El host y la web de todos los participantes tienen que usar el mismo orquestador.** Los `.env.example` traen por defecto el compartido, Makino Hara (`wss://orquestador.harukoia.makinohara.sys.iokoia.com`). El local, `orquestador.harukoia.local.iokoia.dev`, existe **en cada máquina por separado**: en otra laptop apunta al orquestador de esa laptop, y la sala sale "no abierta en este orquestador". Sirve solo si todos están en la misma máquina. La pantalla de la sala muestra a qué orquestador está conectada. Guía completa, incluida la actualización de instalaciones anteriores: [configuracion-del-entorno.md](../../../fijos/configuracion-del-entorno.md).
+
 Variables nuevas: `WEB_ORIGEN` en `apps/host/.env`; `VITE_ORQUESTADOR_URL` y `VITE_HOST_URL` en `apps/web/.env`. `VITE_ORQUESTADOR_ECO_URL` se retiró con el eco. Tras cambiarlas: `pnpm exec pm2 delete <app> && pnpm dev:start` en la app.
+
+Cada reinicio del host crea una sala nueva (vive en memoria hasta H3): los links anteriores dejan de servir y hay que volver a pulsar "Volverme host".
 
 Dos pestañas de la misma persona son dos participantes con el mismo nombre: se acepta y se muestra tal cual. Para probar con dos nombres en una sola máquina, usa una ventana de incógnito (otro `localStorage`).
 
