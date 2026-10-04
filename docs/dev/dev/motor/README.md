@@ -30,8 +30,8 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | A6 | Formato de log | Hecho |
 | B1 | Contrato del protocolo | Hecho |
 | B2 | Registro de salas | Hecho |
-| B3 | Túnel del orquestador | Hecho — falta el checkpoint 2 entre dos redes |
-| B4 | Conexión del host | Pendiente |
+| B3 | Túnel del orquestador | Hecho — checkpoint 2 pasado entre dos redes |
+| B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
 | B5 | Sala en vivo y presencia | Pendiente |
 | B6 | Web: nombre, volverme host, unirme | Pendiente |
 | B7 | Resistencia y reconexión | Pendiente |
@@ -65,6 +65,7 @@ Fijado en B1, en [`packages/domain`](../../../../packages/domain/README.md). Es 
 | **D5** | `host-reemplazado` es una de las causas de cierre del protocolo |
 | Planos | **Control** en texto JSON; **datos** en binario opaco que el relay no mira |
 | Canales | `relay/canal/canal.ts` es el único archivo que los enumera. Hoy: `sesion` |
+| Emparejamiento | Desde B4 las **dos** puntas reciben confirmación: el invitado `entrada-aceptada`, la conexión de datos del host `emparejamiento-aceptado`. Sin la segunda, el host no distinguía un rechazo de los primeros bytes del invitado |
 
 **Pendiente de decidir, descubierto en este paso:** el protocolo **no lleva número de versión**. Orquestador y host se despliegan por separado, así que un día podrán tener versiones distintas del contrato. No lo agregué porque no estaba en el alcance de B1; hay que decidir si entra antes de B7.
 
@@ -105,13 +106,11 @@ El túnel es el único dueño de la ruta de actualización de protocolo, así qu
 
 Mientras existió el huérfano, la web mostraba «conexión cerrada con código 1006». Era correcto —la ruta ya no existía— pero ilegible: **el navegador reporta 1006 ante cualquier handshake fallido y no expone el código HTTP a JavaScript**, así que el `404` del servidor nunca llegaba a verse en pantalla.
 
-### Checkpoint 2 — pendiente
+### Checkpoint 2 — pasado
 
-El plan exige probar el túnel **entre dos redes distintas**, y lo coloca **antes de B4**: se prueba con scripts en los dos extremos, no con el host real. Lo verificado hasta ahora es local, incluido el paso por el proxy de desarrollo.
+**2026-10-04.** Orquestador en Makino Hara con Coolify (`wss://orquestador.harukoia.makinohara.sys.iokoia.com`), host con el arnés en la laptop detrás del NAT de casa, invitado en otra red. Dos invitados emparejados, 60 s cada uno, todos los ✓ y cierre limpio. Detalle en [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
 
-El arnés está listo en `apps/orchestrator/src/tunel/humo.mjs`, con modo host y modo invitado. Importa el contrato de `@harukoia/domain` en vez de copiarlo, así que si el protocolo cambia el arnés se rompe en vez de mentir.
-
-Lo único que falta es un orquestador con dirección alcanzable desde fuera. Decidido el 2026-10-04: **servidor propio con nombre público y TLS**, que además es el destino final según la arquitectura. Pasos exactos en [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
+El arnés está en `apps/orchestrator/src/tunel/humo.mjs`. Importa el contrato de `@harukoia/domain` en vez de copiarlo: si el protocolo cambia, se rompe en vez de mentir.
 
 ### Imagen de contenedor (Docker + Coolify)
 
@@ -129,6 +128,36 @@ Parametrizado con `APP` porque la arquitectura pide un contenedor host **genéri
 Pasos del checkpoint 2 con Coolify: [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
 
 **Hallazgos pendientes, sin tocar:** `engines.node` de la raíz dice `>=20` y las apps de servidor necesitan **≥23.6**; y el script `start` del orquestador apunta a `dist/main.js`, que ya no se produce.
+
+## Conexión del host
+
+Fijado en B4, en `apps/host/src/conexion-al-orquestador/`. El host **marca hacia fuera** y mantiene su sala registrada sin que nadie lo toque.
+
+| Comportamiento | Cómo quedó |
+|---|---|
+| Arranque | Se registra aunque el orquestador todavía no exista: reintenta hasta que aparece |
+| Latido | Cada **10 s**, más un ping. Si el ping no vuelve, la conexión se da por muerta y se rehace: escribir en un socket muerto no falla, así que sin esto suspender la máquina dejaría al host creyéndose conectado |
+| Espera creciente | De **0,5 s** a **30 s**, entre la mitad y el máximo de cada intento. La mitad fija garantiza que crece; la mitad al azar evita que todos los hosts vuelvan a la vez |
+| Rechazos | Uno definitivo (otra sala con ese identificador, token de host malo, contrato que el orquestador no entiende, `host-reemplazado`) **no se reintenta**. Uno temporal (`host-sin-latido`, `sala-no-encontrada`) sí. Los dos mapas son `Record` sobre las causas del contrato: una causa nueva no compila sin decidir de qué lado cae |
+| Invitados | Por cada `entra-invitado` abre una conexión de datos saliente con el ticket y, tras `emparejamiento-aceptado`, la entrega al **manejador de su canal** |
+| Apagado | Suelta la sala con `cerrar-sala` en lugar de dejarla caducar |
+
+**Mecanismo para B5:** un manejador por canal, `Record<Canal, ManejadorDeCanal>`. B5 enchufa la sala en vivo en el de `sesion`; un canal nuevo es un miembro de `CANALES` y su manejador, sin tocar la conexión. Hasta B5 el manejador de `sesion` solo registra la llegada: el invitado queda conectado y sus bytes no se procesan.
+
+### Las cuatro decisiones de B4
+
+| # | Decisión | Por qué |
+|---|----------|---------|
+| 1 | El orquestador se configura con **`ORQUESTADOR_URL`** en el `.env` del host. Sin ella el host **no arranca** | Falta de configuración no es fallo de red: es mejor un error claro que un host esperando a nadie |
+| 2 | La identidad de la sala se genera al arrancar y **vive en memoria** | La sala no persiste en esta rama. Reiniciar el host = sala y link nuevos. Persistir es H3 |
+| 3 | El token de invitación se **imprime una vez** en el log, marcado como solo desarrollo | Es la única forma de probar antes de que B6 dé la pantalla de invitar. El token de host no se imprime nunca |
+| 4 | Antes de B5, los datos del invitado **no se procesan** | Nada de comportamiento simulado en el camino real |
+
+### Operación
+
+- **`dev:restart` no relee el `.env`**: PM2 guarda el entorno del primer arranque. Tras cambiar el `.env` del host: `pnpm exec pm2 delete harukoia-host-dev && pnpm dev:start` dentro de `apps/host`.
+- El kit de portless le pasa a Node el certificado de portless, así que el host bajo PM2 llega por `wss://` al orquestador local. Fuera de PM2 hace falta `NODE_EXTRA_CA_CERTS=~/.portless/ca.pem`.
+- **Makino Hara hay que redesplegarlo**: el host de B4 espera `emparejamiento-aceptado`, que el orquestador desplegado antes de B4 no envía.
 
 ## Registro de salas
 
@@ -168,7 +197,7 @@ Decidido en el paso A4. El runner es **Vitest** en todo el monorepo.
 | Tipo de prueba | Dónde | Ejemplo |
 |----------------|-------|---------|
 | Una función, un módulo, un proceso contra sí mismo | **Junto al código que prueba**, misma carpeta | `apps/orchestrator/src/tunel/tunel.test.ts` |
-| Dos o más procesos vivos a la vez | `packages/pruebas-entre-procesos/` | `src/arranque-de-los-procesos/arranque.test.ts` |
+| Dos o más procesos vivos a la vez | `packages/pruebas-entre-procesos/` | `src/host-y-orquestador/host-y-orquestador.test.ts` |
 | Navegador real contra el motor | `packages/pruebas-entre-procesos/`, cuando exista | — |
 
 Reglas, iguales para las dos: cada prueba levanta y tumba lo suyo, **puerto cero** leído de la salida del proceso en vez de puertos fijos, y tiempo máximo explícito en todo lo que abra un socket o lance un proceso. Detalle en el [README del paquete de pruebas](../../../../packages/pruebas-entre-procesos/README.md).

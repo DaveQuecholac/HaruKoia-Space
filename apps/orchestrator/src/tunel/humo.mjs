@@ -143,8 +143,12 @@ function abrirConexionDeDatos({ conexion, ticket }) {
       if (mensaje?.tipo === 'emparejamiento-rechazado') {
         abortar(`el emparejamiento fue rechazado: ${mensaje.causa}`);
       }
+      if (mensaje?.tipo !== 'emparejamiento-aceptado') {
+        abortar('el orquestador no confirmó el emparejamiento antes de los datos');
+      }
       emparejada = true;
       linea('emparejado: desde aquí solo pasan bytes');
+      return;
     }
 
     // El host hace eco: el invitado comprueba que los bytes vuelven idénticos.

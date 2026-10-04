@@ -298,6 +298,9 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
     const { conexion, sala, invitado } = reclamo.pendiente;
     const registroDeLaConexion = registro.con({ sala, conexion });
 
+    // Las dos puntas se enteran antes de que pase el primer byte: desde aquí
+    // ninguna de las dos vuelve a ver control.
+    enviarControl(socket, { tipo: 'emparejamiento-aceptado', conexion });
     enviarControl(invitado, { tipo: 'entrada-aceptada', conexion });
     unidas.set(conexion, { sala });
 

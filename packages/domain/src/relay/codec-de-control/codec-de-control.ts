@@ -127,6 +127,10 @@ const LECTORES: Record<TipoDeMensaje, (datos: Record<string, unknown>) => Mensaj
     tipo: 'entrada-rechazada',
     causa: unoDe(datos, 'causa', CAUSAS_DE_RECHAZO),
   }),
+  'emparejamiento-aceptado': (datos) => ({
+    tipo: 'emparejamiento-aceptado',
+    conexion: comoIdentificadorDeConexion(campoDeTexto(datos, 'conexion')),
+  }),
   'emparejamiento-rechazado': (datos) => ({
     tipo: 'emparejamiento-rechazado',
     causa: unoDe(datos, 'causa', CAUSAS_DE_RECHAZO),

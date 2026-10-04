@@ -119,6 +119,13 @@ async function datosDelHost(conexion: IdentificadorDeConexion, ticket: Ticket) {
   return datos;
 }
 
+/** Datos del host con ticket válido: lo primero que recibe es la aceptación. */
+async function datosEmparejados(conexion: IdentificadorDeConexion, ticket: Ticket) {
+  const datos = await datosDelHost(conexion, ticket);
+  expect(await siguienteControl(datos)).toEqual({ tipo: 'emparejamiento-aceptado', conexion });
+  return datos;
+}
+
 /** El recorrido completo: invitado dentro y las dos puntas unidas. */
 async function salaConUnInvitado(identidad: IdentidadDeSala) {
   const control = await hostRegistrado(identidad);
@@ -129,7 +136,7 @@ async function salaConUnInvitado(identidad: IdentidadDeSala) {
   if (aviso.tipo !== 'entra-invitado') throw new Error(`se esperaba el aviso: ${aviso.tipo}`);
 
   const aceptacion = siguienteControl(invitado);
-  const datos = await datosDelHost(aviso.conexion, aviso.ticket);
+  const datos = await datosEmparejados(aviso.conexion, aviso.ticket);
   expect((await aceptacion).tipo).toBe('entrada-aceptada');
 
   return { control, invitado, datos, conexion: aviso.conexion };
@@ -345,7 +352,7 @@ describe('diez invitados a la vez', () => {
     // Cada punta de datos se queda con la carga de su invitado.
     const parejas = await Promise.all(
       avisos.map(async (aviso, i) => ({
-        datos: await datosDelHost(aviso.conexion, aviso.ticket),
+        datos: await datosEmparejados(aviso.conexion, aviso.ticket),
         carga: Buffer.from(`soy el invitado numero ${i}`.padEnd(64, '.')),
       })),
     );

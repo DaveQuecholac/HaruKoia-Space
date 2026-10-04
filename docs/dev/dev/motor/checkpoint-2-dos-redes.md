@@ -116,6 +116,27 @@ Cuando **1–6** pasen → checkpoint 2 cerrado → se puede seguir con **B4**.
 
 ## Evidencia
 
-Pega la salida del veredicto (con fecha) y márcalo hecho en el [README de la rama](README.md).
+**Estado: pasado el 2026-10-04.**
 
-**Estado: pendiente** hasta que corra contra Makino Hara + Coolify.
+- Orquestador: Coolify en Makino Hara, `wss://orquestador.harukoia.makinohara.sys.iokoia.com`.
+- Host: el arnés en modo host, en la laptop detrás del NAT de casa.
+- Invitado: el arnés en modo invitado, desde otra red. Veredicto con todos los ✓.
+
+Lado del host, segunda sala de la sesión:
+
+```
+15:52:56.254  sala registrada: crnadztb6g6er9hn
+15:54:24.955  avisan de un invitado (1a0b3zp7cdz845p4) por el canal sesion
+15:54:25.343  conexión de datos saliente abierta
+15:54:26.369  emparejado: desde aquí solo pasan bytes
+15:55:25.555  el invitado 1a0b3zp7cdz845p4 se fue
+15:55:25.658  conexión de datos cerrada (código 1000)
+15:59:06.647  avisan de un invitado (9wtrc1a8nwkk7qsn) por el canal sesion
+15:59:08.172  emparejado: desde aquí solo pasan bytes
+16:00:07.259  el invitado 9wtrc1a8nwkk7qsn se fue
+16:00:07.357  conexión de datos cerrada (código 1000)
+```
+
+Pendiente para cerrar H1, no para seguir: repetir con `SEGUNDOS=120` o más para descartar que el proxy de Coolify corte conexiones inactivas largas.
+
+**Desde B4** el arnés exige el aviso `emparejamiento-aceptado`. Para repetir esta prueba hay que redesplegar el orquestador en Coolify.

@@ -96,6 +96,12 @@ export type MensajeDelOrquestador =
   | { readonly tipo: 'sala-cerrada'; readonly causa: CausaDeCierre }
   | { readonly tipo: 'entrada-aceptada'; readonly conexion: IdentificadorDeConexion }
   | { readonly tipo: 'entrada-rechazada'; readonly causa: CausaDeRechazo }
+  /**
+   * Primer y único mensaje de control que recibe una conexión de datos del
+   * host cuando su ticket vale. Sin él, el host no distinguiría un rechazo de
+   * los primeros bytes del invitado. Añadido en B4.
+   */
+  | { readonly tipo: 'emparejamiento-aceptado'; readonly conexion: IdentificadorDeConexion }
   | { readonly tipo: 'emparejamiento-rechazado'; readonly causa: CausaDeRechazo };
 
 export type MensajeDeControl = MensajeDelHost | MensajeDelInvitado | MensajeDelOrquestador;
@@ -114,5 +120,6 @@ export const TIPOS_DEL_ORQUESTADOR = [
   'sala-cerrada',
   'entrada-aceptada',
   'entrada-rechazada',
+  'emparejamiento-aceptado',
   'emparejamiento-rechazado',
 ] as const;

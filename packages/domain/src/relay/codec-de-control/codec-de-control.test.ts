@@ -37,6 +37,7 @@ const TODOS: MensajeDeControl[] = [
   { tipo: 'sala-cerrada', causa: 'host-reemplazado' },
   { tipo: 'entrada-aceptada', conexion },
   { tipo: 'entrada-rechazada', causa: 'token-de-invitacion-invalido' },
+  { tipo: 'emparejamiento-aceptado', conexion },
   { tipo: 'emparejamiento-rechazado', causa: 'ticket-invalido' },
 ];
 
