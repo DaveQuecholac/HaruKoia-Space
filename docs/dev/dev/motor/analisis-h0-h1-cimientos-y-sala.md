@@ -37,8 +37,8 @@ El v2 define la topología, no el protocolo. Lo siguiente cambia el código y **
 | D1 Librería del servidor | **Confirmada:** `node:http` + `ws` | B2 |
 | D2 Cuándo entra la sala Yjs | Pendiente — recomendación (a) | B5 |
 | D3 Forma del relay | **Confirmada:** túnel inverso | B1, B3, B4 |
-| D4 Token del link separado | Pendiente — recomendación (b) | B2 |
-| D5 Reconexión del host | Pendiente — recomendación (b) | B2 |
+| D4 Token del link separado | **Confirmada:** token de invitación aparte del identificador de sala | B2 |
+| D5 Reconexión del host | **Confirmada:** el token de host correcto reemplaza el registro anterior | B2 |
 | D6 Salas por proceso host | Pendiente — una en la v1 | B1 |
 | D7 Dónde se sirve la web | Pendiente — falta la forma del link | B6 |
 | D8 Runner de pruebas | **Confirmada:** Vitest | A4 |
@@ -71,14 +71,30 @@ La presencia de H1 puede construirse de dos formas.
 
 El host no acepta conexiones entrantes, así que el orquestador no puede abrir una conexión hacia él por cada invitado. Hay dos formas de resolverlo.
 
-| Opción | Cómo funciona | Consecuencia en el host |
-|--------|---------------|-------------------------|
-| **a** Multiplexar | Una sola conexión host↔orquestador; cada mensaje lleva un identificador de conexión del invitado | El host tiene que **emular un socket por invitado** para dárselo al servidor de sala. Es la parte frágil |
-| **b** Túnel inverso | Una conexión de **control** permanente; cuando entra un invitado, el orquestador avisa y el host **abre una conexión de datos saliente** para ese invitado. El orquestador une las dos puntas | Cada invitado llega al servidor de sala como una conexión normal. Nada que emular |
+| Opción | Cómo funciona | Conexiones por sala |
+|--------|---------------|---------------------|
+| **a** Multiplexar | Una sola conexión host↔orquestador; cada mensaje lleva un identificador de conexión del invitado | 1 |
+| **b** Túnel inverso | Una conexión de **control** permanente; cuando entra un invitado, el orquestador avisa y el host **abre una conexión de datos saliente** para ese invitado. El orquestador une las dos puntas | N+1 |
 
-**Decisión: (b) túnel inverso.** Elimina el riesgo de integración con el servidor de sala, que es donde más fácil se pierde una semana. Cuesta una ida y vuelta extra al entrar a la sala, que ocurre una sola vez por invitado, y mantiene N+1 conexiones por sala en lugar de una.
+**Decisión: (b) túnel inverso.**
 
-Antes de escribir el paso B5 hay que confirmar contra la documentación oficial del servidor de sala **cómo recibe una conexión ya establecida**, porque de eso depende que la conexión de datos se le entregue tal cual. Es lo único de esta decisión que no se puede dar por hecho.
+**Corregido el 2026-10-04 contra la documentación oficial de Hocuspocus v4.** La justificación anterior decía que multiplexar obligaba al host a *emular un socket* por invitado, y que eso era la parte frágil. **Eso era cierto en la v3 y ya no lo es.** En la v4, `handleConnection(incoming, request, context?)` acepta cualquier `WebSocketLike` —solo exige `send`, `close` y `readyState`— y devuelve un `ClientConnection` al que el integrador le entrega los mensajes con `handleMessage` y `handleClose`. Es el camino oficial para Bun, Deno y Cloudflare Workers.
+
+Consecuencia: **las dos opciones necesitan la misma fontanería**, porque en ninguna la conexión del invitado la acepta un servidor nuestro, así que en ninguna se puede usar el servidor integrado de Hocuspocus.
+
+La decisión se mantiene por una razón distinta: **aislamiento de la congestión**.
+
+| | Multiplexar | Túnel inverso |
+|---|---|---|
+| Invitado con mala red | Su cola llena el socket compartido y **atasca a todos** | Solo se atasca él |
+| Control de flujo | A mano, por invitado, sobre un socket común | Lo da TCP |
+| Emparejamiento | No hace falta | Ticket con caducidad |
+
+Un atasco de cabeza de línea se manifiesta como "a veces la pizarra se pone lenta para todo el equipo", intermitente y sin culpable visible. Los fallos del emparejamiento, en cambio, se ven y se prueban: el invitado recibe un error con causa. Se prefiere el modo de falla visible.
+
+Costos aceptados: una ida y vuelta extra al entrar —una sola vez por invitado— y N+1 conexiones por sala.
+
+**Verificación de B5 resuelta.** Ya se sabe cómo se entrega una conexión al servidor de sala: `handleConnection` con un `Request` estándar de la web que el host construye a partir del identificador de sala, más el reenvío manual de mensajes y cierre. Hocuspocus v4 exige Node 22 o superior; las máquinas tienen 24. Nota para H3: su extensión de SQLite ahora usa `better-sqlite3`.
 
 En las dos opciones el mensaje viaja **binario**, sin envolverlo en texto: el documento compartido ya es binario y meterlo en JSON lo infla sin ganar nada.
 **Bloquea:** pasos B1, B3 y B4. Es la primera que hay que confirmar.
@@ -90,7 +106,7 @@ En las dos opciones el mensaje viaja **binario**, sin envolverlo en texto: el do
 | **a** El identificador de sala es también el secreto del link | Un identificador que aparece en un log es acceso a la sala |
 | **b** Identificador de sala para enrutar, **token de invitación** aparte para entrar | Se puede revocar o rotar sin cambiar la sala; M16 ya lo va a necesitar |
 
-**Recomendación: (b).** Cuesta poco ahora y mucho después. Nota de seguridad: si el token viaja en el link, conviene que vaya en el fragmento de la URL —después de `#`— porque esa parte no se envía al servidor ni se filtra por el encabezado de referencia.
+**Decisión: (b) token de invitación aparte.** Cuesta poco ahora y mucho después. Nota de seguridad: si el token viaja en el link, conviene que vaya en el fragmento de la URL —después de `#`— porque esa parte no se envía al servidor ni se filtra por el encabezado de referencia.
 **Bloquea:** paso B2.
 
 ### D5 — El host reconecta y su sala sigue registrada
@@ -102,7 +118,7 @@ Pasa siempre: el host se suspende, el orquestador todavía no detectó la caída
 | **a** Rechazar hasta que expire el latido | La sala queda muerta varios segundos por un registro fantasma |
 | **b** Quien presente el **token de host** correcto reemplaza el registro anterior y la conexión vieja se cierra | Recuperación inmediata; exige que el host tenga un token estable |
 
-**Recomendación: (b).** El rechazo de la fila "dos hosts reclaman la misma sala" del v2 aplica a un host **distinto**, no al mismo host volviendo.
+**Decisión: (b) reemplazar con token de host.** El rechazo de la fila "dos hosts reclaman la misma sala" del v2 aplica a un host **distinto**, no al mismo host volviendo. Reemplazar no agrega riesgo: quien tiene el token de host ya podría suplantarlo.
 **Bloquea:** paso B2.
 
 ### D6 — Cuántas salas por proceso host
@@ -172,7 +188,7 @@ Patrón existente a extender: ninguno — es el primer código del motor.
 | # | Riesgo | Cómo lo atacamos | Cuándo se verifica |
 |---|--------|------------------|--------------------|
 | R1 | El proxy de desarrollo no pasa la actualización a WebSocket y perdemos días creyendo que el bug es nuestro | Probar un eco por WebSocket a través del proxy **antes** de construir nada | Paso A3, el primero |
-| R2 | El transporte del relay no encaja con lo que el servidor de sala espera de un cliente | Decisión D3 opción (b): cada invitado llega como conexión normal | Paso B5 |
+| R2 | El transporte del relay no encaja con lo que el servidor de sala espera de un cliente | **Cerrado el 2026-10-04:** Hocuspocus v4 acepta cualquier `WebSocketLike` vía `handleConnection` y devuelve un `ClientConnection` al que se le reenvían los mensajes. Ver D3 | Resuelto en documentación; se ejercita en B5 |
 | R3 | NAT real sin probar hasta el final | Prueba con dos redes en cuanto el eco cruce el relay, no al cerrar la épica | Paso B3 |
 | R4 | Salas fantasma en el registro y fuga de memoria | Latido con corte por inactividad y baja al cerrar; prueba que cuenta salas vivas | Paso B2 |
 | R5 | Tormenta de reconexión: todos vuelven al mismo instante | Espera creciente con variación aleatoria, tope máximo | Paso B7 |

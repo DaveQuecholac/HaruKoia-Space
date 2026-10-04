@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 
-import { montarEcoDeDiagnostico } from './diagnostico-de-eco/eco.ts';
 import { registro } from './registro-del-proceso/registro-del-proceso.ts';
+import { montarTunel } from './tunel/tunel.ts';
 
 const port = Number(process.env.PORT ?? 0);
 const host = process.env.HOST ?? '127.0.0.1';
@@ -16,7 +16,9 @@ const server = createServer((req, res) => {
   res.end(JSON.stringify({ error: 'not found' }));
 });
 
-montarEcoDeDiagnostico(server, registro);
+// El túnel es el único dueño de la ruta de actualización de protocolo: rechaza
+// por su cuenta lo que no reconoce, así que nada más puede escuchar aquí.
+montarTunel(server, { registro });
 
 server.listen(port, host, () => {
   const direccion = server.address();

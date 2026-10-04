@@ -18,3 +18,42 @@ Todos los identificadores del motor —salas, commits, participantes, conexiones
 Lo que llega de la red **nunca** se castea a mano: pasa por `comoIdentificador`, que valida o falla.
 
 El tipo `Identificador<'sala'>` no es asignable a `Identificador<'commit'>`, así que el compilador atrapa el intercambio de identificadores entre colecciones.
+
+## Contrato del protocolo del relay (paso B1)
+
+Este paquete es el **único** lugar donde vive el protocolo. El orquestador y el host lo importan; ninguno lo redefine.
+
+### Identidad de una sala — decisión D4
+
+Tres valores distintos, y la distinción es el punto:
+
+| Valor | Longitud | Secreto | Para qué |
+|-------|----------|---------|----------|
+| Identificador de sala | 16 caracteres (80 bits) | No | Enrutar. Aparece en logs y en mensajes de control |
+| Token de host | 26 caracteres (130 bits) | Sí | Probar que eres el dueño y recuperar la sala (D5) |
+| Token de invitación | 26 caracteres (130 bits) | Sí | Entrar. Se comparte en el link y se puede rotar |
+
+`rotarTokenDeInvitacion` cambia el token de invitación **sin tocar** la sala ni el token de host: los links viejos dejan de servir y las sesiones abiertas siguen.
+
+### Dos planos separados
+
+| Plano | Qué lleva | Codificación |
+|-------|-----------|--------------|
+| **Control** | Registro, latido, entra y sale invitado, cierre | Texto JSON, en `relay/codec-de-control/` |
+| **Datos** | Bytes opacos del canal | Binario puro. El relay no los mira y el contrato no los describe |
+
+El control es poco frecuente y conviene leerlo en un log; los datos no se envuelven en texto porque eso cuesta un tercio más de tamaño sin ganar nada. El formato del control vive en un solo archivo: cambiarlo por una codificación binaria no toca la forma de los mensajes.
+
+### Canales
+
+`relay/canal/canal.ts` es el único archivo del repositorio que enumera canales. Hoy hay uno: `sesion`. Cuando entre la réplica de la base local (H3) será otro miembro de la unión más su manejador en el host.
+
+### Nada se ignora en silencio
+
+`interpretarControl` devuelve `{ ok: true, mensaje }` o `{ ok: false, causa, detalle }`. Las causas son uniones de literales, no texto libre, así que el receptor puede ramificar sobre ellas.
+
+Agregar un mensaje al protocolo = un miembro en la unión y una entrada en el mapa de lectores. Nada más.
+
+### Sin vocabulario de pizarra
+
+El relay no sabe qué transporta. Si en este paquete aparece la palabra trazo, figura, lienzo o commit, está en la capa equivocada, y hay una prueba que lo verifica.
