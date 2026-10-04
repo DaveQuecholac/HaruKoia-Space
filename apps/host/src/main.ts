@@ -1,5 +1,7 @@
 import { createServer } from 'node:http';
 
+import { registro } from './registro-del-proceso/registro-del-proceso.ts';
+
 const port = Number(process.env.PORT ?? 0);
 const host = process.env.HOST ?? '127.0.0.1';
 
@@ -14,5 +16,7 @@ const server = createServer((req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`host escuchando en http://${host}:${port}`);
+  const direccion = server.address();
+  const puertoAsignado = direccion !== null && typeof direccion === 'object' ? direccion.port : port;
+  registro.info(`escuchando en http://${host}:${puertoAsignado}`, { puerto: puertoAsignado });
 });

@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@harukoia/domain": "workspace:*",
+    "@harukoia/registro": "workspace:*",
     "@harukoia/schema": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -23,11 +23,11 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | Paso | Qué | Estado |
 |------|-----|--------|
 | A1 | Rama y documentación | Hecho |
-| A2 | Arranque en las dos máquinas | Pendiente — falta la máquina de Kua |
-| A3 | Humo de WebSocket por el proxy | Pendiente |
-| A4 | Andamio de pruebas | Pendiente |
-| A5 | Reglas del contrato | Pendiente |
-| A6 | Formato de log | Pendiente |
+| A2 | Arranque en las dos máquinas | Parcial — verificado aquí; falta la máquina de Kua |
+| A3 | Humo de WebSocket por el proxy | Hecho — 6 de 6 comprobaciones |
+| A4 | Andamio de pruebas | Hecho — Vitest, 5 pruebas |
+| A5 | Reglas del contrato | Hecho — falta que Kua las revise |
+| A6 | Formato de log | Hecho |
 | B1 | Contrato del protocolo | Pendiente |
 | B2 | Registro de salas | Pendiente |
 | B3 | Túnel del orquestador | Pendiente |
@@ -39,6 +39,54 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | B9 | Varios participantes y cierre | Pendiente |
 
 El esqueleto del monorepo y el arranque con PM2 y portless ya existen del trabajo previo a esta rama; A2 es verificarlo en las dos máquinas, no construirlo.
+
+## Reglas del contrato
+
+Fijadas en el paso A5. Son lo más caro de cambiar después, así que **las dos personas tienen que estar de acuerdo** antes de seguir.
+
+| Regla | Decisión | Dónde |
+|-------|----------|-------|
+| Identificadores | 32 símbolos sin `i`, `l`, `o`, `u`; mínimo 16 caracteres (80 bits); Web Crypto | [`packages/domain`](../../../../packages/domain/README.md) |
+| Tipado de identificadores | `Identificador<'sala'>` no es asignable a `Identificador<'commit'>` | `packages/domain/src/identificador/` |
+| Orden de réplica | Por `actualizadoEn` y, a marca igual, por `id`. La marca **la pone el host**, nunca el cliente | [`packages/schema`](../../../../packages/schema/README.md) |
+| Borrado | Lógico con `borrado: true`. Lo replicado nunca se borra físicamente | `packages/schema/src/documento-replicado/` |
+| Versión de esquema | Por colección, con cadena de migraciones sin huecos. Se migra al leer, nunca hacia atrás | `packages/schema/src/version-de-esquema/` |
+| Estilo | Uniones de literales y tipos planos; sin `enum`, `namespace`, propiedades de constructor ni decoradores | Las dos |
+
+Lo que **no** se fijó aquí, a propósito: los campos de cada colección. Esos se cierran en la épica que los usa.
+
+## Formato de log
+
+Fijado en el paso A6. Una línea por evento, igual en los tres procesos, en [`packages/registro`](../../../../packages/registro/README.md).
+
+```text
+2026-10-04T09:12:33.481Z info  orquestador sala=4k7m conexion=9b2 invitado entró
+```
+
+Texto con pares `clave=valor`, no JSON: se lee con `tail` y se filtra con `grep sala=<id>`. Un evento es **siempre** una sola línea; los saltos se escapan. Seguir una sala completa entre los tres procesos:
+
+```bash
+grep "sala=<id>" apps/*/logs/pm2/*.log | sort
+```
+
+**Pendiente que destapó este paso:** `registro` se consume desde su fuente (`exports` → `src/index.ts`), mientras que `domain` y `schema` publican `dist`. Dos formas de consumir un paquete interno. Hay que unificarlas en **B1**, que es cuando el protocolo entra en `domain` y los tres procesos lo importan de verdad.
+
+## Dónde vive cada prueba
+
+Decidido en el paso A4. El runner es **Vitest** en todo el monorepo.
+
+| Tipo de prueba | Dónde | Ejemplo |
+|----------------|-------|---------|
+| Una función, un módulo, un proceso contra sí mismo | **Junto al código que prueba**, misma carpeta | `apps/orchestrator/src/diagnostico-de-eco/eco.test.ts` |
+| Dos o más procesos vivos a la vez | `packages/pruebas-entre-procesos/` | `src/arranque-de-los-procesos/arranque.test.ts` |
+| Navegador real contra el motor | `packages/pruebas-entre-procesos/`, cuando exista | — |
+
+Reglas, iguales para las dos: cada prueba levanta y tumba lo suyo, **puerto cero** leído de la salida del proceso en vez de puertos fijos, y tiempo máximo explícito en todo lo que abra un socket o lance un proceso. Detalle en el [README del paquete de pruebas](../../../../packages/pruebas-entre-procesos/README.md).
+
+```bash
+pnpm test                                        # todo el monorepo
+pnpm --filter @harukoia/orchestrator test        # un paquete
+```
 
 ## Decisiones
 
@@ -61,4 +109,5 @@ Ninguna la toma quien implementa. Están en la sección 3 del análisis con sus 
 3. **El orquestador no sabe qué transporta.** Si en su código aparece vocabulario de pizarra, está mal puesto.
 4. **El contrato del protocolo vive en `packages/domain`**, no dentro del orquestador ni del host.
 5. **Sin `enum`, `namespace`, propiedades declaradas en el constructor ni decoradores.** Node ejecuta TypeScript quitando los tipos, no transformándolos: esas construcciones compilan y fallan al correr.
-6. **El orden de épicas de este plan sustituye** al orden de la sección 12 del análisis de arquitectura v2.
+6. **Los imports relativos llevan su extensión real** (`./eco.ts`, `./app.tsx`). Es consecuencia de lo anterior: Node no adivina la extensión. Los paquetes de servidor compilan con la reescritura de extensión activada, para que la salida siga apuntando a `.js`. Hallazgo del paso A3; se formaliza en A5.
+7. **El orden de épicas de este plan sustituye** al orden de la sección 12 del análisis de arquitectura v2.

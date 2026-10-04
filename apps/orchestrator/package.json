@@ -14,14 +14,19 @@
     "dev:plain": "node --watch src/main.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "start": "node dist/main.js"
   },
   "dependencies": {
     "@harukoia/domain": "workspace:*",
-    "@harukoia/schema": "workspace:*"
+    "@harukoia/registro": "workspace:*",
+    "@harukoia/schema": "workspace:*",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
-    "typescript": "^5.7.3"
+    "@types/ws": "^8.18.2",
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.3"
   }
 }

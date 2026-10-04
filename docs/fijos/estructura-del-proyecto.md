@@ -13,7 +13,9 @@ motor-colaborativo/
 │   └── cli/                binario `space`
 ├── packages/
 │   ├── schema/             esquemas de las colecciones replicadas
-│   └── domain/             sala, commit, push, estados, nombres de archivo
+│   ├── domain/             sala, commit, push, estados, nombres de archivo
+│   ├── registro/           una línea de log por evento, igual en los tres procesos
+│   └── pruebas-entre-procesos/  pruebas que levantan orquestador y host a la vez
 ├── scripts/                kit PM2 + portless y orquestador de la raíz
 ├── docker/                 compose de los dos contenedores
 ├── docs/
@@ -32,6 +34,8 @@ motor-colaborativo/
 | `apps/cli` | Arrancar el host, estado, materializar markdown | En la máquina del developer |
 | `packages/schema` | Contrato de datos entre web, host y CLI | — |
 | `packages/domain` | Reglas del dominio sin transporte ni almacenamiento | — |
+| `packages/registro` | Formato de log común. Un fallo se sigue entre los tres procesos filtrando por sala | — |
+| `packages/pruebas-entre-procesos` | Pruebas sin un único dueño: las que levantan más de un proceso. Las unitarias viven junto al código que prueban | — |
 
 El criterio para crear un proceso nuevo está en [por-que-no-microservicios.md](./arquitectura/por-que-no-microservicios.md). Una capacidad nueva es un módulo dentro de uno de estos paquetes hasta que cumpla alguna de las cuatro condiciones de ahí.
 
