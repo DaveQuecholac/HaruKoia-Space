@@ -24,14 +24,6 @@ if (!urlDelOrquestador) {
 // nuevos. La persistencia es H3.
 const identidad = generarIdentidadDeSala();
 
-// Solo desarrollo, decisión de B4: hasta que B6 dé la pantalla de invitar, es
-// la única forma de obtener el token. Queda en el log de PM2. El token de host
-// no se imprime nunca.
-registro.aviso('solo desarrollo: invitación de la sala', {
-  sala: identidad.sala,
-  tokenDeInvitacion: identidad.tokenDeInvitacion,
-});
-
 const sala = await abrirSalaEnVivo({
   sala: identidad.sala,
   tokenDeWebDelHost: identidad.tokenDeWebDelHost,

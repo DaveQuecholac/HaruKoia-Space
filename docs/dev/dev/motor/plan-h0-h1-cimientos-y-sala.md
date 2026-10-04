@@ -348,6 +348,17 @@ Patrón existente a extender: ninguno; los mensajes siguen la forma del codec de
 
 Qué entra: arnés de 2 a 10 clientes sin navegador sobre la misma sala, entradas y salidas durante la sesión, y la medición de cuánto tarda un mensaje en cruzar el relay.
 
+**Decisiones, confirmadas el 2026-10-04 (rebanada completa: convergencia, entradas y salidas, y latencia):**
+
+| # | Decisión |
+|---|----------|
+| 1 | **Qué mide la latencia.** Desde que un participante escribe hasta que **el último** de los diez lo ve: lo que siente la sala, no el mejor caso. Varias rondas; se reportan la **mediana** y la **peor** |
+| 2 | **La latencia no reprueba.** La prueba mide y reporta. Solo falla si los diez no convergen dentro del tiempo máximo. Un umbral en milisegundos depende de la máquina y daría rojos falsos |
+| 3 | **Dónde queda registrada.** La prueba la imprime; la cifra se anota a mano en el README de la rama, con fecha y máquina. Sin archivos de evidencia que se desactualicen solos |
+| 4 | **Medición sin encuestar.** Cada cliente observa su documento y marca el instante en que le llegó el cambio. Encuestar cada 25 ms mediría el encuestado, no el relay |
+
+**Archivos.** `packages/pruebas-entre-procesos/src/latencia-de-la-sala/` (la medición, que H2 reutiliza con el lienzo) y `src/muchos-participantes/` (la prueba de los diez).
+
 **Hecho cuando.**
 1. Diez clientes convergen al mismo estado.
 2. La lista de participantes refleja el número real en todo momento.

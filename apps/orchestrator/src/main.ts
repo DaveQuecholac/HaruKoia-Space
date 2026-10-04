@@ -20,6 +20,11 @@ const server = createServer((req, res) => {
 // por su cuenta lo que no reconoce, así que nada más puede escuchar aquí.
 const tunel = montarTunel(server, { registro });
 
+/** Cada 10 s: un latido del host cabe tres veces en la tolerancia de 30 s. */
+const INTERVALO_DE_BARRIDO = 10_000;
+const barrido = setInterval(() => tunel.barrer(), INTERVALO_DE_BARRIDO);
+barrido.unref();
+
 server.listen(port, host, () => {
   const direccion = server.address();
   const puertoAsignado = direccion !== null && typeof direccion === 'object' ? direccion.port : port;
@@ -36,6 +41,7 @@ function apagar(senal: string): void {
   apagando = true;
   registro.info('apagando', { senal, salas: tunel.salas.salasVivas() });
 
+  clearInterval(barrido);
   tunel.cerrarConexiones();
   tunel.desmontar();
   server.close(() => process.exit(0));

@@ -36,7 +36,7 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | B6 | Web: nombre, volverme host, unirme | Hecho — **checkpoint 3 pasado** el 2026-10-04: dos máquinas en redes distintas por Makino Hara |
 | B7 | Resistencia y reconexión | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
 | B8 | Roles mínimos | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
-| B9 | Varios participantes y cierre | Pendiente |
+| B9 | Varios participantes y cierre | Hecho — diez participantes convergen y la latencia quedó medida. Falta recorrer a mano [checkpoint 3 y 4](checkpoint-3-y-4.md) para cerrar H1 |
 
 El esqueleto del monorepo y el arranque con PM2 y portless ya existen del trabajo previo a esta rama; A2 es verificarlo en las dos máquinas, no construirlo.
 
@@ -127,7 +127,7 @@ Parametrizado con `APP` porque la arquitectura pide un contenedor host **genéri
 
 Pasos del checkpoint 2 con Coolify: [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
 
-**Hallazgos pendientes, sin tocar:** `engines.node` de la raíz dice `>=20` y las apps de servidor necesitan **≥23.6**; y el script `start` del orquestador apunta a `dist/main.js`, que ya no se produce.
+**Resuelto al cerrar H1:** `engines.node` de la raíz es **≥23.6**; `start` del orquestador y del host ejecuta `src/main.ts`. El proceso llama a `barrer` cada 10 s.
 
 ## Conexión del host
 
@@ -150,7 +150,7 @@ Fijado en B4, en `apps/host/src/conexion-al-orquestador/`. El host **marca hacia
 |---|----------|---------|
 | 1 | El orquestador se configura con **`ORQUESTADOR_URL`** en el `.env` del host. Sin ella el host **no arranca** | Falta de configuración no es fallo de red: es mejor un error claro que un host esperando a nadie |
 | 2 | La identidad de la sala se genera al arrancar y **vive en memoria** | La sala no persiste en esta rama. Reiniciar el host = sala y link nuevos. Persistir es H3 |
-| 3 | El token de invitación se **imprime una vez** en el log, marcado como solo desarrollo | Es la única forma de probar antes de que B6 dé la pantalla de invitar. El token de host no se imprime nunca |
+| 3 | El token de invitación **no se imprime**. Se pide con “Volverme host” (`GET /invitacion`) | B4 lo imprimía hasta que existió la pantalla. El token de host no se imprime nunca |
 | 4 | Antes de B5, los datos del invitado **no se procesan** | Nada de comportamiento simulado en el camino real. Superada por B5 |
 
 ### Operación
@@ -242,6 +242,23 @@ Fijado en B8. Dos roles: **host** y **espectador**. El espectador edita el table
 **Hubo que redesplegar el orquestador:** uno anterior a B8 rechaza `cambiar-invitacion`. El host lo trata como "el orquestador no respondió": el link no cambia, la sala sigue abierta y la web lo dice.
 
 Pruebas: cuatro casos entre procesos en `packages/pruebas-entre-procesos/src/roles/`, incluido un intruso que se hace pasar por el host con su mismo identificador de presencia.
+
+## Varios participantes
+
+Fijado en B9, en `packages/pruebas-entre-procesos/src/muchos-participantes/`. Diez participantes sin navegador sobre la misma sala, con el orquestador y el host reales.
+
+| Qué se prueba | Cómo |
+|---|---|
+| Convergencia | Los diez escriben **a la vez**, cada uno lo suyo y los diez la misma clave. Al final el documento es idéntico en los diez |
+| La lista sigue al número real | Entran de uno en uno hasta diez y luego se van tres, en plena sesión. Después de cada entrada y cada salida se compara contra lo que cuenta el **host**, no solo contra lo que ve un cliente |
+| Quien vuelve no duplica ni pierde | Un participante se va y regresa: recibe lo de todos **una sola vez** y lo suyo sigue ahí |
+| Latencia | Desde que uno escribe hasta que **el último** de los diez lo ve. Cada cliente observa su documento y marca la llegada; encuestar mediría el encuestado, no el relay |
+
+La medición **no reprueba** por ser alta: depende de la máquina. Solo falla si a alguien no le llega dentro del tiempo máximo.
+
+**Punto de partida para H2** (anotado a mano, decisión 3 de B9): el 2026-10-04, en la laptop de desarrollo (Ryzen 5 8645HS, Node 24, todo en loopback), tres corridas de cinco rondas con diez participantes dieron **mediana de 0.9 a 2.7 ms** y **peor caso de 1.7 a 4.1 ms**. Es el costo del relay sin red de por medio; con el orquestador en Makino Hara hay que volver a medir.
+
+Dos criterios del plan de pruebas de la v2 **no** entran aquí porque les falta diseño: "escribe sin red y la sala se reinicia" necesita que el host persista (H3), y "el host se cae y el último commit queda intacto" necesita que existan los commits.
 
 ## Registro de salas
 

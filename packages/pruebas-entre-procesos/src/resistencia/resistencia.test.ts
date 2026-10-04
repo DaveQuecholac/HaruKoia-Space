@@ -11,7 +11,7 @@ import type { ChildProcess } from 'node:child_process';
 
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { invitacionDelHost, registroDeLaSala } from '../invitacion-del-host/invitacion-del-host.ts';
+import { ORIGEN_DE_LA_WEB_DE_PRUEBA, invitacionDelHost, registroDeLaSala } from '../invitacion-del-host/invitacion-del-host.ts';
 import {
   type ProcesoLevantado,
   apagarTodos,
@@ -51,8 +51,11 @@ async function salaLevantada() {
   const puerto = await puertoLibre();
   const base = `ws://127.0.0.1:${puerto}`;
   const orquestador = await levantarOrquestador(puerto);
-  const host = await levantar('apps/host/src/main.ts', { ORQUESTADOR_URL: base });
-  const { sala, token } = invitacionDelHost(host);
+  const host = await levantar('apps/host/src/main.ts', {
+    ORQUESTADOR_URL: base,
+    WEB_ORIGEN: ORIGEN_DE_LA_WEB_DE_PRUEBA,
+  });
+  const { sala, token } = await invitacionDelHost(host);
   await esperarQue(() => registroDeLaSala(orquestador, sala));
   return { puerto, base, orquestador, host, sala, token };
 }

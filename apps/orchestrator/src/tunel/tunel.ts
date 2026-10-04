@@ -21,6 +21,7 @@ import {
   CODIGO_DE_SALA_CERRADA,
   type CausaDeCierre,
   type IdentificadorDeConexion,
+  type IdentificadorDeSala,
   type MensajeDeControl,
   RUTAS,
   TAMANO_MAXIMO_DE_MENSAJE,
@@ -38,6 +39,8 @@ export type OpcionesDelTunel = {
   readonly registro: Registro;
   readonly caducidadDelEmparejamiento?: number;
   readonly toleranciaSinLatido?: number;
+  /** Reloj inyectable para las pruebas del barrido. */
+  readonly reloj?: () => number;
 };
 
 export type Tunel = {
@@ -47,6 +50,11 @@ export type Tunel = {
   readonly conexionesUnidas: () => number;
   /** Sockets abiertos en el orquestador, de cualquier ruta. */
   readonly socketsAbiertos: () => number;
+  /**
+   * Retira las salas sin latido, avisa a su host y echa a sus invitados.
+   * El proceso es quien lo llama, cada `INTERVALO_DE_BARRIDO`.
+   */
+  readonly barrer: () => void;
   /**
    * Apagado limpio: cierra todos los sockets con 1001 ("el servidor se va")
    * para que hosts e invitados reconecten de inmediato, sin esperar a que
@@ -140,6 +148,7 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
     ...(opciones.toleranciaSinLatido === undefined
       ? {}
       : { toleranciaSinLatido: opciones.toleranciaSinLatido }),
+    ...(opciones.reloj === undefined ? {} : { reloj: opciones.reloj }),
   });
 
   const emparejador: Emparejador<WebSocket> = crearEmparejador<WebSocket>({
@@ -158,7 +167,7 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
    * Conexiones unidas: para avisarle al host cuando un invitado se va, y para
    * cerrar a los invitados de una sala cuando su host la cierra.
    */
-  const unidas = new Map<IdentificadorDeConexion, { sala: string; puntas: Puntas }>();
+  const unidas = new Map<IdentificadorDeConexion, { sala: IdentificadorDeSala; puntas: Puntas }>();
 
   const alUpgrade = (peticion: IncomingMessage, socket: Duplex, cabecera: Buffer): void => {
     const ruta = new URL(peticion.url ?? '/', 'http://interno').pathname;
@@ -247,7 +256,8 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
       }
 
       if (leido.mensaje.tipo === 'latido') {
-        salas.latido(sala, tokenDeHost);
+        const pulso = salas.latido(sala, tokenDeHost);
+        if (!pulso.ok) enviarControl(socket, { tipo: 'registro-rechazado', causa: pulso.causa });
         return;
       }
       if (leido.mensaje.tipo === 'cambiar-invitacion') {
@@ -259,16 +269,7 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
         return;
       }
       if (leido.mensaje.tipo === 'cerrar-sala') {
-        for (const pendiente of emparejador.deLaSala(sala)) {
-          emparejador.cancelar(pendiente.conexion);
-          rechazar(pendiente.invitado, {
-            tipo: 'entrada-rechazada',
-            causa: 'sala-no-encontrada',
-          });
-        }
-        for (const unida of [...unidas.values()]) {
-          if (unida.sala === sala) unida.puntas.cerrarPorSalaCerrada('host-cerro-la-sala');
-        }
+        echarInvitadosDe(sala, 'host-cerro-la-sala');
         salas.cerrar(sala, tokenDeHost);
         return;
       }
@@ -281,6 +282,18 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
       // registro caduca por latido. Decisión D5.
       registroDeLaSala.aviso('conexión de control cerrada');
     });
+  }
+
+  function echarInvitadosDe(sala: IdentificadorDeSala, causa: CausaDeCierre): void {
+    for (const pendiente of emparejador.deLaSala(sala)) {
+      emparejador.cancelar(pendiente.conexion);
+      if (pendiente.invitado.readyState === WebSocket.OPEN) {
+        pendiente.invitado.close(CODIGO_DE_SALA_CERRADA, causa);
+      }
+    }
+    for (const unida of [...unidas.values()]) {
+      if (unida.sala === sala) unida.puntas.cerrarPorSalaCerrada(causa);
+    }
   }
 
   function atenderInvitado(
@@ -354,6 +367,9 @@ export function montarTunel(servidor: Server, opciones: OpcionesDelTunel): Tunel
     emparejamientosPendientes: emparejador.pendientes,
     conexionesUnidas: () => unidas.size,
     socketsAbiertos: () => servidorDeSockets.clients.size,
+    barrer: () => {
+      for (const sala of salas.barrer()) echarInvitadosDe(sala, 'host-sin-latido');
+    },
     cerrarConexiones: () => {
       for (const socket of servidorDeSockets.clients) socket.close(1001);
     },

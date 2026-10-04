@@ -75,7 +75,14 @@ function correrComoHost() {
 
   sesion.on('open', () => {
     linea('conexión de control abierta');
-    sesion.send(serializarControl({ tipo: 'registrar', ...identidad }));
+    sesion.send(
+      serializarControl({
+        tipo: 'registrar',
+        sala: identidad.sala,
+        tokenDeHost: identidad.tokenDeHost,
+        tokenDeInvitacion: identidad.tokenDeInvitacion,
+      }),
+    );
   });
 
   const latido = setInterval(() => {

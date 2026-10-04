@@ -9,17 +9,6 @@ import {
 
 import type { ProcesoLevantado } from '../levantar-proceso/levantar-proceso.ts';
 
-/** Lo que el host imprime al arrancar, solo en desarrollo (decisión de B4). */
-export function invitacionDelHost(host: ProcesoLevantado): {
-  sala: IdentificadorDeSala;
-  token: TokenDeInvitacion;
-} {
-  const sala = /sala=(\w+)/.exec(host.salida())?.[1];
-  const token = /tokenDeInvitacion=(\w+)/.exec(host.salida())?.[1];
-  if (!sala || !token) throw new Error(`el host no imprimió su invitación:\n${host.salida()}`);
-  return { sala: comoIdentificadorDeSala(sala), token: comoTokenDeInvitacion(token) };
-}
-
 /** El origen de web que las pruebas le configuran al host en `WEB_ORIGEN`. */
 export const ORIGEN_DE_LA_WEB_DE_PRUEBA = 'https://web.prueba.harukoia';
 
@@ -41,6 +30,15 @@ export async function invitacionParaLaWeb(host: ProcesoLevantado): Promise<{
     token: comoTokenDeInvitacion(cuerpo['tokenDeInvitacion']),
     tokenDeWebDelHost: comoTokenDeWebDelHost(cuerpo['tokenDeWebDelHost']),
   };
+}
+
+/** Sala y token de invitación, por el mismo camino que la web. */
+export async function invitacionDelHost(host: ProcesoLevantado): Promise<{
+  sala: IdentificadorDeSala;
+  token: TokenDeInvitacion;
+}> {
+  const { sala, token } = await invitacionParaLaWeb(host);
+  return { sala, token };
 }
 
 export function registroDeLaSala(orquestador: ProcesoLevantado, sala: string): boolean {

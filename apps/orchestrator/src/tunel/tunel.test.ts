@@ -30,18 +30,24 @@ import WebSocket from 'ws';
 import { montarTunel, type Tunel } from './tunel.ts';
 
 const CADUCIDAD = 300;
+const TOLERANCIA = 30;
 
 let servidor: Server;
 let tunel: Tunel;
 let base: string;
 let abiertos: WebSocket[];
+/** Reloj del registro: las pruebas del barrido lo avanzan; las demás lo dejan en 0. */
+let instante = 0;
 
 beforeEach(async () => {
+  instante = 0;
   abiertos = [];
   servidor = createServer();
   tunel = montarTunel(servidor, {
     registro: crearRegistro({ proceso: 'orquestador', destino: () => {} }),
     caducidadDelEmparejamiento: CADUCIDAD,
+    toleranciaSinLatido: TOLERANCIA,
+    reloj: () => instante,
   });
 
   await new Promise<void>((listo) => servidor.listen(0, '127.0.0.1', listo));
@@ -440,13 +446,10 @@ describe('cierres', () => {
     const invitado = await invitadoEntrando(identidad);
     await espera;
 
-    const respuesta = siguienteControl(invitado);
+    const cerrado = cierreConRazon(invitado);
     control.send(serializarControl({ tipo: 'cerrar-sala' }));
 
-    expect(await respuesta).toEqual({
-      tipo: 'entrada-rechazada',
-      causa: 'sala-no-encontrada',
-    });
+    expect(await cerrado).toEqual({ codigo: CODIGO_DE_SALA_CERRADA, razon: 'host-cerro-la-sala' });
     expect(tunel.salas.salasVivas()).toBe(0);
   });
 
@@ -561,6 +564,48 @@ describe('el latido mantiene la sala', () => {
     await new Promise((listo) => setTimeout(listo, 50));
 
     expect(tunel.salas.salasVivas()).toBe(1);
+  });
+
+  it('un latido de una sala ya vencida se rechaza con causa, sin cerrar en silencio', async () => {
+    const identidad = generarIdentidadDeSala();
+    const control = await hostRegistrado(identidad);
+    instante = TOLERANCIA + 1;
+
+    const respuesta = siguienteControl(control);
+    control.send(serializarControl({ tipo: 'latido' }));
+
+    expect(await respuesta).toEqual({ tipo: 'registro-rechazado', causa: 'sala-no-encontrada' });
+    expect(control.readyState).toBe(WebSocket.OPEN);
+  });
+
+  it('el barrido cierra al host y echa a los invitados unidos', async () => {
+    const identidad = generarIdentidadDeSala();
+    const { control, invitado } = await salaConUnInvitado(identidad);
+    instante = TOLERANCIA + 1;
+
+    const avisoAlHost = siguienteControl(control);
+    const cerrado = cierreConRazon(invitado);
+    tunel.barrer();
+
+    expect(await avisoAlHost).toEqual({ tipo: 'sala-cerrada', causa: 'host-sin-latido' });
+    expect(await cerrado).toEqual({ codigo: CODIGO_DE_SALA_CERRADA, razon: 'host-sin-latido' });
+    expect(tunel.salas.salasVivas()).toBe(0);
+    expect(tunel.conexionesUnidas()).toBe(0);
+  });
+
+  it('el barrido echa a quien todavía esperaba emparejarse', async () => {
+    const identidad = generarIdentidadDeSala();
+    const control = await hostRegistrado(identidad);
+    const espera = siguienteControl(control);
+    const invitado = await invitadoEntrando(identidad);
+    await espera;
+    instante = TOLERANCIA + 1;
+
+    const cerrado = cierreConRazon(invitado);
+    tunel.barrer();
+
+    expect(await cerrado).toEqual({ codigo: CODIGO_DE_SALA_CERRADA, razon: 'host-sin-latido' });
+    expect(tunel.emparejamientosPendientes()).toBe(0);
   });
 
   it('cambiar la invitación se confirma, y el link anterior ya no entra', async () => {

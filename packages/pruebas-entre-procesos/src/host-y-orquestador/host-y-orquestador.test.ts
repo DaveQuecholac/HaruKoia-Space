@@ -8,7 +8,7 @@ import { type MensajeDeControl, RUTAS, interpretarControl, serializarControl } f
 import { afterAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 
-import { invitacionDelHost, registroDeLaSala } from '../invitacion-del-host/invitacion-del-host.ts';
+import { ORIGEN_DE_LA_WEB_DE_PRUEBA, invitacionDelHost, registroDeLaSala } from '../invitacion-del-host/invitacion-del-host.ts';
 import { apagar, apagarTodos, esperarQue, levantar, puertoLibre } from '../levantar-proceso/levantar-proceso.ts';
 
 afterAll(apagarTodos);
@@ -31,8 +31,11 @@ describe('el host frente al orquestador real', () => {
       const base = `ws://127.0.0.1:${puerto}`;
 
       // 1. El host primero: el orquestador todavía no existe.
-      const host = await levantar('apps/host/src/main.ts', { ORQUESTADOR_URL: base });
-      const { sala, token } = invitacionDelHost(host);
+      const host = await levantar('apps/host/src/main.ts', {
+        ORQUESTADOR_URL: base,
+        WEB_ORIGEN: ORIGEN_DE_LA_WEB_DE_PRUEBA,
+      });
+      const { sala, token } = await invitacionDelHost(host);
       await esperarQue(() => host.salida().includes('se reintenta'));
 
       // 2. Aparece el orquestador y el host se registra sin que nadie lo toque.
