@@ -268,7 +268,7 @@ Qué hace, con la decisión **D2**: se monta el servidor de sala real y la prese
 
 **Objetivo.** Las pantallas mínimas para que esto sea usable por una persona.
 
-**Archivos.** `apps/web/src/entrada/`, `apps/web/src/host/`, `apps/web/src/sala/`.
+**Archivos.** `apps/web/src/entrada/`, `apps/web/src/host/`, `apps/web/src/sala/`, y `apps/host/src/invitacion/` (el host entrega su invitación a la web de su máquina, decidido al aterrizar D7).
 
 Qué hace: pedir el nombre y recordarlo, acción de volverme host que devuelve el link, copiar el link, entrar por link, y la lista de participantes con su rol.
 

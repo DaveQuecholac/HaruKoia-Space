@@ -33,7 +33,7 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 | B3 | Túnel del orquestador | Hecho — checkpoint 2 pasado entre dos redes |
 | B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
 | B5 | Sala en vivo y presencia | Hecho — sin interfaz: la pantalla llega en B6 |
-| B6 | Web: nombre, volverme host, unirme | Pendiente |
+| B6 | Web: nombre, volverme host, unirme | Hecho — falta la prueba a mano de una persona y el checkpoint 3 |
 | B7 | Resistencia y reconexión | Pendiente |
 | B8 | Roles mínimos | Pendiente |
 | B9 | Varios participantes y cierre | Pendiente |
@@ -176,11 +176,29 @@ Fijado en B5, con **D2 confirmada**: sala Yjs real desde H1, con su presencia.
 | Sala vacía | El host abre el documento con una **conexión directa** y lo mantiene. Sin ella, Hocuspocus lo descarga al irse el último invitado. Reiniciar el host sí la vacía (H3) |
 | Salida limpia | El participante desaparece **enseguida** |
 | Caída sucia | Tiempo de espera de **30 s** (decisión de B5; Hocuspocus trae 60). Hocuspocus no hace ping: cierra la conexión que pasa 30 s sin mandar nada, y lo revisa cada 30 s. Una conexión sana renueva su presencia cada ~15 s. En la práctica, los demás dejan de ver al caído **entre 15 y 33 s** después (caduca su presencia) y el host suelta la conexión muerta **entre 30 y 60 s** después |
-| Rechazo de entrada | El socket del relay cierra con código `4403` y la causa como razón, y la avisa por `alSerRechazado`. **Pendiente para B6/B7:** el proveedor reintenta para siempre aunque el rechazo sea definitivo; la web tiene que dejar de reintentar y mostrar la causa |
+| Rechazo de entrada | El socket del relay cierra con código `4403` y la causa como razón, y la avisa por `alSerRechazado`. El proveedor por sí solo reintentaría para siempre; la web de B6 corta los reintentos y muestra la causa |
 
 **Con un socket propio hay que llamar `attach()`** en el proveedor. Sin eso el socket abre, pero el documento nunca se engancha y no viaja ni un mensaje.
 
 `urlDelRelay` pasó del host a `packages/domain`, junto a `RUTAS`: ahora la usan el host y el cliente del invitado.
+
+## Web
+
+Fijado en B6, con **D7** y **D9** confirmadas. Sin router: la ruta `/s/<sala>` es la sala, todo lo demás es el inicio.
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Link | `apps/web/src/entrada/enlace-de-invitacion/` | `https://<web>/s/<sala>#<token>`. El token en el fragmento no llega a ningún servidor |
+| Nombre | `apps/web/src/entrada/nombre-recordado/` | Se pide la primera vez y queda en `localStorage`. Viaja solo en la presencia |
+| Volverme host | `apps/web/src/host/` y `apps/host/src/invitacion/` | La web le pide `GET /invitacion` al host de **su máquina**: sala y token de invitación, nunca el token de host |
+| Rol | `apps/web/src/host/rol-en-la-pestana/` | Host si la pestaña llegó por "Volverme host", invitado si llegó por link. Va en la presencia. **Falsificable hasta B8** |
+| Sala | `apps/web/src/sala/` | Estado visible (conectando, conectado, reconectando o la causa del rechazo), link para copiar si eres host, y la lista de participantes con su rol |
+
+`GET /invitacion` tiene dos candados: solo atiende peticiones de **loopback** (el proxy de portless en desarrollo; detrás del proxy de un servidor viene de otra dirección y se rechaza) y solo al **origen** `WEB_ORIGEN`. Sin `WEB_ORIGEN` la ruta no existe.
+
+Variables nuevas: `WEB_ORIGEN` en `apps/host/.env`; `VITE_ORQUESTADOR_URL` y `VITE_HOST_URL` en `apps/web/.env`. `VITE_ORQUESTADOR_ECO_URL` se retiró con el eco. Tras cambiarlas: `pnpm exec pm2 delete <app> && pnpm dev:start` en la app.
+
+Dos pestañas de la misma persona son dos participantes con el mismo nombre: se acepta y se muestra tal cual. Para probar con dos nombres en una sola máquina, usa una ventana de incógnito (otro `localStorage`).
 
 ## Registro de salas
 
@@ -243,9 +261,11 @@ Ninguna la toma quien implementa. Están en la sección 3 del análisis con sus 
 | D3 | **Relay por túnel inverso**: conexión de control permanente y una conexión de datos saliente por invitado |
 | D4 | **Token de invitación aparte** del identificador de sala: el identificador enruta, el token da acceso y se puede revocar |
 | D5 | El host que presenta el **token de host** correcto **reemplaza** el registro anterior; la conexión vieja se cierra |
+| D7 | Link `https://<web>/s/<sala>#<token>`; "Volverme host" pide la invitación al host de la máquina (B6) |
+| D9 | Nombre en el `localStorage` del navegador y en la presencia (B6) |
 | D8 | Vitest como runner de todo el monorepo |
 
-**Pendientes:** D6, D7 y D9 en el paso donde aparecen (D9 en B6).
+**Pendientes:** D6 (una sala por host en la v1, sin confirmar).
 
 Con D4 y D5 confirmadas, el **checkpoint 1 está cerrado** y la fase B puede empezar por B1.
 

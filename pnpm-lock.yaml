@@ -98,6 +98,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@harukoia/cliente-del-relay':
+        specifier: workspace:^
+        version: link:../../packages/cliente-del-relay
       '@harukoia/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -107,12 +110,18 @@ importers:
       '@harukoia/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@hocuspocus/provider':
+        specifier: ^4.7.0
+        version: 4.7.0(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
       react:
         specifier: ^19.0.0
         version: 19.3.0
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      yjs:
+        specifier: ^13.6.33
+        version: 13.6.33
     devDependencies:
       '@types/react':
         specifier: ^19.0.8
@@ -129,6 +138,9 @@ importers:
       vite:
         specifier: ^6.0.7
         version: 6.4.3(@types/node@22.20.5)
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@22.20.5)(vite@6.4.3(@types/node@22.20.5))
 
   packages/cliente-del-relay:
     dependencies:

@@ -40,9 +40,9 @@ El v2 define la topología, no el protocolo. Lo siguiente cambia el código y **
 | D4 Token del link separado | **Confirmada:** token de invitación aparte del identificador de sala | B2 |
 | D5 Reconexión del host | **Confirmada:** el token de host correcto reemplaza el registro anterior | B2 |
 | D6 Salas por proceso host | Pendiente — una en la v1 | B1 |
-| D7 Dónde se sirve la web | Pendiente — falta la forma del link | B6 |
+| D7 Dónde se sirve la web | **Confirmada:** link `https://<web>/s/<sala>#<token>` | B6 |
 | D8 Runner de pruebas | **Confirmada:** Vitest | A4 |
-| D9 Nombre del participante | Pendiente | B6 |
+| D9 Nombre del participante | **Confirmada:** en el navegador y en la presencia | B6 |
 
 ### D1 — Librería del servidor HTTP y WebSocket
 
@@ -137,8 +137,13 @@ Aclaración para no confundir: "varias sesiones a la vez" en la interfaz signifi
 
 El v2 dice que el orquestador sirve la web. En desarrollo no: cada app tiene su propio proceso y su URL de portless, que es como está montado el arranque. Entonces el link apunta a la web, y la web abre su conexión al orquestador.
 
-Queda por confirmar la forma del link: `https://<web>/s/<identificador>#<token>`.
+**Decisión, confirmada el 2026-10-04:** el link es `https://<web>/s/<identificador>#<token>`. El token va en el fragmento, que el navegador no manda a ningún servidor: no queda en historiales de proxy ni en logs.
 **Bloquea:** paso B6.
+
+Decisiones que salieron al aterrizarla en B6:
+
+- **"Volverme host" le pide la invitación al host de mi máquina.** El navegador no arranca procesos: el host se sigue arrancando con `pnpm dev` (más adelante `space host`). El host expone `GET /invitacion` con sala y token de invitación, **nunca** el token de host. Solo responde a peticiones desde la propia máquina y al origen de la web configurado; sin eso, cualquier página abierta en el navegador podría leer el token.
+- **El rol viaja en la presencia** (host o invitado) y se muestra en la lista. **Es falsificable hasta B8**, que lo resuelve donde no se puede falsificar.
 
 ### D8 — Runner de pruebas
 
@@ -153,6 +158,8 @@ Queda por confirmar la forma del link: `https://<web>/s/<identificador>#<token>`
 ### D9 — Dónde se guarda el nombre del participante
 
 Se pide al entrar y se recuerda en el navegador para la próxima. No se replica ni se persiste en el host más allá de la sesión y de la lista de participantes del commit.
+
+**Decisión, confirmada el 2026-10-04:** se guarda en el `localStorage` del navegador y viaja solo en la presencia de Yjs.
 **Bloquea:** paso B6.
 
 ---

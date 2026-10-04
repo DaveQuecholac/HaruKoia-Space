@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { generarIdentidadDeSala } from '@harukoia/domain';
 
 import { conectarAlOrquestador } from './conexion-al-orquestador/conexion-al-orquestador.ts';
+import { atenderInvitacion } from './invitacion/invitacion.ts';
 import { registro } from './registro-del-proceso/registro-del-proceso.ts';
 import { abrirSalaEnVivo } from './sala/sala.ts';
 
@@ -39,7 +40,10 @@ const conexion = conectarAlOrquestador({
   manejadores: { sesion: sala.manejador },
 });
 
+const origenDeLaWeb = process.env.WEB_ORIGEN;
+
 const server = createServer((req, res) => {
+  if (origenDeLaWeb && atenderInvitacion(req, res, { identidad, origenDeLaWeb })) return;
   if (req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ service: 'host', status: 'ok' }));

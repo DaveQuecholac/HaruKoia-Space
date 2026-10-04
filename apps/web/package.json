@@ -14,20 +14,25 @@
     "dev:plain": "vite",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@harukoia/cliente-del-relay": "workspace:^",
     "@harukoia/domain": "workspace:*",
     "@harukoia/registro": "workspace:*",
     "@harukoia/schema": "workspace:*",
+    "@hocuspocus/provider": "^4.7.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^5.0.3"
   }
 }
