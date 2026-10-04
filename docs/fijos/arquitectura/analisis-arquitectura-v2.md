@@ -293,14 +293,20 @@ Docker Compose con orquestador, contenedor host, un remoto git local y un modelo
 
 ## 12. Orden de construcción
 
-1. Contenedor host con RxDB y SQLite, y un CLI que materialice un markdown de prueba en el repo y lo comitee.
-2. Orquestador con registro de salas, link y relay. Un invitado alcanza al host detrás de NAT.
-3. Sala de pizarra con tldraw, Yjs y presencia. Varias personas dibujando.
-4. Staging, commit, historial y checkout. Traductor a JSON en el repo.
-5. Push: IA a markdown, Pandoc a PDF y Word, commit y push a git.
-6. Sala global con el mismo contenedor host en servidor y repo clonado por identificador.
+El trabajo se agrupa en ocho épicas que se pueden probar una por una. El desglose, con tareas, pruebas y criterios de terminado de cada una, está en [fase-1-modulos-y-tareas.md](../fases/fase-1-modulos-y-tareas.md), que es el documento que manda sobre el orden.
 
-El paso 1 prueba primero la promesa que distingue al producto. Una pizarra que no sale de la sala es una junta que no sirvió de nada.
+| # | Épica | Qué demuestra |
+|---|---|---|
+| H0 | Cimientos | El motor levanta y se apaga igual en las dos máquinas |
+| H1 | Sala por link | Un invitado en otra red alcanza al host detrás de NAT y se ve la presencia |
+| H2 | Dibujamos a la vez | Varias personas en el mismo tablero |
+| H3 | La sala sobrevive | Reiniciar el host o el relay no pierde el trabajo |
+| H4 | Versiones de la pizarra | Staging, commit, historial, checkout, y el tablero como archivo |
+| H5 | Llega al repositorio | Publicación determinista, git y CLI; quien no estuvo recibe los archivos |
+| H6 | Documento con IA | Markdown con secciones, PDF y Word |
+| H7 | Sala global | Host en servidor, sin que nadie clone el repositorio |
+
+Una versión anterior de esta sección ponía la publicación y el CLI antes de la sala, para probar primero la promesa que distingue al producto. Se cambió al orden de arriba porque **el riesgo técnico que hay que matar primero es el alcance del host detrás de NAT a través del relay** (H1): es la única pieza que no podemos copiar de una librería, y descubrir que no funciona después de construir la pizarra encima sale mucho más caro. La promesa de la entrega al repositorio sigue siendo prioritaria y por eso H5 llega antes que la IA, con una salida determinista que se verifica carácter por carácter.
 
 ## 13. Puntos abiertos
 

@@ -1,492 +1,390 @@
-# Fase 1 — Módulos y tareas
+# Fase 1 — Épicas, módulos y tareas
 
-Desglose de **todos** los módulos grandes del motor colaborativo para la fase 1, con qué hace cada uno, de qué depende, con qué trabaja, y una propuesta de reparto entre dos personas.
+Qué se construye en la fase 1, agrupado en **ocho mini-épicas** que se pueden probar una por una, y el catálogo de los **veinte módulos** que las componen.
 
-Base: [análisis de arquitectura v2](../arquitectura/analisis-arquitectura-v2.md). Las decisiones cerradas de ahí no se reabren en este documento.
+Base: [análisis de arquitectura v2](../arquitectura/analisis-arquitectura-v2.md). Las decisiones cerradas de ahí no se reabren aquí.
 
 Fase 1 es **el motor funcionando**: una sala con varias personas dibujando, un commit de la pizarra, y el markdown llegando al repositorio de alguien que no estuvo en la sesión. Los módulos de IOKOIA Space **no** son fase 1.
 
----
+## Cómo leer este documento
 
-## 1. Mapa de módulos
+| Unidad | Qué es | Para qué sirve |
+|--------|--------|----------------|
+| **Épica (H0–H7)** | Una funcionalidad que alguien puede **usar y probar** | Es la unidad de trabajo, de rama y de demostración |
+| **Módulo (M1–M20)** | Una pieza del sistema con dueño claro | Es la unidad de código, para saber dónde vive cada cosa |
 
-Veinte módulos, en cuatro grupos.
+Un módulo aparece en varias épicas: el relay (M5) nace en H1 y se endurece en H3. Las **tareas se numeran por épica**, no por módulo, porque el trabajo se reparte por funcionalidad.
 
-| Grupo | Módulos |
-|-------|---------|
-| **Plataforma** | M1 Arranque · M2 Esquemas y dominio · M3 Base local y réplica · M19 Pruebas · M20 Diagnóstico |
-| **Conexión** | M4 Registro de salas · M5 Relay · M6 Sala en vivo · M7 Presencia · M16 Identidad y roles · M17 Sala global |
-| **Pizarra y versiones** | M8 Pizarra · M9 Traductor · M10 Staging y commits · M18 Interfaz y sesiones |
-| **Publicación** | M11 Push · M12 Markdown con IA · M13 Exportación · M14 Git · M15 CLI |
-
-```text
-M1 Arranque
-  └─ M2 Esquemas y dominio ──────────────┬──────────────┬─────────────┐
-       │                                 │              │             │
-       ├─ M3 Base local y réplica ───────┤              │             │
-       │     │                           │              │             │
-       │     ├─ M15 CLI ─── M14 Git      │              │             │
-       │     └─ M11 Push ─┬─ M12 IA      │              │             │
-       │                  └─ M13 Export  │              │             │
-       │                                 │              │             │
-  M4 Registro ─ M5 Relay ─┬─ M6 Sala ─┬──┴─ M7 Presencia              │
-                          │           │                               │
-                          │           └─ M8 Pizarra ─ M9 Traductor ─ M10 Commits
-                          │                                            │
-                          └─ M16 Identidad y roles      M18 Interfaz ──┘
-                                   │
-                                   └─ M17 Sala global
-
-  M19 Pruebas y M20 Diagnóstico cruzan todo
-```
+> **Orden de construcción.** Este documento manda sobre el orden. La sección 12 del análisis v2 propone otro (publicación antes que sala) y quedó superada por la decisión de empezar por la sala, donde está el riesgo técnico real.
 
 ---
 
-## 2. Plataforma
+## 1. Las ocho épicas
 
-### M1 — Arranque y monorepo
+| # | Historia | Se prueba con | Riesgo que mata |
+|---|----------|---------------|-----------------|
+| **H0** | Levanto el motor | `pnpm dev` y las pruebas corriendo en las dos máquinas | Que cada quien trabaje en un entorno distinto |
+| **H1** | Entro por un link desde otra red y veo quién está | Dos máquinas en redes distintas, lista de participantes viva | **Que el host detrás de NAT no sea alcanzable** |
+| **H2** | Dibujamos los dos a la vez | Dos personas trazando, con cursores y nombres | Integración del lienzo con la sala |
+| **H3** | Cierro la laptop y la sala vuelve | Reiniciar el host y matar el relay sin perder el tablero | Pérdida de trabajo; es lo que hace inusable el producto |
+| **H4** | Guardo una versión y vuelvo a ella | Staging, commit, historial, checkout; tablero como archivo | El versionado de pizarra es lo que estamos inventando |
+| **H5** | Lo guardado llega al repositorio de quien no estuvo | `space update` en otra máquina trae el archivo | Que la promesa del producto no se cumpla |
+| **H6** | La IA convierte la pizarra en documento | Markdown con secciones, PDF y Word | Calidad de la salida del modelo |
+| **H7** | La sala vive en el servidor | Sala global sin que nadie clone el repositorio | Operación del host fuera de la máquina del developer |
 
-**Qué hace.** Paquetes, dependencias, arranque con PM2 y portless, contenedores, typecheck y pruebas en un solo gesto.
+### Por qué ese orden
 
-**Depende de.** Nada.
-**Trabaja con.** Todos.
+**H1 antes que la pizarra.** El riesgo mayor no es dibujar juntos —eso lo resuelven las librerías— sino que un invitado en otra red alcance al host a través del relay. Si falla en la semana dos se replantea barato; en la semana ocho ya hay una pizarra construida encima.
 
-| Tarea | Detalle |
-|-------|---------|
-| M1-T1 | `pnpm install` limpio y `pnpm dev` arrancando las tres apps con logs |
-| M1-T2 | `pnpm dev:stop`, `dev:status` y `dev:restart` verificados en la máquina de cada quien |
-| M1-T3 | Inicializar git, primera rama de trabajo y carpeta en `docs/dev/` |
-| M1-T4 | `pnpm typecheck` y `pnpm test` corriendo en vacío sin errores |
-| M1-T5 | `pnpm docker:up` levantando orquestador y host, con `/health` respondiendo |
+**H3 donde está, no al final.** La resistencia a caídas suele dejarse para el cierre y es lo que mata estos proyectos: una pizarra que pierde trabajo cuando el host suspende la laptop no es usable, y arreglarlo después obliga a rehacer la sala.
 
-**Hecho cuando.** Las dos personas pueden levantar el motor y apagarlo sin pedir ayuda, y los dos contenedores arrancan.
+**H4 antes de publicar.** Staging, commit y checkout sobre un tablero no son un patrón que podamos copiar de ningún lado. Hay que usarlo un par de semanas antes de construir la publicación encima.
 
-Estado: esqueleto creado. Falta git, instalar dependencias y verificar en ambas máquinas.
-
-### M2 — Esquemas y dominio
-
-**Qué hace.** El contrato de datos del motor: qué es una sala, un commit, un snapshot, un documento y un adjunto. Versiones de esquema y sus migraciones. Nombres de archivo de lo que se materializa en el repositorio y las secciones del markdown.
-
-**Depende de.** M1.
-**Trabaja con.** M3, M6, M10, M11, M15. Es la pieza que impide que el host y el CLI definan lo mismo de dos formas.
-
-| Tarea | Detalle |
-|-------|---------|
-| M2-T1 | Colecciones `rooms`, `commits`, `snapshots`, `documents`, `attachments` con sus campos |
-| M2-T2 | Campos de control de la réplica: orden determinista y marca de borrado |
-| M2-T3 | Versionado de esquema y el mecanismo de migración en el cliente |
-| M2-T4 | Tipos de dominio: estados de sala, de commit y de push |
-| M2-T5 | Nombres y rutas de los archivos que el CLI escribe en el repositorio |
-
-**Hecho cuando.** Web, host y CLI compilan contra el mismo contrato y una colección nueva no obliga a tocar los tres.
-
-**Riesgo.** Es el módulo que más cuesta cambiar después. Conviene cerrarlo entre las dos personas antes de repartir el resto.
-
-### M3 — Base local y réplica
-
-**Qué hace.** La base local en el navegador y en el CLI, y los tres puntos que el host expone para replicar: traer desde un checkpoint, recibir escrituras y emitir el stream de novedades. Incluye el reenganche cuando se pierden eventos.
-
-**Depende de.** M2.
-**Trabaja con.** M8 y M18 (lecturas de la interfaz), M15 (CLI), M11 (estados de publicación).
-
-| Tarea | Detalle |
-|-------|---------|
-| M3-T1 | Base local del navegador y consultas reactivas |
-| M3-T2 | Base local del host con almacenamiento en disco |
-| M3-T3 | Los tres puntos de réplica en el host |
-| M3-T4 | Reenganche: recorrer desde el checkpoint cuando el stream perdió eventos |
-| M3-T5 | Política de conflicto: la versión publicada es inmutable, así que el conflicto es la excepción |
-| M3-T6 | Caso del invitado que escribe sin red y se fusiona al restaurarse la sala |
-
-**Hecho cuando.** Dos clientes y el CLI convergen contra el mismo host, incluso después de perder la red un rato.
-
-**Decisión pendiente.** El almacenamiento en disco de la base local está en el paquete de pago de RxDB. Hay que confirmar la licencia antes de M3-T2.
-
-### M19 — Pruebas y entorno de pruebas
-
-**Qué hace.** Los niveles de prueba del análisis de arquitectura y el entorno que los hace posibles: compose con orquestador, host, remoto git local y modelo de IA simulado.
-
-**Depende de.** M1, y de cada módulo que prueba.
-**Trabaja con.** Todos.
-
-| Tarea | Detalle |
-|-------|---------|
-| M19-T1 | Compose de pruebas con remoto git local y modelo simulado |
-| M19-T2 | Arnés de varios participantes: clientes de sala sin navegador, de 2 a 10 |
-| M19-T3 | Pruebas de convergencia, presencia, invitado que se va y vuelve, host que cae |
-| M19-T4 | Pruebas de resistencia: matar relay, matar host, partir la red, inyectar latencia |
-| M19-T5 | Medición de los objetivos de rendimiento del análisis |
-| M19-T6 | Pruebas de extremo a extremo: dos navegadores, dibujar, commitear, verificar el archivo |
-
-**Hecho cuando.** La prueba de varios participantes corre en la máquina de cualquiera de los dos y falla cuando debe fallar.
-
-**Nota.** M19-T2 no es opcional ni se deja para el final. Es la única forma de saber si el motor colaborativo colabora.
-
-### M20 — Diagnóstico
-
-**Qué hace.** Que un fallo se vea y se entienda: estados explícitos, logs por proceso, y errores que dicen qué pasó en lugar de un error de red genérico.
-
-**Depende de.** M1.
-**Trabaja con.** Todos, sobre todo M5, M11 y M14.
-
-| Tarea | Detalle |
-|-------|---------|
-| M20-T1 | Logs por proceso con el identificador de sala |
-| M20-T2 | Estados visibles en la interfaz: conectado, reconectando, sala cerrada |
-| M20-T3 | Errores de publicación con causa y acción posible |
+**H5 publica sin IA.** La primera publicación que llega al repositorio es un markdown **determinista** —versión, participantes, fecha, notas del tablero— verificable carácter por carácter. Así se depura el transporte sin depurar al mismo tiempo una salida que cambia en cada corrida, y no depende del proveedor de IA, que es una decisión abierta. No es un simulacro que se tire: queda como una variante más del mecanismo de publicación de M11, al lado de la variante con IA.
 
 ---
 
-## 3. Conexión
+## 2. Matriz de épicas y módulos
 
-### M4 — Registro de salas y links
+| Módulo | H0 | H1 | H2 | H3 | H4 | H5 | H6 | H7 |
+|--------|----|----|----|----|----|----|----|----|
+| M1 Arranque | ● | | | | | | | |
+| M2 Esquemas y dominio | ◐ | ◐ | | | ◐ | ● | ◐ | |
+| M3 Base local y réplica | | | | | ◐ | ● | | |
+| M4 Registro de salas | | ● | | ◐ | | | | ◐ |
+| M5 Relay | | ● | | ● | | | | ◐ |
+| M6 Sala en vivo | | ◐ | ◐ | ● | | | | |
+| M7 Presencia | | ● | ◐ | | | | | |
+| M8 Pizarra | | | ● | ◐ | | | | |
+| M9 Traductor | | | | | ● | | | |
+| M10 Staging y commits | | | | | ● | | | |
+| M11 Push | | | | | | ● | ◐ | |
+| M12 Markdown con IA | | | | | | | ● | |
+| M13 Exportación | | | | | | | ● | |
+| M14 Git | | | | | | ● | | ◐ |
+| M15 CLI | | | | | | ● | | |
+| M16 Identidad y roles | | ◐ | | | ◐ | | | ● |
+| M17 Sala global | | | | | | | | ● |
+| M18 Interfaz y sesiones | | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ |
+| M19 Pruebas | ● | ● | ● | ● | ● | ● | ● | ● |
+| M20 Diagnóstico | ◐ | ● | | ● | | ◐ | ◐ | |
 
-**Qué hace.** El orquestador registra `identificador de sala → conexión del host`, genera el link de invitación y resuelve a qué host va cada invitado. Nada de esto se persiste.
+● entra de lleno · ◐ entra en parte
 
-**Depende de.** M1.
-**Trabaja con.** M5, M16, M18.
-
-| Tarea | Detalle |
-|-------|---------|
-| M4-T1 | Registro en memoria y alta del host al arrancar |
-| M4-T2 | Identificador de sala largo y aleatorio, y generación del link |
-| M4-T3 | Rechazo claro si dos hosts reclaman la misma sala |
-| M4-T4 | Baja de la sala cuando el host se desconecta |
-| M4-T5 | Reinicio del orquestador: los hosts se vuelven a registrar |
-
-**Hecho cuando.** Un host se registra, el link funciona, y al apagar el host la sala desaparece del registro.
-
-### M5 — Relay
-
-**Qué hace.** Mover bytes entre los invitados y el contenedor host. El host abre la conexión **hacia** el orquestador, así que funciona detrás de NAT sin abrir puertos.
-
-**Depende de.** M4.
-**Trabaja con.** M6, M3 (la réplica del navegador también pasa por aquí), M16.
-
-| Tarea | Detalle |
-|-------|---------|
-| M5-T1 | Conexión saliente del host y su registro |
-| M5-T2 | Reenvío por identificador de sala en ambos sentidos |
-| M5-T3 | Reconexión automática de host y de invitados |
-| M5-T4 | Aviso explícito al invitado cuando la sala se cerró, no un error genérico |
-| M5-T5 | Prueba detrás de NAT real, con las dos máquinas en redes distintas |
-
-**Hecho cuando.** Alguien en otra red entra por el link y ve el tablero del host sin configurar nada.
-
-**Riesgo.** Es el módulo con más superficie de fallo de red. M19-T4 lo cubre a propósito.
-
-### M6 — Sala en vivo
-
-**Qué hace.** El documento compartido de la sesión dentro del contenedor host, con persistencia para sobrevivir un reinicio. La autoridad está aquí, no en el navegador del host.
-
-**Depende de.** M5, M2.
-**Trabaja con.** M7, M8, M10.
-
-| Tarea | Detalle |
-|-------|---------|
-| M6-T1 | Servidor de sala en el host y entrada de clientes |
-| M6-T2 | Persistencia del documento de la sesión en disco |
-| M6-T3 | Restauración de la sala en el último estado al volver a arrancar |
-| M6-T4 | Compactación del documento al commitear |
-| M6-T5 | Puerta de entrada: solo entra quien trae un link válido |
-
-**Hecho cuando.** Dos personas dibujan a la vez, el host reinicia, y al volver la sala está en el último estado.
-
-### M7 — Presencia
-
-**Qué hace.** Quién está en la sala y en qué: nombre, cursor y foco. Es la conciencia dentro de la junta.
-
-**Depende de.** M6.
-**Trabaja con.** M8, M18.
-
-| Tarea | Detalle |
-|-------|---------|
-| M7-T1 | Identidad de sesión del invitado: nombre visible |
-| M7-T2 | Cursores y selección de los demás en el lienzo |
-| M7-T3 | Lista de participantes con su rol, host o espectador |
-| M7-T4 | Salida limpia: el participante desaparece al cerrar |
-
-**Hecho cuando.** Con cinco personas, cada una ve a las otras cuatro con su nombre, y al salir una, las demás se enteran.
-
-### M16 — Identidad y roles
-
-**Qué hace.** La v1 entra por link de invitación y nombre. Los roles son host y espectador: solo el host comitea. Los permisos se resuelven en el relay y en el host, nunca en el cliente.
-
-**Depende de.** M4, M6.
-**Trabaja con.** M10, M11, M14, M18.
-
-| Tarea | Detalle |
-|-------|---------|
-| M16-T1 | Rol en la sesión y su propagación a la interfaz |
-| M16-T2 | Las acciones de commit y push solo las acepta el host |
-| M16-T3 | Validación en el servidor, con el cliente solo ocultando lo que no puede hacer |
-| M16-T4 | El link no sobrevive a la sesión |
-
-**Hecho cuando.** Un espectador no puede commitear ni con la petición hecha a mano.
-
-**Deuda consciente.** No hay autenticación en la v1. Mientras no entre, las salas globales se limitan a repositorios que el equipo acepte exponer con link.
-
-### M17 — Sala global
-
-**Qué hace.** El mismo contenedor host corriendo en un servidor, con el repositorio clonado por identificador. Es el caso de las pizarras de conocimiento compartido, donde nadie tiene que clonar nada.
-
-**Depende de.** M5, M6, M14, M16.
-**Trabaja con.** M11, M18.
-
-| Tarea | Detalle |
-|-------|---------|
-| M17-T1 | Arranque del host en modo global y su registro |
-| M17-T2 | Clonado del repositorio por identificador dentro del contenedor |
-| M17-T3 | Commit y push desde el servidor |
-| M17-T4 | Interruptor nube o local en la interfaz al volverse host |
-
-**Hecho cuando.** Alguien abre una sala global, trabaja, y el commit aparece en el remoto sin que nadie tuviera el repositorio en su máquina.
-
-Es el último módulo de la fase 1: necesita que git y el push ya funcionen en la sala de usuario.
+M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus estados visibles, o no termina.
 
 ---
 
-## 4. Pizarra y versiones
+## 3. H0 — Levanto el motor
 
-### M8 — Pizarra
+> **Historia.** Clono el repositorio, corro un comando y tengo el motor arriba. Lo apago con otro comando.
 
-**Qué hace.** El lienzo: formas, selección, cámara, y su conexión al documento compartido de la sala.
+**Alcance.** Monorepo, arranque con PM2 y portless, contenedores, typecheck, andamio de pruebas y las reglas del contrato de datos.
 
-**Depende de.** M6, M7.
-**Trabaja con.** M9, M10, M18.
+**No entra.** Los campos de cada colección: se cierran en la épica que los usa. Diseñar el esquema de documentos publicados antes de H5 es la forma más cara de equivocarse.
 
-| Tarea | Detalle |
-|-------|---------|
-| M8-T1 | Lienzo montado en la web con la librería de pizarra |
-| M8-T2 | Conexión del lienzo al documento de la sala |
-| M8-T3 | Dos personas dibujando sin candados ni pisadas |
-| M8-T4 | Comportamiento sin red: se sigue dibujando y al volver se fusiona |
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H0-T1 | `pnpm install` limpio y `pnpm dev` arrancando las tres apps con logs | M1 |
+| H0-T2 | `dev:stop`, `dev:status` y `dev:restart` verificados en las dos máquinas | M1 |
+| H0-T3 | Git inicializado, rama de trabajo y su carpeta en `docs/dev/` | M1 |
+| H0-T4 | `pnpm docker:up` con orquestador y host respondiendo `/health` | M1 |
+| H0-T5 | Reglas del contrato: identificadores, versionado de esquema, orden de réplica, borrado lógico | M2 |
+| H0-T6 | Andamio de pruebas: runner elegido, `pnpm test` corriendo de verdad | M19 |
+| H0-T7 | Formato de log común con identificador de sala | M20 |
 
-**Hecho cuando.** El trazo de una persona aparece en la pantalla de la otra dentro del objetivo de latencia.
+**Pruebas.** Unitarias del generador de identificadores y del versionado de esquema. El resto es verificación manual del arranque en las dos máquinas.
 
-### M9 — Traductor
-
-**Qué hace.** Convertir el tablero a un JSON portable, y de vuelta. Ese JSON es lo que se escribe como archivo en el repositorio y lo que git puede revisar. Guardar la pizarra es guardar el estado espacio-temporal de los elementos, no texto suelto.
-
-**Depende de.** M8, M2.
-**Trabaja con.** M10, M11, M14.
-
-| Tarea | Detalle |
-|-------|---------|
-| M9-T1 | Del tablero a JSON: formas, coordenadas, orden |
-| M9-T2 | De JSON al tablero, sin pérdida |
-| M9-T3 | Versión de formato propia, independiente del formato interno de la librería |
-| M9-T4 | Pruebas de ida y vuelta con tableros de ejemplo |
-
-**Hecho cuando.** Un tablero exportado y vuelto a importar es idéntico, y el archivo se entiende en un diff.
-
-**Riesgo.** Si el formato de la librería cambia al actualizar, este módulo absorbe el golpe. Por eso el formato del archivo es nuestro.
-
-### M10 — Staging y commits
-
-**Qué hace.** El control de versiones de la pizarra: marcar en staging lo que entra, guardar como commit con padre y participantes, historial, y checkout de un commit anterior como nuevo estado de trabajo.
-
-**Depende de.** M6, M9, M2, M16.
-**Trabaja con.** M11, M18.
-
-| Tarea | Detalle |
-|-------|---------|
-| M10-T1 | Área de staging en la sala y marcado por los participantes |
-| M10-T2 | Commit: snapshot, JSON del tablero, autor, participantes, padre |
-| M10-T3 | Historial de la pizarra |
-| M10-T4 | Checkout: traer un commit al estado de trabajo sin reescribir historia |
-| M10-T5 | Encadenamiento después de un checkout, dejando la puerta abierta a ramificar |
-
-**Hecho cuando.** Se puede guardar, ver el historial, volver a una versión anterior, y seguir trabajando desde ahí.
-
-Ramificación queda **fuera** de la fase 1.
-
-### M18 — Interfaz y sesiones
-
-**Qué hace.** La misma interfaz para todos: volverme host, interruptor nube o local, generar link, unirse, activar y desactivar el modo en línea, varias sesiones a la vez, y los estados del push.
-
-**Depende de.** M3, M7, M10, M16.
-**Trabaja con.** M8, M11, M17.
-
-| Tarea | Detalle |
-|-------|---------|
-| M18-T1 | Acción de volverme host y generación del link |
-| M18-T2 | Unirse con link y entrar como espectador |
-| M18-T3 | Lista de sesiones y cambio entre ellas |
-| M18-T4 | Estados visibles: en línea, reconectando, sala cerrada, push en proceso o fallido |
-| M18-T5 | Lectura del markdown publicado y acceso a PDF y Word |
-
-**Hecho cuando.** Alguien que no vio el código puede abrir, invitar, trabajar y publicar sin instrucciones.
-
-Los controles de acceso (quién entra, link privado, contraseña) quedan **fuera** de la fase 1.
+**Definition of done.**
+1. Las dos personas levantan y apagan el motor sin ayuda.
+2. `pnpm typecheck` y `pnpm test` pasan, y `test` ejecuta al menos una prueba real.
+3. Los dos contenedores arrancan y responden.
+4. Las reglas del contrato están escritas y las dos personas las leyeron.
 
 ---
 
-## 5. Publicación
+## 4. H1 — Entro por un link desde otra red y veo quién está
 
-### M11 — Push
+> **Historia.** Me vuelvo host, comparto un link, y alguien en otra red entra y aparecemos los dos en la lista de participantes.
 
-**Qué hace.** La tubería que convierte un commit en documentos: congelar el snapshot, encolar el trabajo, generar, escribir los archivos y dejar el estado replicado para que la interfaz lo vea.
+**Alcance.** Registro de salas, relay, sala en vivo mínima, presencia, roles mínimos y las pantallas de entrada.
 
-**Depende de.** M10, M3, M2.
-**Trabaja con.** M12, M13, M14, M18.
+**No entra.** Lienzo (H2), persistencia de la sala (H3), commits (H4), autenticación.
 
-| Tarea | Detalle |
-|-------|---------|
-| M11-T1 | Cola de trabajos en el host |
-| M11-T2 | Orden del push: validar rol, congelar snapshot, encolar |
-| M11-T3 | Estados del documento replicados: en proceso, publicado, fallido |
-| M11-T4 | Reintento desde la versión, sin volver a dibujar nada |
-| M11-T5 | Mecanismo genérico, con markdown, PDF y Word como variantes |
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H1-T1 | Contrato del protocolo: registro, apertura de conexión de invitado, cierre, error | M2 |
+| H1-T2 | Registro de salas en memoria: alta, baja, rechazo de duplicado | M4 |
+| H1-T3 | Identificador de sala y token de invitación; generación del link | M4, M16 |
+| H1-T4 | Conexión saliente del host al orquestador y su registro | M5 |
+| H1-T5 | Enrutamiento del invitado hasta el host por identificador de sala | M5 |
+| H1-T6 | Reconexión con espera creciente, de host y de invitado | M5 |
+| H1-T7 | Sala en vivo mínima en el host, con el documento compartido | M6 |
+| H1-T8 | Presencia: nombre del participante y lista viva | M7 |
+| H1-T9 | Rol host o espectador, resuelto en el servidor | M16 |
+| H1-T10 | Pantallas: nombre, volverme host, copiar link, unirme | M18 |
+| H1-T11 | Aviso explícito de sala cerrada o link inválido, no un error de red | M5, M20 |
+| H1-T12 | Pruebas de integración y de varios participantes sin navegador | M19 |
 
-**Hecho cuando.** El push responde de inmediato y la interfaz muestra el avance aunque quien publicó cierre la pestaña.
+**Pruebas.**
+- Unitarias: registro de salas, tokens, espera creciente.
+- Integración: host, orquestador y clientes sin navegador en la misma sala.
+- Varios participantes: de 2 a 10 entran y salen; la lista refleja el número real.
+- Resistencia: matar el orquestador y el host en media sesión.
+- Manual: dos máquinas en **redes distintas**.
 
-**Nota de diseño.** M11-T5 importa: cuando entren los módulos de IOKOIA, cada tipo de salida debe ser una variante de esta tubería, no una tubería nueva.
+**Definition of done.**
+1. Alguien en otra red entra por el link sin configurar nada.
+2. Los participantes se ven con su nombre y desaparecen al salir.
+3. Matar el orquestador y levantarlo deja la sala funcionando sin recargar.
+4. Al apagar el host, el invitado ve "sala cerrada", no un error genérico.
+5. Un espectador no puede ejecutar acciones de host ni con la petición hecha a mano.
+6. La prueba de varios participantes corre en la máquina de cualquiera de los dos.
 
-### M12 — Markdown con IA
-
-**Qué hace.** Convertir el contenido de la pizarra en markdown con secciones estables: contexto, decisiones, planes, pendientes.
-
-**Depende de.** M11, M9.
-**Trabaja con.** M13, M14, M15.
-
-| Tarea | Detalle |
-|-------|---------|
-| M12-T1 | Entrada del modelo a partir del snapshot y del JSON del tablero |
-| M12-T2 | Secciones fijas y su validación antes de escribir el archivo |
-| M12-T3 | Reintento y guardado de la salida cruda cuando no valida |
-| M12-T4 | Modelo simulado para las pruebas, sin ramas de simulación en el camino real |
-
-**Bloqueado por un punto abierto.** Qué proveedor de IA se usa y si hace falta un modo sin IA para repositorios sensibles. El contenido de la pizarra sale de la organización en esa llamada. **Hay que decidirlo antes de M12-T1.**
-
-### M13 — Exportación
-
-**Qué hace.** Del mismo markdown a PDF y Word, y el guardado de esos adjuntos.
-
-**Depende de.** M12, M11.
-**Trabaja con.** M14, M18.
-
-| Tarea | Detalle |
-|-------|---------|
-| M13-T1 | Generación de PDF y Word desde el markdown publicado |
-| M13-T2 | Adjuntos asociados al commit |
-| M13-T3 | Reintento de la exportación sin regenerar el texto |
-
-**Hecho cuando.** Un fallo de la exportación no obliga a volver a pasar por el modelo.
-
-### M14 — Git
-
-**Qué hace.** La copia de trabajo del host: escribir los archivos generados, comitear y empujar al remoto. Es el camino por el que se enteran los que no estuvieron.
-
-**Depende de.** M11, M16.
-**Trabaja con.** M9, M12, M13, M15, M17.
-
-| Tarea | Detalle |
-|-------|---------|
-| M14-T1 | Escritura de los archivos generados en rutas propias y declaradas |
-| M14-T2 | Commit con mensaje derivado del commit de la pizarra |
-| M14-T3 | Push al remoto |
-| M14-T4 | Remoto adelantado: traer, reintentar, y resolución para archivos generados |
-| M14-T5 | No mezclar lo generado con la documentación escrita a mano |
-
-**Punto abierto.** En la junta quedó como posible recorte del alcance inicial. **Hay que decidirlo antes de M14-T1**, porque M15 y M17 dependen de esta decisión.
-
-### M15 — CLI `space`
-
-**Qué hace.** El binario de la máquina del developer: arrancar el host para un checkout, reportar estado, y materializar el markdown publicado en el repositorio.
-
-**Depende de.** M3, M2, M14.
-**Trabaja con.** M4, M11.
-
-| Tarea | Detalle |
-|-------|---------|
-| M15-T1 | `space host`: levanta el contenedor host para este checkout y devuelve el link |
-| M15-T2 | `space status`: versión local y si la réplica está al día |
-| M15-T3 | `space update`: baja las versiones y escribe los archivos |
-| M15-T4 | Idempotencia: no reescribir si el contenido es idéntico |
-| M15-T5 | Mensajes cortos con sala, versión y ruta escrita |
-
-**Hecho cuando.** Alguien que no estuvo en la sesión corre un comando y tiene el markdown en su repositorio.
-
-**Punto abierto.** Si el CLI de la v1 debe poder unirse a una sala o solo materializar y reportar.
+**Decisiones que la bloquean.** Librería del servidor WebSocket, forma del relay, y si el token del link se separa del identificador de sala. Ver el análisis de la rama `dev/motor`.
 
 ---
 
-## 6. Orden de construcción
+## 5. H2 — Dibujamos los dos a la vez
 
-Sigue el orden del análisis de arquitectura: primero la promesa que distingue al producto, después la pizarra.
+> **Historia.** Dibujo y mi trazo aparece en la pantalla de la otra persona, con su cursor moviéndose en el mío.
 
-| Hito | Módulos | Se demuestra con |
-|------|---------|------------------|
-| **H1 Cimientos** | M1, M2 | Las dos máquinas levantan el motor; el contrato de datos está cerrado |
-| **H2 El documento viaja** | M3, M15, M14 | Un markdown de prueba sale de un host y aparece en el repositorio de la otra persona |
-| **H3 Hay sala** | M4, M5, M6, M7, M16 | Alguien en otra red entra por link y se ve la presencia |
-| **H4 Hay pizarra** | M8, M9, M18 | Dos personas dibujan a la vez y el tablero se guarda como archivo |
-| **H5 Hay versiones** | M10 | Staging, commit, historial y checkout |
-| **H6 Hay publicación** | M11, M12, M13 | Un commit se convierte en markdown, PDF y Word |
-| **H7 Sala global** | M17 | Una pizarra en servidor comitea sin que nadie clone el repositorio |
+**Alcance.** Lienzo conectado a la sala, cursores y selección ajena, comportamiento sin red.
 
-M19 y M20 avanzan dentro de cada hito, no al final.
+**No entra.** Guardar versiones (H4), exportar (H6).
+
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H2-T1 | Lienzo montado en la web | M8 |
+| H2-T2 | Lienzo conectado al documento de la sala | M8 |
+| H2-T3 | Dos personas dibujando sin candados ni pisadas | M8 |
+| H2-T4 | Cursores y selección de los demás | M7 |
+| H2-T5 | Sin red se sigue dibujando y al volver se fusiona | M8 |
+| H2-T6 | Medición de la latencia de un trazo | M19 |
+
+**Pruebas.** Convergencia con escrituras simultáneas; un invitado se va y vuelve sin duplicar ni perder su trabajo; latencia medida contra el objetivo.
+
+**Definition of done.**
+1. El trazo de una persona aparece en la otra pantalla por debajo del objetivo de latencia.
+2. Con diez clientes el tablero converge al mismo estado.
+3. Quien se queda sin red sigue dibujando y al volver no pierde nada.
 
 ---
 
-## 7. Reparto propuesto
+## 6. H3 — Cierro la laptop y la sala vuelve
 
-Dos pistas que se tocan lo menos posible, para no bloquearse. **M2 se hace entre los dos antes de separar**: es el contrato que las dos pistas comparten, y cambiarlo después es lo más caro del proyecto.
+> **Historia.** Mi máquina se suspende o el relay se cae, y cuando vuelvo la sala sigue siendo la misma.
 
-| Pista | Módulos | Carácter del trabajo |
-|-------|---------|----------------------|
-| **A — Datos, host y publicación** | M3, M11, M12, M13, M14, M15, M17 | Base local y réplica, cola de trabajos, modelo, exportación, git, CLI |
-| **B — Conexión, pizarra e interfaz** | M4, M5, M6, M7, M8, M9, M10, M16, M18 | Orquestador, relay, sala en vivo, presencia, lienzo, versionado, interfaz |
-| **Compartidos** | M1, M2, M19, M20 | Los dos. M2 primero y juntos |
+**Alcance.** Persistencia del documento de la sesión, restauración, reconexión y estados visibles.
+
+**No entra.** Migración de host: si el host no vuelve, la sala no revive en otra máquina. Está fuera de la v1.
+
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H3-T1 | Persistencia del documento de la sesión en disco | M6 |
+| H3-T2 | Restauración de la sala en el último estado al rearrancar | M6 |
+| H3-T3 | Compactación del documento | M6 |
+| H3-T4 | Reconexión de invitados al volver el host, sin recargar | M5 |
+| H3-T5 | El invitado que trabajó sin red se fusiona al restaurarse la sala | M6, M8 |
+| H3-T6 | Estados visibles: en línea, reconectando, sala cerrada | M18, M20 |
+| H3-T7 | Pruebas de resistencia: matar procesos, partir la red, inyectar latencia | M19 |
+
+**Definition of done.**
+1. Reiniciar el contenedor host devuelve la sala en el último estado, no en el último guardado.
+2. Matar el relay no pierde trazos: al reconectar, converge.
+3. Ningún dato se pierde **sin aviso**: si algo se perdió, la interfaz lo dice.
+
+---
+
+## 7. H4 — Guardo una versión y vuelvo a ella
+
+> **Historia.** Marco lo que vale, guardo una versión con su mensaje, veo el historial y puedo volver a una versión anterior.
+
+**Alcance.** Traductor a JSON, staging, commits con padre y participantes, historial y checkout.
+
+**No entra.** Ramificación. Publicación al repositorio (H5).
+
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H4-T1 | Del tablero a JSON: formas, coordenadas, orden | M9 |
+| H4-T2 | De JSON al tablero, sin pérdida | M9 |
+| H4-T3 | Versión de formato propia, independiente del formato de la librería | M9 |
+| H4-T4 | Área de staging y marcado por los participantes | M10 |
+| H4-T5 | Commit: snapshot, JSON, autor, participantes, padre | M10 |
+| H4-T6 | Historial navegable | M10, M18 |
+| H4-T7 | Checkout de un commit como nuevo estado de trabajo | M10 |
+| H4-T8 | Solo el host comitea, validado en el servidor | M16 |
+| H4-T9 | Historial replicado a los invitados | M3 |
+| H4-T10 | Pruebas de ida y vuelta del traductor y del grafo de commits | M19 |
+
+**Definition of done.**
+1. Se guarda, se ve el historial, se vuelve a una versión y se sigue trabajando desde ahí.
+2. Un tablero exportado y reimportado es idéntico.
+3. El archivo JSON se entiende en un diff de git.
+4. El commit después de un checkout cuelga del commit correcto.
+
+**Decisión que la bloquea.** Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra.
+
+---
+
+## 8. H5 — Lo guardado llega al repositorio de quien no estuvo
+
+> **Historia.** Guardo una versión, hago push, y alguien que no estuvo en la junta corre un comando y tiene los archivos en su repositorio.
+
+**Alcance.** Tubería de publicación, salida determinista sin IA, escritura en la copia de trabajo, commit y push a git, y el CLI.
+
+**No entra.** La IA (H6) y los adjuntos PDF y Word (H6).
+
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H5-T1 | Colecciones de documentos y adjuntos en el contrato | M2 |
+| H5-T2 | Base local del host con almacenamiento en disco | M3 |
+| H5-T3 | Los tres puntos de réplica del host, con reenganche desde el checkpoint | M3 |
+| H5-T4 | Cola de trabajos de publicación en el host | M11 |
+| H5-T5 | Mecanismo genérico de publicación con variantes de formato | M11 |
+| H5-T6 | Variante determinista: markdown sin modelo, a partir del commit | M11 |
+| H5-T7 | Estados replicados: en proceso, publicado, fallido, y reintento | M11, M18 |
+| H5-T8 | Escritura en rutas propias y declaradas, sin tocar documentación manual | M14 |
+| H5-T9 | Commit y push a git, con el caso de remoto adelantado | M14 |
+| H5-T10 | `space host`, `space status`, `space update` | M15 |
+| H5-T11 | Idempotencia de la materialización | M15 |
+| H5-T12 | Prueba de extremo a extremo contra un remoto git local | M19 |
+
+**Definition of done.**
+1. Alguien que no estuvo corre un comando y tiene el markdown y el tablero en su repositorio.
+2. Correr el comando dos veces no cambia nada.
+3. Un remoto adelantado se resuelve con reintento, sin intervención manual.
+4. Un fallo de publicación se ve, dice la causa y se puede reintentar sin volver a dibujar.
+
+**Decisiones que la bloquean.** Si git entra en el alcance inicial —se necesita **antes de H4**, porque cambia la forma de esta épica— y la licencia del almacenamiento en disco de la base local.
+
+---
+
+## 9. H6 — La IA convierte la pizarra en documento
+
+> **Historia.** Hago push y lo que dibujamos llega como un documento con contexto, decisiones, planes y pendientes, más su PDF y su Word.
+
+**Alcance.** Variante con modelo de la tubería de publicación, validación de secciones, y exportación.
+
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H6-T1 | Entrada del modelo desde el snapshot y el JSON del tablero | M12 |
+| H6-T2 | Secciones fijas y su validación antes de escribir el archivo | M12 |
+| H6-T3 | Reintento y guardado de la salida cruda cuando no valida | M12 |
+| H6-T4 | Modelo simulado en las pruebas, sin ramas de simulación en el camino real | M12, M19 |
+| H6-T5 | PDF y Word desde el markdown publicado | M13 |
+| H6-T6 | Adjuntos asociados al commit y reintento sin regenerar el texto | M13 |
+
+**Definition of done.**
+1. Un commit produce markdown con las secciones acordadas, PDF y Word.
+2. Si el modelo devuelve algo que no valida, no se escribe el archivo y queda la salida cruda para revisar.
+3. Un fallo de exportación no obliga a volver a pasar por el modelo.
+
+**Decisiones que la bloquean.** Qué proveedor de IA, si hace falta un modo sin modelo para repositorios sensibles, y qué secciones exactas lleva el markdown.
+
+---
+
+## 10. H7 — La sala vive en el servidor
+
+> **Historia.** Abro una pizarra de equipo que no vive en la máquina de nadie, trabajamos, y el commit llega al repositorio.
+
+**Alcance.** El mismo contenedor host en un servidor, con el repositorio clonado por identificador.
+
+| Tarea | Qué | Módulo |
+|-------|-----|--------|
+| H7-T1 | Arranque del host en modo global y su registro | M17 |
+| H7-T2 | Clonado del repositorio por identificador dentro del contenedor | M17 |
+| H7-T3 | Commit y push desde el servidor | M17, M14 |
+| H7-T4 | Interruptor nube o local al volverse host | M18 |
+| H7-T5 | Roles completos y validación en el servidor | M16 |
+
+**Definition of done.**
+1. Una sala global comitea sin que nadie tenga el repositorio en su máquina.
+2. La misma imagen de contenedor sirve para los dos modos.
+
+**Deuda consciente.** Sin autenticación, las salas globales se limitan a repositorios que el equipo acepte exponer con link.
+
+---
+
+## 11. Catálogo de módulos
+
+Qué es cada pieza y dónde vive. Las tareas están en las épicas.
+
+| Módulo | Qué hace | Depende de | Épicas |
+|--------|----------|-----------|--------|
+| **M1** Arranque | Monorepo, PM2 y portless, contenedores, typecheck | — | H0 |
+| **M2** Esquemas y dominio | Contrato de datos: sala, commit, snapshot, documento, adjunto; versiones y migraciones | M1 | H0, H1, H4, H5, H6 |
+| **M3** Base local y réplica | Base local en navegador y host; traer desde checkpoint, empujar, stream, reenganche | M2 | H4, H5 |
+| **M4** Registro de salas | `identificador de sala → conexión del host`, links, resolución. No persiste | M1 | H1, H3, H7 |
+| **M5** Relay | Mover bytes entre invitados y host. Conexión saliente del host | M4 | H1, H3, H7 |
+| **M6** Sala en vivo | Documento compartido de la sesión en el host, con persistencia | M5, M2 | H1, H2, H3 |
+| **M7** Presencia | Quién está y en qué: nombre, cursor, foco | M6 | H1, H2 |
+| **M8** Pizarra | Lienzo: formas, selección, cámara, conectado a la sala | M6, M7 | H2, H3 |
+| **M9** Traductor | Tablero a JSON portable y de vuelta. Es el archivo que git revisa | M8, M2 | H4 |
+| **M10** Staging y commits | Staging, commit con padre y participantes, historial, checkout | M6, M9, M16 | H4 |
+| **M11** Push | Tubería de publicación: cola, variantes de formato, estados | M10, M3 | H5, H6 |
+| **M12** Markdown con IA | Variante con modelo, con secciones fijas y validación | M11, M9 | H6 |
+| **M13** Exportación | PDF y Word desde el markdown, y sus adjuntos | M12, M11 | H6 |
+| **M14** Git | Copia de trabajo, escritura de generados, commit y push | M11, M16 | H5, H7 |
+| **M15** CLI `space` | Arrancar host, estado, materializar en el repositorio | M3, M2, M14 | H5 |
+| **M16** Identidad y roles | Link y nombre; host y espectador; validación en el servidor | M4, M6 | H1, H4, H7 |
+| **M17** Sala global | Host en servidor con repositorio clonado por identificador | M5, M6, M14, M16 | H7 |
+| **M18** Interfaz y sesiones | Volverme host, link, unirme, sesiones, estados visibles | M3, M7, M10, M16 | H1–H7 |
+| **M19** Pruebas | Niveles de prueba y el entorno que los hace posibles | M1 | Todas |
+| **M20** Diagnóstico | Logs por proceso, estados explícitos, errores con causa | M1 | H0, H1, H3, H5, H6 |
+
+---
+
+## 12. Reparto entre dos personas
+
+Dos pistas que se tocan lo menos posible. Un orden puramente secuencial de épicas bloquearía a una de las dos, así que la pista de datos avanza en paralelo contra el contrato.
+
+| Pista | Módulos | Carácter |
+|-------|---------|----------|
+| **A — Datos y publicación** | M3, M11, M12, M13, M14, M15, M17 | Base local y réplica, cola de trabajos, modelo, exportación, git, CLI |
+| **B — Conexión y pizarra** | M4, M5, M6, M7, M8, M9, M10, M16, M18 | Orquestador, relay, sala, presencia, lienzo, versionado, interfaz |
+| **Compartidos** | M1, M2, M19, M20 | Los dos. Las reglas del contrato, primero y juntos |
 
 Propuesta de asignación, a ajustar entre ustedes:
 
-- **David:** pista A. Es la que conecta con el CLI, git y la forma de trabajar de IOKOIA, que es donde ya tiene contexto.
+- **David:** pista A. Es la que conecta con el CLI, git y la forma de trabajar de IOKOIA, donde ya tiene contexto.
 - **Kua:** pista B. Es la separación orquestador y host, y el versionado de la pizarra, que fue lo que propuso en la junta.
+
+Mientras la pista B lleva H1 a H4 por el camino crítico, la pista A construye la base local y la réplica —que H4 ya necesita para el historial— y el esqueleto del CLI contra el contrato. Cuando B termine H4, H5 tiene la mitad hecha.
 
 ### Puntos de contacto
 
-Donde las dos pistas se encuentran, conviene acordarlo antes de codear:
+Donde las pistas se encuentran, se acuerda antes de codear.
 
-| Contacto | Entre | Qué hay que acordar |
-|----------|-------|---------------------|
+| Contacto | Entre | Qué se acuerda |
+|----------|-------|----------------|
 | Snapshot del commit | M10 (B) y M11 (A) | Qué recibe exactamente la tubería de publicación |
 | JSON del tablero | M9 (B) y M14 (A) | Qué archivo se escribe y en qué ruta |
-| Réplica por el relay | M3 (A) y M5 (B) | Cómo pasa la réplica por el relay sin mezclarse con la sesión |
+| Réplica por el relay | M3 (A) y M5 (B) | Cómo pasa la réplica sin mezclarse con la sesión |
 | Estados del push | M11 (A) y M18 (B) | Qué estados ve la interfaz y cómo llegan |
 | Rol del host | M16 (B) y M14 (A) | Quién valida que solo el host comitea |
 
-### Arranque sugerido
+---
 
-| Semana | Pista A | Pista B |
-|--------|---------|---------|
-| 1 | M2 juntos, luego M1 en las dos máquinas | M2 juntos, luego M1 |
-| 2 | M3: base local y los tres puntos de réplica | M4 y M5: registro, link y relay |
-| 3 | M15: CLI con `update` idempotente | M6 y M7: sala en vivo y presencia |
-| 4 | M14: copia de trabajo, commit y push | M8: lienzo conectado a la sala |
+## 13. Lo que bloquea, y cuándo
 
-Al final de la semana 4, H2 y H3 deberían estar demostrables. De ahí en adelante se replanifica con lo aprendido.
+Decisiones de producto que detienen épicas. No se cierran implementando: se cierran preguntando y actualizando el documento que corresponda.
+
+| Decisión abierta | Bloquea | Se necesita antes de |
+|------------------|---------|----------------------|
+| Si git entra en el alcance inicial | H5, y con ella H7 | **H4** — cambia la forma de la épica siguiente |
+| Qué parte del tablero entra en staging | H4 | H4 |
+| Licencia del almacenamiento en disco de la base local | H5 | H5 |
+| Alcance del CLI en la v1: solo materializar, o también unirse a una sala | H5 | H5 |
+| Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
+| Qué secciones exactas lleva el markdown | H6 | H6 |
+| Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
+
+Las dos primeras son las urgentes.
 
 ---
 
-## 8. Lo que bloquea
-
-Tres decisiones de producto detienen módulos concretos. No se resuelven implementando.
-
-| Punto abierto | Bloquea | Hasta cuándo se puede esperar |
-|---------------|---------|-------------------------------|
-| Proveedor de IA y si hace falta un modo sin IA | M12 | Antes del hito H6 |
-| Si git entra en el alcance inicial | M14, y con él M15 y M17 | Antes del hito H2 |
-| Alcance del CLI en la v1 | M15 | Antes del hito H2 |
-| Qué parte del tablero entra en staging | M10 | Antes del hito H5 |
-| Cuándo entra autenticación | M17 con repositorios reales | Antes de abrir la primera sala global con un repositorio del equipo |
-
-Las dos primeras son urgentes: H2 es el primer hito con valor demostrable y las dos lo tocan.
-
----
-
-## 9. Fuera de la fase 1
+## 14. Fuera de la fase 1
 
 - Migración de host cuando el host cae.
 - Ramificación del historial de la pizarra.
@@ -496,4 +394,4 @@ Las dos primeras son urgentes: H2 es el primer hito con valor demostrable y las 
 - Los módulos de IOKOIA Space (diseño, git, tareas, minutas, calendario, correo, agentes, depuración, metas, procedimientos, entidades, autenticación).
 - Aplicación móvil.
 
-Cada uno de esos módulos de IOKOIA, cuando llegue, entra como colecciones, pantallas y comandos de este motor, reutilizando la tubería de M11 y el contrato de M2.
+Cuando lleguen, esos módulos entran como colecciones, pantallas y comandos de este motor, reutilizando la tubería de M11 y el contrato de M2.
