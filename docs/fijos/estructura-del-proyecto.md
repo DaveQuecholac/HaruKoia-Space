@@ -8,17 +8,17 @@ Estructura base del monorepo, derivada del [análisis de arquitectura v2](./arqu
 motor-colaborativo/
 ├── apps/
 │   ├── orchestrator/       orquestador: registro de salas, links, relay
-│   ├── host/               contenedor host: sala Yjs, base local, repo, IA, exportación
-│   ├── web/                pizarra, presencia, lectura local
+│   ├── host/               contenedor host: sala Yjs, SQLite de PowerSync, repo, IA, exportación
+│   ├── web/                pizarra, presencia, lectura local de lo replicado
 │   └── cli/                binario `space`
 ├── packages/
-│   ├── schema/             esquemas de las colecciones replicadas
+│   ├── schema/             esquemas de las tablas replicadas
 │   ├── domain/             sala, commit, push, estados, nombres de archivo
 │   ├── registro/           una línea de log por evento, igual en los tres procesos
 │   ├── cliente-del-relay/  entrada del invitado por el túnel, en navegador y Node
 │   └── pruebas-entre-procesos/  pruebas que levantan orquestador y host a la vez
 ├── scripts/                kit PM2 + portless y orquestador de la raíz
-├── docker/                 compose de los dos contenedores
+├── docker/                 compose de orquestador y host (la réplica central entra con la PdC 2)
 ├── docs/
 │   ├── fijos/              documentación permanente
 │   └── dev/<rama-git>/     documentación de la rama en curso
@@ -30,8 +30,8 @@ motor-colaborativo/
 | Paquete | Responsabilidad | Escala y falla |
 |---------|-----------------|----------------|
 | `apps/orchestrator` | Registro de salas y relay por identificador. No persiste el tablero | Por conexiones. Si se reinicia, hosts e invitados reconectan |
-| `apps/host` | Autoridad de la sala y dueño del commit. Base local, repositorio, IA, exportación | Por sala. Su caída cierra esa sala, no las demás |
-| `apps/web` | Interfaz y base local del navegador | En el cliente |
+| `apps/host` | Autoridad de la sala y dueño del commit. Único que escribe en la réplica central. Base local, repositorio, IA, exportación | Por sala. Su caída cierra esa sala, no las demás |
+| `apps/web` | Interfaz y lectura local de lo replicado. Puede cambiar a Expo según la PdC 1 | En el cliente |
 | `apps/cli` | Arrancar el host, estado, materializar markdown | En la máquina del developer |
 | `packages/schema` | Contrato de datos entre web, host y CLI | — |
 | `packages/domain` | Reglas del dominio sin transporte ni almacenamiento | — |
@@ -40,6 +40,8 @@ motor-colaborativo/
 | `packages/pruebas-entre-procesos` | Pruebas sin un único dueño: las que levantan más de un proceso. Las unitarias viven junto al código que prueban | — |
 
 El criterio para crear un proceso nuevo está en [por-que-no-microservicios.md](./arquitectura/por-que-no-microservicios.md). Una capacidad nueva es un módulo dentro de uno de estos paquetes hasta que cumpla alguna de las cuatro condiciones de ahí.
+
+**Réplica central** (revisión 2026-10-19). La arquitectura agrega Postgres, PowerSync Service y un backend de escritura en la nube ([v2, sección 4](./arquitectura/analisis-arquitectura-v2.md#4-topología)). Todavía no tienen paquete ni contenedor: si el backend vive dentro de `apps/orchestrator` o en una app propia es un punto abierto, y se decide con la prueba de concepto de PowerSync. Cuando entre una app nueva, se registra como dice `.cursor/rules/pm2-app.mdc`.
 
 ## Arranque con PM2 y portless
 
@@ -105,7 +107,9 @@ Si el proxy no está arriba, el helper se detiene con el mensaje y el comando pa
 
 ## Contenedores
 
-El compose de `docker/` levanta los dos contenedores que fija la arquitectura: orquestador y host. El host incluye `git` y `pandoc`, porque comitea y exporta. Su volumen `/data` guarda la base local y la copia de trabajo.
+El compose de `docker/` levanta hoy dos contenedores: orquestador y host. El host incluye `git` y `pandoc`, porque comitea y exporta. Su volumen `/data` guarda la base local y la copia de trabajo.
+
+La réplica central (Postgres, PowerSync Service y el backend de escritura) todavía no está en el compose: entra con la prueba de concepto de PowerSync. PowerSync publica su imagen como `journeyapps/powersync-service` y tiene guía para desplegarse en Coolify.
 
 ```bash
 pnpm docker:up
@@ -116,6 +120,6 @@ El día a día es PM2 y portless. El compose sirve para probar la separación re
 
 ## Estado actual
 
-Los esqueletos responden `/health` y nada más. No hay sala, ni commit, ni réplica. Eso entra por las rebanadas de la [fase 1](./fases/fase-1-modulos-y-tareas.md), cada una con su análisis y su plan en `docs/dev/<rama>/`.
+H0 y H1 están hechas en la rama `dev/motor`: arranque, registro de salas, relay por túnel inverso, sala Yjs en vivo con presencia, roles mínimos y las pantallas de entrada. Detalle y lo que falta para cerrar H1 en [docs/dev/dev/motor/README.md](../dev/dev/motor/README.md).
 
-Pendiente de la máquina, no del repo: inicializar git. Sin rama no hay carpeta de documentación de desarrollo.
+Todavía no hay lienzo, ni persistencia de la sala, ni commit, ni réplica. Eso entra por las rebanadas de la [fase 1](./fases/fase-1-modulos-y-tareas.md), cada una con su análisis y su plan en `docs/dev/<rama>/`. Lo siguiente son las dos pruebas de concepto de la revisión del 2026-10-19.

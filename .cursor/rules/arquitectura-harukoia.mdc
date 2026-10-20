@@ -18,6 +18,8 @@ Este repositorio es el **motor colaborativo HaruKoia**, construido desde cero. I
 | `docs/fijos/inicial/acuerdos-junta-fase2.md` | Acuerdos de la junta que originaron la v2 |
 | `docs/fijos/estructura-del-proyecto.md` | Paquetes, procesos y arranque con PM2 y portless |
 | `docs/fijos/fases/fase-1-modulos-y-tareas.md` | Módulos de la fase 1, dependencias y reparto |
+| `docs/dev/dev/motor/analisis-stack-powersync-react-native.md` | Por qué salió RxDB y entró PowerSync (revisión del 2026-10-19), y las decisiones S2 a S10 que siguen abiertas |
+| `docs/dev/dev/motor/plan-pdc-stack-powersync-react-native.md` | Las dos pruebas de concepto: React Native antes de H2, PowerSync antes de H4 |
 
 Layout de la documentación y puerta de las ramas: **`docs-layout.mdc`**.
 
@@ -28,19 +30,32 @@ Ante una contradicción entre documentos, **detente y repórtalo** — **`docume
 El agente **no** propone un stack alternativo, **no** reabre estas decisiones y **no** implementa contra ellas:
 
 - El motor es **host-autoritativo**: cada sesión tiene un host dueño de los datos y del commit.
-- El servidor en la nube es **orquestador y relay**: registra salas, genera links y enruta. **No guarda el tablero**.
-- **No hay maestro central de documentos.** El host persiste.
+- El **orquestador** registra salas, genera links y enruta. **No guarda datos.**
+- **No hay maestro central que escriba.** Existe una **réplica central** de lectura (Postgres y PowerSync Service) para que quien no estuvo vea el historial con el host apagado. **Solo el host la alimenta**, a través del backend de escritura, que rechaza a cualquier otro.
+- **Base local y réplica: PowerSync** (Open Edition autoalojada y sus SDK). El host escribe en su SQLite con el SDK de Node y su cola sube por una conexión saliente. **RxDB está fuera**: no lo propongas ni lo instales.
+- **La réplica no pasa por el relay.** El relay lleva solo la sala en vivo (Yjs).
+- La sala en vivo es **Yjs con Hocuspocus** en el contenedor host. PowerSync no la sustituye.
 - Solo el **host** comitea y empuja a git.
 - El markdown se genera **al hacer push**, no mientras se dibuja.
 - La pizarra tiene **staging, commit, historial y checkout**. Ramificación queda fuera de la v1.
-- **Dos contenedores**: orquestador y contenedor host genérico (sala de usuario o sala global).
+- **Contenedores**: orquestador, contenedor host genérico (sala de usuario o sala global) y la réplica central (Postgres, PowerSync Service y backend de escritura).
 - Identidad de la v1: **link de invitación y nombre**. El control de acceso viene después.
+- **React Native todavía no está decidido.** La web sigue en React DOM con Vite hasta que la prueba de concepto lo resuelva. No migres pantallas a React Native ni agregues una app Expo fuera de esa prueba.
 
 Si el usuario pide algo que choca con una de estas decisiones, **dilo** y pregunta si quiere cambiar el diseño. Cambiar el diseño es editar el documento, no improvisar en el código.
 
 ## Puntos abiertos
 
 El análisis v2 tiene una sección de **puntos abiertos** (entre otros: proveedor de IA, secciones exactas del markdown, qué entra en staging, alcance del CLI en la v1, cuándo entra autenticación, si git está en el alcance inicial).
+
+Abiertos por la revisión del 2026-10-19:
+- Qué sube a la réplica central: metadatos, o también el snapshot y el JSON del tablero.
+- Dónde vive el backend de escritura.
+- Quién emite el token de lectura de PowerSync.
+- El almacén de buckets.
+- Si las reglas del contrato de H0 se ajustan a PowerSync.
+- Si `space update` baja de git o de la réplica.
+- Si React Native entra en la v1.
 
 Un punto abierto **no** se cierra implementando. Se cierra preguntando al usuario y actualizando el documento — **`design-first.mdc`**.
 
@@ -56,7 +71,10 @@ Usa estos términos tal cual en código, documentación y conversación, para qu
 | **Contenedor host** | Proceso con la sala en vivo, la base local y la copia de trabajo del repo |
 | **Commit** | Versión oficial de la pizarra, con padre, autor y participantes |
 | **Push** | Comitear y empujar al remoto git lo generado a partir de la pizarra |
-| **Sync en vivo** | Los cambios de la sesión entre participantes. **No** es git |
+| **Sync en vivo** | Los cambios de la sesión entre participantes, por el relay. **No** es git ni la réplica |
+| **Réplica** | Lo que el host guardó (commits, estados) sube a la réplica central y los demás lo leen con PowerSync. **No** es git ni el sync en vivo |
+| **Réplica central** | Postgres, PowerSync Service y backend de escritura en la nube. Copia de lectura que solo alimenta el host |
+| **Backend de escritura** | Recibe la cola de subida del host y escribe en Postgres. Rechaza a quien no es el host de la sala |
 | **Sala de usuario** y **sala global** | Host en la máquina del developer, o host en servidor |
 
 Nombres oficiales: **HaruKoia** y **IOKOIA** (Space). No los mezcles ni los abrevies de otra forma.

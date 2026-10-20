@@ -1,6 +1,6 @@
 # `@harukoia/web` — Web
 
-Pizarra, presencia y lectura local de lo publicado. Base local en el navegador; se replica contra el contenedor host a través del relay.
+Pizarra, presencia y lectura local de lo publicado. La sala en vivo llega por el relay. El historial y los estados del push se leerán de la réplica central con PowerSync, **sin** pasar por el relay (H4). Si la web se queda en Vite o pasa a Expo lo decide la prueba de concepto de React Native.
 
 | Dato | Valor |
 |------|-------|

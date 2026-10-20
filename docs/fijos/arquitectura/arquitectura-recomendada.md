@@ -1,6 +1,8 @@
 # Arquitectura recomendada — Motor colaborativo HaruKoia
 
 > Documento superado en varios puntos por el [análisis de arquitectura v2](./analisis-arquitectura-v2.md), que recoge los acuerdos de la junta de Fase 2. Cambiaron: el maestro MongoDB (se eliminó), los roles de host y espectadores, el momento en que se genera el markdown, el versionado de la pizarra, la separación en orquestador y contenedor host, y la identidad de la v1. Lo demás sigue vigente.
+>
+> **Revisión del 2026-10-19:** también quedó superado **RxDB**. Todo lo que este documento dice de RxDB (Dexie en el navegador, almacenamiento SQLite de pago, `pull` / `push` / `pullStream`, plugin CRDT, réplica en el CLI) se sustituye por **PowerSync** con una réplica central de lectura que solo alimenta el host. Ver la sección 5 de la v2.
 
 Decisión de arquitectura del motor que se construye en este repositorio, desde cero. IoKoia Space no se modifica. Cuando el motor esté funcionando, sus módulos se traen hacia acá, uno por uno.
 

@@ -46,7 +46,7 @@ El control es poco frecuente y conviene leerlo en un log; los datos no se envuel
 
 ### Canales
 
-`relay/canal/canal.ts` es el único archivo del repositorio que enumera canales. Hoy hay uno: `sesion`. Cuando entre la réplica de la base local (H3) será otro miembro de la unión más su manejador en el host.
+`relay/canal/canal.ts` es el único archivo del repositorio que enumera canales. Hoy hay uno: `sesion`. Un canal nuevo es otro miembro de la unión más su manejador en el host. La réplica de la base local **no** será un canal: desde la revisión del 2026-10-19 va del host a la réplica central de PowerSync, fuera del relay.
 
 ### Nada se ignora en silencio
 

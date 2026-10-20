@@ -17,6 +17,8 @@ Un módulo aparece en varias épicas: el relay (M5) nace en H1 y se endurece en 
 
 > **Orden de construcción.** Este documento manda sobre el orden. La sección 12 del análisis v2 propone otro (publicación antes que sala) y quedó superada por la decisión de empezar por la sala, donde está el riesgo técnico real.
 
+> **Revisión del 2026-10-19.** Sale RxDB: la base local y la réplica (M3) pasan a **PowerSync**, con una réplica central de lectura que solo alimenta el host y que **no pasa por el relay**. Antes de H2 va la prueba de concepto de React Native, y antes de H4 la de PowerSync. Ver la v2, secciones 4, 5 y 13, y el [plan de las pruebas de concepto](../../dev/dev/motor/plan-pdc-stack-powersync-react-native.md).
+
 ---
 
 ## 1. Las ocho épicas
@@ -164,6 +166,8 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 
 **Pruebas.** Convergencia con escrituras simultáneas; un invitado se va y vuelve sin duplicar ni perder su trabajo; latencia medida contra el objetivo.
 
+**Decisión que la bloquea.** Dónde se monta el lienzo: React DOM con Vite, o Expo con tldraw en un componente DOM. La decide la prueba de concepto de React Native (PdC 1).
+
 **Definition of done.**
 1. El trazo de una persona aparece en la otra pantalla por debajo del objetivo de latencia.
 2. Con diez clientes el tablero converge al mismo estado.
@@ -214,7 +218,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 | H4-T6 | Historial navegable | M10, M18 |
 | H4-T7 | Checkout de un commit como nuevo estado de trabajo | M10 |
 | H4-T8 | Solo el host comitea, validado en el servidor | M16 |
-| H4-T9 | Historial replicado a los invitados | M3 |
+| H4-T9 | Historial replicado a los invitados, leído de la réplica central con PowerSync | M3 |
 | H4-T10 | Pruebas de ida y vuelta del traductor y del grafo de commits | M19 |
 
 **Definition of done.**
@@ -223,7 +227,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. El archivo JSON se entiende en un diff de git.
 4. El commit después de un checkout cuelga del commit correcto.
 
-**Decisión que la bloquea.** Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra.
+**Decisiones que la bloquean.** Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra. Y, para H4-T9, el resultado de la prueba de concepto de PowerSync (PdC 2) con lo que deja abierto: qué sube a la réplica central y quién emite el token de lectura.
 
 ---
 
@@ -237,9 +241,9 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 
 | Tarea | Qué | Módulo |
 |-------|-----|--------|
-| H5-T1 | Colecciones de documentos y adjuntos en el contrato | M2 |
-| H5-T2 | Base local del host con almacenamiento en disco | M3 |
-| H5-T3 | Los tres puntos de réplica del host, con reenganche desde el checkpoint | M3 |
+| H5-T1 | Tablas de documentos y adjuntos en el contrato | M2 |
+| H5-T2 | SQLite de PowerSync en el host (SDK de Node) y su cola de subida | M3 |
+| H5-T3 | Réplica central: backend de escritura que solo acepta al host de la sala, Postgres y PowerSync Service | M3 |
 | H5-T4 | Cola de trabajos de publicación en el host | M11 |
 | H5-T5 | Mecanismo genérico de publicación con variantes de formato | M11 |
 | H5-T6 | Variante determinista: markdown sin modelo, a partir del commit | M11 |
@@ -256,7 +260,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. Un remoto adelantado se resuelve con reintento, sin intervención manual.
 4. Un fallo de publicación se ve, dice la causa y se puede reintentar sin volver a dibujar.
 
-**Decisiones que la bloquean.** Si git entra en el alcance inicial —se necesita **antes de H4**, porque cambia la forma de esta épica— y la licencia del almacenamiento en disco de la base local.
+**Decisiones que la bloquean.** Si git entra en el alcance inicial —se necesita **antes de H4**, porque cambia la forma de esta épica—, dónde vive el backend de escritura, y si `space update` baja de git o lee de la réplica central. La licencia del almacenamiento en disco quedó resuelta el 2026-10-19: PowerSync autoalojado y sus SDK son gratis.
 
 ---
 
@@ -314,7 +318,7 @@ Qué es cada pieza y dónde vive. Las tareas están en las épicas.
 |--------|----------|-----------|--------|
 | **M1** Arranque | Monorepo, PM2 y portless, contenedores, typecheck | — | H0 |
 | **M2** Esquemas y dominio | Contrato de datos: sala, commit, snapshot, documento, adjunto; versiones y migraciones | M1 | H0, H1, H4, H5, H6 |
-| **M3** Base local y réplica | Base local en navegador y host; traer desde checkpoint, empujar, stream, reenganche | M2 | H4, H5 |
+| **M3** Base local y réplica | SQLite de PowerSync en host y clientes; cola de subida del host; réplica central (backend de escritura, Postgres, PowerSync Service). No pasa por el relay | M2 | H4, H5 |
 | **M4** Registro de salas | `identificador de sala → conexión del host`, links, resolución. No persiste | M1 | H1, H3, H7 |
 | **M5** Relay | Mover bytes entre invitados y host. Conexión saliente del host | M4 | H1, H3, H7 |
 | **M6** Sala en vivo | Documento compartido de la sesión en el host, con persistencia | M5, M2 | H1, H2, H3 |
@@ -352,6 +356,8 @@ Propuesta de asignación, a ajustar entre ustedes:
 
 Mientras la pista B lleva H1 a H4 por el camino crítico, la pista A construye la base local y la réplica —que H4 ya necesita para el historial— y el esqueleto del CLI contra el contrato. Cuando B termine H4, H5 tiene la mitad hecha.
 
+Desde la revisión del 2026-10-19, cada pista abre con su prueba de concepto: la **PdC 1** (React Native y tldraw) es de la pista B y va antes de H2; la **PdC 2** (PowerSync con la réplica central) es de la pista A y va antes de H4.
+
 ### Puntos de contacto
 
 Donde las pistas se encuentran, se acuerda antes de codear.
@@ -360,7 +366,8 @@ Donde las pistas se encuentran, se acuerda antes de codear.
 |----------|-------|----------------|
 | Snapshot del commit | M10 (B) y M11 (A) | Qué recibe exactamente la tubería de publicación |
 | JSON del tablero | M9 (B) y M14 (A) | Qué archivo se escribe y en qué ruta |
-| Réplica por el relay | M3 (A) y M5 (B) | Cómo pasa la réplica sin mezclarse con la sesión |
+| Réplica fuera del relay | M3 (A) y M5 (B) | La réplica va del host a la réplica central y de ahí a los lectores. M5 no la transporta: el relay solo lleva la sala en vivo |
+| Token de lectura | M3 (A) y M16 (B) | Quién emite el JWT de PowerSync, contra qué credencial de la sala y con qué alcance |
 | Estados del push | M11 (A) y M18 (B) | Qué estados ve la interfaz y cómo llegan |
 | Rol del host | M16 (B) y M14 (A) | Quién valida que solo el host comitea |
 
@@ -374,13 +381,20 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 |------------------|---------|----------------------|
 | Si git entra en el alcance inicial | H5, y con ella H7 | **H4** — cambia la forma de la épica siguiente |
 | Qué parte del tablero entra en staging | H4 | H4 |
-| Licencia del almacenamiento en disco de la base local | H5 | H5 |
+| ~~Licencia del almacenamiento en disco de la base local~~ | — | Resuelta el 2026-10-19: PowerSync autoalojado, gratis |
+| Si React Native entra en la v1 (PdC 1), y cómo se arranca Expo con PM2 y portless | H2 | **H2** |
+| Qué sube a la réplica central: metadatos, o también snapshot y JSON del tablero | H4, H5 | PdC 2 |
+| Dónde vive el backend de escritura: en el orquestador o como proceso propio | H4, H5 | PdC 2 |
+| Quién emite el token de lectura de PowerSync y con qué alcance | H4 | PdC 2 |
+| Almacén de buckets de PowerSync: MongoDB o Postgres | H4 | PdC 2 |
+| Si las reglas del contrato de H0 (orden, borrado, migración al leer) se ajustan al modelo de PowerSync | H4 | H4 |
+| Si `space update` baja de git o lee de la réplica central | H5 | H5 |
 | Alcance del CLI en la v1: solo materializar, o también unirse a una sala | H5 | H5 |
 | Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
 | Qué secciones exactas lleva el markdown | H6 | H6 |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-Las dos primeras son las urgentes.
+Las urgentes son las dos primeras y la de React Native, que bloquea H2.
 
 ---
 
@@ -389,9 +403,9 @@ Las dos primeras son las urgentes.
 - Migración de host cuando el host cae.
 - Ramificación del historial de la pizarra.
 - Control de acceso, link privado, contraseña.
-- Maestro central en la nube.
+- Un maestro central que escriba. La réplica central solo la alimenta el host.
 - Markdown en tiempo real mientras se dibuja.
 - Los módulos de IOKOIA Space (diseño, git, tareas, minutas, calendario, correo, agentes, depuración, metas, procedimientos, entidades, autenticación).
-- Aplicación móvil.
+- Aplicación móvil, salvo que la PdC 1 la adelante.
 
 Cuando lleguen, esos módulos entran como colecciones, pantallas y comandos de este motor, reutilizando la tubería de M11 y el contrato de M2.

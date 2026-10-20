@@ -191,6 +191,8 @@ Prueba de extensión: agregar el canal de réplica = un miembro más en la unió
 Patrón existente a extender: ninguno — es el primer código del motor.
 ```
 
+**Nota del 2026-10-19.** El canal de réplica de la base local ya no es una variante probable: con la revisión del stack, la réplica va del host a la réplica central de PowerSync, **fuera del relay** ([analisis-stack-powersync-react-native.md](./analisis-stack-powersync-react-native.md)). El mecanismo no cambia; sus siguientes variantes probables son el canal de control y el de adjuntos.
+
 **Consecuencia directa:** nada en el orquestador se llama "pizarra" ni "sesión de dibujo". El orquestador no sabe qué transporta. Si en el código del relay aparece una palabra de la pizarra, está mal puesta.
 
 ---

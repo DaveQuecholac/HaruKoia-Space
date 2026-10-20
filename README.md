@@ -32,11 +32,13 @@ Requiere el proxy portless instalado en la máquina (`iokoia install portless`) 
 | Ruta | Qué hay |
 |------|---------|
 | `apps/orchestrator` | Registro de salas, links y relay |
-| `apps/host` | Sala en vivo, base local, repositorio, markdown y exportación |
-| `apps/web` | Pizarra, presencia y lectura de lo publicado |
+| `apps/host` | Sala en vivo, SQLite de PowerSync, repositorio, markdown y exportación |
+| `apps/web` | Pizarra, presencia y lectura de lo replicado |
 | `apps/cli` | Binario `space` |
 | `packages/schema`, `packages/domain` | Contrato de datos y dominio |
-| `docker/` | Los dos contenedores |
+| `docker/` | Contenedores de orquestador y host |
+
+La base local y la réplica son **PowerSync**, con una réplica central de lectura que solo alimenta el host (revisión del 2026-10-19). RxDB salió del diseño. Ver la [arquitectura v2](./docs/fijos/arquitectura/analisis-arquitectura-v2.md#5-datos).
 
 ## Documentación
 

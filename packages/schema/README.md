@@ -4,6 +4,8 @@ Esquemas de las colecciones replicadas: salas, commits, snapshots, documentos y 
 
 Lo consumen la web, el host y el CLI. Es el contrato que evita que el markdown que escribe el host y el que lee el CLI se definan en dos lugares.
 
+> **Revisión del 2026-10-19.** La réplica pasa a **PowerSync**: el host escribe en su SQLite, sube a una réplica central y los demás leen de ahí. Las reglas de abajo se fijaron pensando en RxDB. Si se quedan igual o se ajustan al modelo de PowerSync, que tiene su propio orden por checkpoints, borra con `DELETE` y aplica el esquema de cliente sin migraciones, es un punto abierto que se decide en H4 (v2, sección 13). Hasta entonces siguen vigentes.
+
 ## Reglas de lo replicado (fijadas en A5)
 
 ### Campos de control

@@ -14,7 +14,7 @@ Clasifica el mensaje:
 | Tipo | Ejemplos | Permitido este turno |
 |------|----------|----------------------|
 | **A. Meta / procedimiento / opinión** | "qué procedimiento seguirías", "por qué no hiciste", "cómo configurarías las rules", "analiza y propón" (sin implementar) | **Solo texto.** Sin Grep, Read, Shell, WebSearch, Task, Glob. |
-| **B. Concepto / framework** | "cómo funciona la réplica de RxDB", "qué es un CRDT" | **Texto** desde conocimiento. **WebSearch** solo si de otro modo adivinarías detalles de API — **una** consulta máximo, luego responde. **Sin grep al repo.** |
+| **B. Concepto / framework** | "cómo funciona la cola de subida de PowerSync", "qué es un CRDT" | **Texto** desde conocimiento. **WebSearch** solo si de otro modo adivinarías detalles de API — **una** consulta máximo, luego responde. **Sin grep al repo.** |
 | **C. Hecho del repo** | "dónde está definido X", "qué dice el análisis de arquitectura" | **Read puntual** en las rutas nombradas. |
 | **D. Implementar** | "agrega X", "arréglalo", "edita la regla Y", "impleméntalo", "hazlo" | **`agent-feature-proposal-e2e.mdc`** para funcionalidad de producto → el usuario elige alcance → luego herramientas según la rebanada autorizada. Capacidades nuevas: bloque de mecanismo de **`agent-extensible-capability-design.mdc`** antes de código con forma de feature. Un alcance ya estrecho en el mensaje del usuario salta la propuesta. |
 
