@@ -1,0 +1,28 @@
+# El contexto de construcción es la raíz del monorepo: sin esto se copiarían
+# cientos de megas de dependencias y, peor, los .env de desarrollo.
+
+node_modules
+**/node_modules
+
+# Se instala dentro de la imagen, no se copia desde la máquina.
+.pnpm-store
+
+# Configuración local. Nunca entra a una imagen.
+.env
+.env.*
+!.env.example
+
+# Nada de esto se ejecuta en el contenedor.
+**/logs
+**/dist
+**/.vite
+**/coverage
+.git
+.github
+.cursor
+.vscode
+
+# PM2 y portless son el camino de desarrollo de la máquina del developer.
+ecosystem.config.cjs
+**/ecosystem.config.cjs
+.pm2

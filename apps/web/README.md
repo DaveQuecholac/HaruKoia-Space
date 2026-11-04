@@ -1,6 +1,6 @@
 # `@harukoia/web` — Web
 
-Pizarra, presencia y lectura local de lo publicado. Base local en el navegador; se replica contra el contenedor host a través del relay.
+Pantallas de H1: presencia y entrada a la sala. La sala en vivo llega por el relay. El historial se leerá de la réplica central con PowerSync, sin pasar por el relay (H4). La app de la v1 es Expo (React Native). Esta web en Vite sigue hasta que exista el diseño de esa app y se autorice construirla.
 
 | Dato | Valor |
 |------|-------|

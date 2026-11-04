@@ -1,0 +1,363 @@
+# Rama `dev/motor`
+
+Primeras dos épicas del motor colaborativo: **H0 Cimientos** y **H1 Sala por link**.
+
+| Documento | Qué tiene |
+|-----------|-----------|
+| [analisis-h0-h1-cimientos-y-sala.md](./analisis-h0-h1-cimientos-y-sala.md) | Por qué esta rebanada primero, qué fija el diseño, decisiones abiertas, riesgos |
+| [plan-h0-h1-cimientos-y-sala.md](./plan-h0-h1-cimientos-y-sala.md) | Quince pasos con verificación, criterios y errores previstos |
+| [checkpoint-2-dos-redes.md](./checkpoint-2-dos-redes.md) | Prueba del túnel entre dos redes con Makino Hara |
+| [checkpoint-3-y-4.md](./checkpoint-3-y-4.md) | Pruebas a mano para cerrar H1 y chequeo de calidad del código |
+| [analisis-stack-powersync-react-native.md](./analisis-stack-powersync-react-native.md) | Decisión cerrada: PowerSync y React Native. Lo que falta escribir antes de construir |
+| [plan-pdc-stack-powersync-react-native.md](./plan-pdc-stack-powersync-react-native.md) | Prueba de la réplica central, antes de H4. La votación de React Native se retiró |
+
+Épicas y módulos de toda la fase: [fase-1-modulos-y-tareas.md](../../../fijos/fases/fase-1-modulos-y-tareas.md).
+Arquitectura vigente: [analisis-arquitectura-v2.md](../../../fijos/arquitectura/analisis-arquitectura-v2.md).
+
+## Alcance
+
+**Entra.** Arranque verificado en las dos máquinas, andamio de pruebas, reglas del contrato de datos, registro de salas, relay, sala en vivo mínima, presencia, roles mínimos y las pantallas de entrada.
+
+**No entra.** Lienzo (H2), persistencia de la sala (H3), commits (H4), publicación y CLI (H5), autenticación, sala global (H7).
+
+Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alcance.
+
+## Estado
+
+| Paso | Qué | Estado |
+|------|-----|--------|
+| A1 | Rama y documentación | Hecho |
+| A2 | Arranque en las dos máquinas | Parcial — verificado aquí; falta la máquina de Kua |
+| A3 | Humo de WebSocket por el proxy | Hecho — 6 de 6 comprobaciones |
+| A4 | Andamio de pruebas | Hecho — Vitest, 5 pruebas |
+| A5 | Reglas del contrato | Hecho — falta que Kua las revise |
+| A6 | Formato de log | Hecho |
+| B1 | Contrato del protocolo | Hecho |
+| B2 | Registro de salas | Hecho |
+| B3 | Túnel del orquestador | Hecho — checkpoint 2 pasado entre dos redes |
+| B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
+| B5 | Sala en vivo y presencia | Hecho — sin interfaz: la pantalla llega en B6 |
+| B6 | Web: nombre, volverme host, unirme | Hecho — **checkpoint 3 pasado** el 2026-10-04: dos máquinas en redes distintas por Makino Hara |
+| B7 | Resistencia y reconexión | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
+| B8 | Roles mínimos | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
+| B9 | Varios participantes y cierre | Hecho — diez participantes convergen y la latencia quedó medida. Falta recorrer a mano [checkpoint 3 y 4](checkpoint-3-y-4.md) para cerrar H1 |
+
+El esqueleto del monorepo y el arranque con PM2 y portless ya existen del trabajo previo a esta rama; A2 es verificarlo en las dos máquinas, no construirlo.
+
+## Stack vigente
+
+Ya está en los documentos fijos. No cambia lo construido en H0 y H1.
+
+| Qué | Cómo quedó |
+|---|---|
+| Base local y réplica | **PowerSync.** El host escribe en su SQLite (SDK de Node) y su cola sube por una conexión saliente a una **réplica central** (backend de escritura, Postgres, PowerSync Service). Invitados, web y CLI solo leen |
+| Quién escribe en la réplica central | **Solo el host de cada sala.** Lo valida el backend de escritura, no PowerSync |
+| Relay | Lleva **solo la sala en vivo**. La réplica no pasa por él |
+| React Native | **Entra en la v1**, con Expo, en web y en móvil. La web de H1 sigue en Vite hasta el diseño de esa app |
+
+Siguiente documento, antes de construir H2: el diseño de la app Expo. Antes de H4: el diseño y la [prueba de la réplica](./plan-pdc-stack-powersync-react-native.md). Lo que esas dos piezas tienen que cerrar está en el [registro de la decisión](./analisis-stack-powersync-react-native.md).
+
+Patrones ya cableados en IOKOIA Space (SQLite multi-runtime, secrets, PowerSync self-hosted): [referencia-space-powersync-sqlite-secrets.md](../../../fijos/referencia-space-powersync-sqlite-secrets.md). Al construir, abrir `/home/davesq/Documents/IoKoia/space/`.
+
+## Reglas del contrato
+
+Fijadas en el paso A5. Son lo más caro de cambiar después, así que **las dos personas tienen que estar de acuerdo** antes de seguir.
+
+| Regla | Decisión | Dónde |
+|-------|----------|-------|
+| Identificadores | 32 símbolos sin `i`, `l`, `o`, `u`; mínimo 16 caracteres (80 bits); Web Crypto | [`packages/domain`](../../../../packages/domain/README.md) |
+| Tipado de identificadores | `Identificador<'sala'>` no es asignable a `Identificador<'commit'>` | `packages/domain/src/identificador/` |
+| Orden de réplica | Por `actualizadoEn` y, a marca igual, por `id`. La marca **la pone el host**, nunca el cliente | [`packages/schema`](../../../../packages/schema/README.md) |
+| Borrado | Lógico con `borrado: true`. Lo replicado nunca se borra físicamente | `packages/schema/src/documento-replicado/` |
+| Versión de esquema | Por colección, con cadena de migraciones sin huecos. Se migra al leer, nunca hacia atrás | `packages/schema/src/version-de-esquema/` |
+| Estilo | Uniones de literales y tipos planos; sin `enum`, `namespace`, propiedades de constructor ni decoradores | Las dos |
+
+Lo que **no** se fijó aquí, a propósito: los campos de cada colección. Esos se cierran en la épica que los usa.
+
+Las reglas de orden, borrado y versión de esquema son las de H0. Si se quedan o se ajustan al modelo de PowerSync se decide en el diseño de la réplica, antes de H4. Hasta entonces siguen vigentes.
+
+## Contrato del protocolo
+
+Fijado en B1, en [`packages/domain`](../../../../packages/domain/README.md). Es el único lugar donde vive el protocolo.
+
+| Decisión aterrizada | Cómo quedó |
+|---|---|
+| **D4** | Tres valores por sala: identificador de 16 caracteres para enrutar, token de host y token de invitación de 26 caracteres |
+| **D5** | `host-reemplazado` es una de las causas de cierre del protocolo |
+| Planos | **Control** en texto JSON; **datos** en binario opaco que el relay no mira |
+| Canales | `relay/canal/canal.ts` es el único archivo que los enumera. Hoy: `sesion` |
+| Emparejamiento | Desde B4 las **dos** puntas reciben confirmación: el invitado `entrada-aceptada`, la conexión de datos del host `emparejamiento-aceptado`. Sin la segunda, el host no distinguía un rechazo de los primeros bytes del invitado |
+
+**Sigue abierto:** el protocolo **no lleva número de versión**. Orquestador y host se despliegan por separado, así que pueden tener versiones distintas del contrato. B7 se cerró sin él. Hay que decidir si entra antes de que esos dos procesos se desplieguen con contratos distintos.
+
+## El túnel
+
+Fijado en B3, en `apps/orchestrator/src/tunel/`. Tres rutas, declaradas en el contrato para que los tres procesos usen las mismas:
+
+| Ruta | Quién la abre | Para qué |
+|------|---------------|----------|
+| `/relay/control` | Host | Permanente, una por sala. Registro, latido, avisos |
+| `/relay/sala` | Invitado | Se vuelve conexión de datos al emparejarse |
+| `/relay/datos` | Host | Una por invitado, **saliente**. Es el túnel inverso de D3 |
+
+Las tres empiezan hablando control: su **primer mensaje** decide qué son. Después del emparejamiento, las de datos solo transportan bytes.
+
+### Las cuatro decisiones de B3
+
+| # | Decisión | Por qué |
+|---|----------|---------|
+| 1 | **El orquestador valida la invitación**; el registro lleva ese token | El relay ya transporta todos los bytes de la sesión en claro: esconderle este token no protegería nada y costaría una ida y vuelta |
+| 2 | **Ticket de un solo uso** por invitado para la conexión de datos | El token de host recupera la sala y luego autoriza commits; que no viaje en cada entrada |
+| 3 | El invitado manda su token en el **primer mensaje**, no en la URL | Un secreto en la URL acaba escrito en los logs de acceso del proxy |
+| 4 | Topes: **10 s** de emparejamiento, **1 MB** por mensaje, **4 MB** de cola | Sin topes, un invitado que no drena convierte la memoria del orquestador en el límite del sistema, y eso tira todas las salas |
+
+Un ticket equivocado y una conexión inexistente dan **el mismo** rechazo, a propósito: así no se puede sondear qué identificadores están vivos.
+
+### Lo que el orquestador no hace
+
+No interpreta lo que transporta. Hay una prueba que le manda bytes con la forma de un mensaje de control y verifica que pasan tal cual, sin que la sala se cierre.
+
+### Rutas desconocidas
+
+Se rechazan con un `404` HTTP inmediato. No hay handshake todavía, así que no se puede enviar un cierre de WebSocket. Dejarlas sin respuesta —como estaban al principio de B3— cuelga el socket y el cliente acaba viendo un cierre anormal con código 1006, sin causa.
+
+### El eco de A3 se retiró
+
+El túnel es el único dueño de la ruta de actualización de protocolo, así que el eco no podía seguir montado. Se borraron sus tres piezas: el módulo y las pruebas del orquestador, el script de humo, y el componente de la web con su variable de entorno. La web vuelve a ser el esqueleto que era, hasta que B6 le dé pantallas reales.
+
+Mientras existió el huérfano, la web mostraba «conexión cerrada con código 1006». Era correcto —la ruta ya no existía— pero ilegible: **el navegador reporta 1006 ante cualquier handshake fallido y no expone el código HTTP a JavaScript**, así que el `404` del servidor nunca llegaba a verse en pantalla.
+
+### Checkpoint 2 — pasado
+
+**2026-10-04.** Orquestador en Makino Hara con Coolify (`wss://orquestador.harukoia.makinohara.sys.iokoia.com`), host con el arnés en la laptop detrás del NAT de casa, invitado en otra red. Dos invitados emparejados, 60 s cada uno, todos los ✓ y cierre limpio. Detalle en [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
+
+El arnés está en `apps/orchestrator/src/tunel/humo.mjs`. Importa el contrato de `@harukoia/domain` en vez de copiarlo: si el protocolo cambia, se rompe en vez de mentir.
+
+### Imagen de contenedor (Docker + Coolify)
+
+`Dockerfile` en la raíz + `docker-compose.yml` para **Coolify en Makino Hara**.
+
+- Build Arg / compose: `APP=orchestrator`
+- Puerto interno: **8080**
+- Healthcheck: `GET /health` (curl dentro de la imagen)
+- Por defecto `APP=orchestrator` si Coolify no pasa el arg
+
+Parametrizado con `APP` porque la arquitectura pide un contenedor host **genérico**. Añadir una variante no cuesta un archivo nuevo.
+
+**No** usar `pnpm deploy`: rompería el arranque (paquetes internos deben quedar enlazados fuera de `node_modules`).
+
+Pasos del checkpoint 2 con Coolify: [checkpoint-2-dos-redes.md](checkpoint-2-dos-redes.md).
+
+**Resuelto al cerrar H1:** `engines.node` de la raíz es **≥23.6**; `start` del orquestador y del host ejecuta `src/main.ts`. El proceso llama a `barrer` cada 10 s.
+
+## Conexión del host
+
+Fijado en B4, en `apps/host/src/conexion-al-orquestador/`. El host **marca hacia fuera** y mantiene su sala registrada sin que nadie lo toque.
+
+| Comportamiento | Cómo quedó |
+|---|---|
+| Arranque | Se registra aunque el orquestador todavía no exista: reintenta hasta que aparece |
+| Latido | Cada **10 s**, más un ping. Si el ping no vuelve, la conexión se da por muerta y se rehace: escribir en un socket muerto no falla, así que sin esto suspender la máquina dejaría al host creyéndose conectado |
+| Espera creciente | De **0,5 s** a **30 s**, entre la mitad y el máximo de cada intento. La mitad fija garantiza que crece; la mitad al azar evita que todos los hosts vuelvan a la vez |
+| Rechazos | Uno definitivo (otra sala con ese identificador, token de host malo, contrato que el orquestador no entiende, `host-reemplazado`) **no se reintenta**. Uno temporal (`host-sin-latido`, `sala-no-encontrada`) sí. Los dos mapas son `Record` sobre las causas del contrato: una causa nueva no compila sin decidir de qué lado cae |
+| Invitados | Por cada `entra-invitado` abre una conexión de datos saliente con el ticket y, tras `emparejamiento-aceptado`, la entrega al **manejador de su canal** |
+| Apagado | Suelta la sala con `cerrar-sala` en lugar de dejarla caducar |
+
+**Mecanismo:** un manejador por canal, `Record<Canal, ManejadorDeCanal>`. El de `sesion` es la sala en vivo de B5; un canal nuevo es un miembro de `CANALES` y su manejador, sin tocar la conexión.
+
+### Las cuatro decisiones de B4
+
+| # | Decisión | Por qué |
+|---|----------|---------|
+| 1 | El orquestador se configura con **`ORQUESTADOR_URL`** en el `.env` del host. Sin ella el host **no arranca** | Falta de configuración no es fallo de red: es mejor un error claro que un host esperando a nadie |
+| 2 | La identidad de la sala se genera al arrancar y **vive en memoria** | La sala no persiste en esta rama. Reiniciar el host = sala y link nuevos. Persistir es H3 |
+| 3 | El token de invitación **no se imprime**. Se pide con “Volverme host” (`GET /invitacion`) | B4 lo imprimía hasta que existió la pantalla. El token de host no se imprime nunca |
+| 4 | Antes de B5, los datos del invitado **no se procesan** | Nada de comportamiento simulado en el camino real. Superada por B5 |
+
+### Operación
+
+- **`dev:restart` no relee el `.env`**: PM2 guarda el entorno del primer arranque. Tras cambiar el `.env` del host: `pnpm exec pm2 delete harukoia-host-dev && pnpm dev:start` dentro de `apps/host`.
+- El kit de portless le pasa a Node el certificado de portless, así que el host bajo PM2 llega por `wss://` al orquestador local. Fuera de PM2 hace falta `NODE_EXTRA_CA_CERTS=~/.portless/ca.pem`.
+- **Makino Hara hay que redesplegarlo**: el host de B4 espera `emparejamiento-aceptado`, que el orquestador desplegado antes de B4 no envía.
+- La invitación de desarrollo es un **aviso**, así que va a `apps/host/logs/pm2/error.log`, no a `out.log`. `logs/` está en el `.gitignore`: `rg` lo salta salvo con `--no-ignore`.
+
+## Sala en vivo
+
+Fijado en B5, con **D2 confirmada**: sala Yjs real desde H1, con su presencia.
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Sala | `apps/host/src/sala/` | Hocuspocus **sin servidor propio**: cada conexión de datos del túnel se le entrega ya abierta y se le pasan bytes y cierre |
+| Participantes | `apps/host/src/participantes/` | La lista sale de la **presencia de Yjs**, no de una lista aparte: no hay dos fuentes que se contradigan. El host registra cada cambio con el total |
+| Lado invitado | `packages/cliente-del-relay/` | Una clase con forma de WebSocket que hace la entrada de B3 (sala y token en el primer mensaje) y solo se declara abierta tras `entrada-aceptada`. Se le pasa al proveedor de Hocuspocus como `WebSocketPolyfill`. Usa el `WebSocket` nativo: la misma clase sirve en navegador y en Node |
+
+| Regla | Cómo quedó |
+|---|---|
+| Documento | **Uno**, con el nombre de la sala. Otro nombre se rechaza en `onConnect`: sin eso un invitado podría crear documentos en la memoria del host |
+| Sala vacía | El host abre el documento con una **conexión directa** y lo mantiene. Sin ella, Hocuspocus lo descarga al irse el último invitado. Reiniciar el host sí la vacía (H3) |
+| Salida limpia | El participante desaparece **enseguida** |
+| Caída sucia | Tiempo de espera de **30 s** (decisión de B5; Hocuspocus trae 60). Hocuspocus no hace ping: cierra la conexión que pasa 30 s sin mandar nada, y lo revisa cada 30 s. Una conexión sana renueva su presencia cada ~15 s. En la práctica, los demás dejan de ver al caído **entre 15 y 33 s** después (caduca su presencia) y el host suelta la conexión muerta **entre 30 y 60 s** después |
+| Rechazo de entrada | El socket del relay cierra con código `4403` y la causa como razón, y la avisa por `alSerRechazado`. El proveedor por sí solo reintentaría para siempre; la web decide si espera o se detiene (ver **Resistencia**) |
+| Sala cerrada a propósito | Con `cerrar-sala`, el orquestador cierra a los invitados unidos de esa sala con el código **`4410`** y la causa como razón (`packages/domain/src/relay/cierre-de-sala/`). El socket del relay la avisa por `alCerrarseLaSala`. Una caída nunca trae ese código |
+
+**Con un socket propio hay que llamar `attach()`** en el proveedor. Sin eso el socket abre, pero el documento nunca se engancha y no viaja ni un mensaje.
+
+`urlDelRelay` pasó del host a `packages/domain`, junto a `RUTAS`: ahora la usan el host y el cliente del invitado.
+
+## Web
+
+Fijado en B6, con **D7** y **D9** confirmadas. Sin router: la ruta `/s/<sala>` es la sala, todo lo demás es el inicio.
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Link | `apps/web/src/entrada/enlace-de-invitacion/` | `https://<web>/s/<sala>#<token>`. El token en el fragmento no llega a ningún servidor |
+| Nombre | `apps/web/src/entrada/nombre-recordado/` | Se pide la primera vez y queda en `localStorage`. Viaja solo en la presencia |
+| Volverme host | `apps/web/src/host/` y `apps/host/src/invitacion/` | La web le pide `GET /invitacion` al host de **su máquina**: sala, token de invitación **vigente** y, desde B8, el token de la web del host. Nunca el token de host |
+| Credencial de host | `apps/web/src/host/credencial-de-host/` | Desde B8: el token de la web del host, por sala y por pestaña (`sessionStorage`). No va en el link |
+| Sala | `apps/web/src/sala/` | Estado visible (conectando, conectado, reconectando, esperando al host, sala cerrada o la causa del rechazo), link para copiar y "Cambiar link" si eres host, y la lista de participantes con el rol que decidió el host |
+
+`GET /invitacion` tiene dos candados: solo atiende peticiones de **loopback** (el proxy de portless en desarrollo; detrás del proxy de un servidor viene de otra dirección y se rechaza) y solo al **origen** `WEB_ORIGEN`. Sin `WEB_ORIGEN` la ruta no existe.
+
+**El host y la web de todos los participantes tienen que usar el mismo orquestador.** Los `.env.example` traen por defecto el compartido, Makino Hara (`wss://orquestador.harukoia.makinohara.sys.iokoia.com`). El local, `orquestador.harukoia.local.iokoia.dev`, existe **en cada máquina por separado**: en otra laptop apunta al orquestador de esa laptop, y la sala sale "no abierta en este orquestador". Sirve solo si todos están en la misma máquina. La pantalla de la sala muestra a qué orquestador está conectada. Guía completa, incluida la actualización de instalaciones anteriores: [configuracion-del-entorno.md](../../../fijos/configuracion-del-entorno.md).
+
+Variables nuevas: `WEB_ORIGEN` en `apps/host/.env`; `VITE_ORQUESTADOR_URL` y `VITE_HOST_URL` en `apps/web/.env`. `VITE_ORQUESTADOR_ECO_URL` se retiró con el eco. Tras cambiarlas: `pnpm exec pm2 delete <app> && pnpm dev:start` en la app.
+
+Cada reinicio del host crea una sala nueva (vive en memoria hasta H3): los links anteriores dejan de servir y hay que volver a pulsar "Volverme host".
+
+Dos pestañas de la misma persona son dos participantes con el mismo nombre: se acepta y se muestra tal cual. Para probar con dos nombres en una sola máquina, usa una ventana de incógnito (otro `localStorage`).
+
+## Resistencia
+
+Fijado en B7. Qué ve la persona en la sala según lo que falló:
+
+| Qué pasó | Estado en la web | Qué hace |
+|---|---|---|
+| Se cayó la red o el orquestador | Reconectando… | El proveedor reintenta solo: 1 s, doblando, tope de 30 s, con variación aleatoria. Sin límite |
+| Ya estabas dentro y la sala "no se encuentra" (el host está volviendo) | Esperando al host… | Sigue intentando hasta **2 minutos**. Si el host no vuelve: "La sala se cerró" y Reintentar |
+| El host cerró la sala (apagó su proceso) | El host cerró la sala. | Se detiene. No hay botón: esa sala ya no existe |
+| Link inválido, versión que no coincide, o cualquier rechazo en la primera entrada | La causa | Se detiene, con Reintentar |
+
+Qué rechazo es temporal y cuál definitivo está en `packages/cliente-del-relay/src/naturaleza-del-rechazo/`, con un `Record`: una causa nueva no compila sin decidirlo.
+
+| Proceso | Cierre limpio |
+|---|---|
+| Orquestador | Con SIGTERM o SIGINT cierra todos los sockets con `1001`, para que hosts e invitados reconecten de inmediato, y sale con `0` (tope de 2 s) |
+| Host | Manda `cerrar-sala`, espera a que el orquestador cierre el control, y **solo después** cierra sus conexiones de datos. Al revés, el invitado vería una caída. El orden no se puede probar de forma fiable entre procesos: en local el aviso casi siempre gana la carrera |
+
+El tope de **1 MB** por mensaje pasó a `packages/domain`: el orquestador lo aplica al reenviar, y ahora el host también al recibir (control y datos).
+
+Pruebas: cien ciclos dentro del orquestador (`tunel.test.ts`) y del host (`sala.test.ts`), con contadores en cero y memoria dentro de un margen, y siete casos entre procesos en `packages/pruebas-entre-procesos/src/resistencia/`, con un proxy TCP que mete latencia, parte la red o la corta.
+
+## Roles
+
+Fijado en B8. Dos roles: **host** y **espectador**. El espectador edita el tablero igual que el host; el rol solo limita las acciones de sala.
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Quién es host | `apps/host/src/rol-de-la-conexion/` | La pestaña presenta el token de la web del host al conectar (`onAuthenticate` de Hocuspocus). Con ese token es host; sin él, espectador. Comparación en tiempo constante |
+| Rol visible | `apps/host/src/sala/sala.ts` | El host le dice a cada conexión su rol (`tu-rol`) y **sella** el rol en la presencia de cada participante. Una presencia que otra conexión ya anunció se descarta: nadie habla a nombre de otro |
+| Acciones | `packages/domain/src/sala/accion-de-sala/` y `apps/host/src/acciones-de-sala/` | El rol que exige cada acción está en un `Record`: una acción nueva no compila sin decidirlo. Hoy: `cambiar-invitacion`, solo host |
+| Mensajes de sala | `packages/domain/src/sala/mensaje-de-sala/` | Viajan como *stateless* de Hocuspocus dentro del canal de datos: `pedir-accion`, `tu-rol`, `accion-rechazada`, `invitacion-cambiada`. El orquestador no los ve |
+| Cambiar link | `apps/host/src/conexion-al-orquestador/` y `apps/orchestrator/src/tunel/` | El host genera un token nuevo y lo manda por control (`cambiar-invitacion`); el orquestador contesta `invitacion-cambiada`. Desde ahí el link anterior no deja entrar; quienes ya están siguen dentro. Solo las pestañas del host reciben el token nuevo y cambian el link en la barra |
+
+**Hubo que redesplegar el orquestador:** uno anterior a B8 rechaza `cambiar-invitacion`. El host lo trata como "el orquestador no respondió": el link no cambia, la sala sigue abierta y la web lo dice.
+
+Pruebas: cuatro casos entre procesos en `packages/pruebas-entre-procesos/src/roles/`, incluido un intruso que se hace pasar por el host con su mismo identificador de presencia.
+
+## Varios participantes
+
+Fijado en B9, en `packages/pruebas-entre-procesos/src/muchos-participantes/`. Diez participantes sin navegador sobre la misma sala, con el orquestador y el host reales.
+
+| Qué se prueba | Cómo |
+|---|---|
+| Convergencia | Los diez escriben **a la vez**, cada uno lo suyo y los diez la misma clave. Al final el documento es idéntico en los diez |
+| La lista sigue al número real | Entran de uno en uno hasta diez y luego se van tres, en plena sesión. Después de cada entrada y cada salida se compara contra lo que cuenta el **host**, no solo contra lo que ve un cliente |
+| Quien vuelve no duplica ni pierde | Un participante se va y regresa: recibe lo de todos **una sola vez** y lo suyo sigue ahí |
+| Latencia | Desde que uno escribe hasta que **el último** de los diez lo ve. Cada cliente observa su documento y marca la llegada; encuestar mediría el encuestado, no el relay |
+
+La medición **no reprueba** por ser alta: depende de la máquina. Solo falla si a alguien no le llega dentro del tiempo máximo.
+
+**Punto de partida para H2** (anotado a mano, decisión 3 de B9): el 2026-10-04, en la laptop de desarrollo (Ryzen 5 8645HS, Node 24, todo en loopback), tres corridas de cinco rondas con diez participantes dieron **mediana de 0.9 a 2.7 ms** y **peor caso de 1.7 a 4.1 ms**. Es el costo del relay sin red de por medio; con el orquestador en Makino Hara hay que volver a medir.
+
+Dos criterios del plan de pruebas de la v2 **no** entran aquí porque les falta diseño: "escribe sin red y la sala se reinicia" necesita que el host persista (H3), y "el host se cae y el último commit queda intacto" necesita que existan los commits.
+
+## Registro de salas
+
+Fijado en B2, en `apps/orchestrator/src/registro-de-salas/`. **En memoria, sin base de datos:** si el orquestador reinicia, los hosts se vuelven a registrar. No es una fuente de verdad que haya que conservar, es un directorio de lo que está vivo ahora.
+
+| Regla | Cómo quedó |
+|---|---|
+| Tolerancia sin latido | **30 segundos** = tres latidos perdidos a uno cada 10. Es un parámetro inyectable, **falta confirmarlo** |
+| Mismo host que vuelve | Reemplaza su registro y la conexión anterior se cierra con `host-reemplazado` (**D5**) |
+| Otro host | Rechazo con `sala-ocupada-por-otro-host`; el host legítimo no se entera |
+| Comparación de tokens | En tiempo constante: el tiempo de respuesta no revela cuántos caracteres acertó quien lo intenta |
+| Expiración | Se **calcula** con un reloj inyectado, no se agenda con temporizadores. Las pruebas no esperan en tiempo real |
+| `resolver` | Devuelve la sala **sin** su token de host: el secreto no sale del registro |
+
+Quién llama a `barrer` periódicamente es asunto del proceso, en **B3**.
+
+## Formato de log
+
+Fijado en el paso A6. Una línea por evento, igual en los tres procesos, en [`packages/registro`](../../../../packages/registro/README.md).
+
+```text
+2026-10-04T09:12:33.481Z info  orquestador sala=4k7m conexion=9b2 invitado entró
+```
+
+Texto con pares `clave=valor`, no JSON: se lee con `tail` y se filtra con `grep sala=<id>`. Un evento es **siempre** una sola línea; los saltos se escapan. Seguir una sala completa entre los tres procesos:
+
+```bash
+grep "sala=<id>" apps/*/logs/pm2/*.log | sort
+```
+
+**Resuelto en B1:** los tres paquetes internos se consumen igual, desde su fuente (`exports` → `src/index.ts`). Node les quita los tipos al vuelo y Vite los transforma, así que no hay `dist` que pueda quedar viejo ni paso de construcción que recordar.
+
+## Dónde vive cada prueba
+
+Decidido en el paso A4. El runner es **Vitest** en todo el monorepo.
+
+| Tipo de prueba | Dónde | Ejemplo |
+|----------------|-------|---------|
+| Una función, un módulo, un proceso contra sí mismo | **Junto al código que prueba**, misma carpeta | `apps/orchestrator/src/tunel/tunel.test.ts` |
+| Dos o más procesos vivos a la vez | `packages/pruebas-entre-procesos/` | `src/sala-en-vivo/sala-en-vivo.test.ts` |
+| Navegador real contra el motor | `packages/pruebas-entre-procesos/`, cuando exista | — |
+
+Reglas, iguales para las dos: cada prueba levanta y tumba lo suyo, **puerto cero** leído de la salida del proceso en vez de puertos fijos, y tiempo máximo explícito en todo lo que abra un socket o lance un proceso. Detalle en el [README del paquete de pruebas](../../../../packages/pruebas-entre-procesos/README.md).
+
+```bash
+pnpm test                                        # todo el monorepo
+pnpm --filter @harukoia/orchestrator test        # un paquete
+```
+
+## Decisiones
+
+Ninguna la toma quien implementa. Están en la sección 3 del análisis con sus opciones y consecuencias.
+
+**Confirmadas:**
+
+| # | Decisión |
+|---|----------|
+| D1 | Servidor con `node:http` y `ws`, sin framework |
+| D2 | **Sala Yjs real desde H1**, con su presencia (B5) |
+| D3 | **Relay por túnel inverso**: conexión de control permanente y una conexión de datos saliente por invitado |
+| D4 | **Token de invitación aparte** del identificador de sala: el identificador enruta, el token da acceso y se puede revocar |
+| D5 | El host que presenta el **token de host** correcto **reemplaza** el registro anterior; la conexión vieja se cierra |
+| D7 | Link `https://<web>/s/<sala>#<token>`; "Volverme host" pide la invitación al host de la máquina (B6) |
+| D9 | Nombre en el `localStorage` del navegador y en la presencia (B6) |
+| D8 | Vitest como runner de todo el monorepo |
+
+**Pendientes:** D6 (una sala por host en la v1, sin confirmar).
+
+Con D4 y D5 confirmadas, el **checkpoint 1 está cerrado** y la fase B puede empezar por B1.
+
+## Decisiones que podrían malinterpretarse
+
+1. **H1 monta la sala real sin lienzo.** No es un adelanto de H2: la presencia se apoya en el mecanismo de la sala para no construir uno que se tire.
+2. **La sala no persiste en esta rama.** Reiniciar el host la deja vacía, y está bien. La persistencia es H3.
+3. **El orquestador no sabe qué transporta.** Si en su código aparece vocabulario de pizarra, está mal puesto.
+4. **El contrato del protocolo vive en `packages/domain`**, no dentro del orquestador ni del host.
+5. **Sin `enum`, `namespace`, propiedades declaradas en el constructor ni decoradores.** Node ejecuta TypeScript quitando los tipos, no transformándolos: esas construcciones compilan y fallan al correr.
+6. **Los imports relativos llevan su extensión real** (`./sala.ts`, `./app.tsx`). Es consecuencia de lo anterior: Node no adivina la extensión. Los paquetes de servidor compilan con la reescritura de extensión activada, para que la salida siga apuntando a `.js`. Hallazgo del paso A3; se formaliza en A5.
+7. **El orden de épicas de este plan sustituye** al orden de la sección 12 del análisis de arquitectura v2.
+8. **La réplica central no es un maestro.** Guarda una copia de lectura y solo la alimenta el host. Si aparece código donde un invitado escribe en ella, está mal.
+9. **La réplica no es un canal del relay.** El bloque de mecanismo del relay la mencionaba como variante probable; desde el 2026-10-19 va fuera del relay.

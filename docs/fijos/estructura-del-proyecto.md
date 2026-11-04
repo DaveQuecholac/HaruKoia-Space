@@ -8,14 +8,19 @@ Estructura base del monorepo, derivada del [análisis de arquitectura v2](./arqu
 motor-colaborativo/
 ├── apps/
 │   ├── orchestrator/       orquestador: registro de salas, links, relay
-│   ├── host/               contenedor host: sala Yjs, base local, repo, IA, exportación
-│   ├── web/                pizarra, presencia, lectura local
+│   ├── host/               contenedor host: sala Yjs, SQLite de PowerSync, repo, IA, exportación
+│   ├── web/                pantallas de H1 (Vite). La app de la v1 pasa a Expo; su diseño va antes de H2
 │   └── cli/                binario `space`
 ├── packages/
-│   ├── schema/             esquemas de las colecciones replicadas
-│   └── domain/             sala, commit, push, estados, nombres de archivo
+│   ├── schema/             esquemas de las tablas replicadas
+│   ├── domain/             sala, commit, push, estados, nombres de archivo
+│   ├── registro/           una línea de log por evento, igual en los tres procesos
+│   ├── cliente-del-relay/  entrada del invitado por el túnel, en navegador y Node
+│   └── pruebas-entre-procesos/  pruebas que levantan orquestador y host a la vez
 ├── scripts/                kit PM2 + portless y orquestador de la raíz
-├── docker/                 compose de los dos contenedores
+├── Dockerfile              imagen que sí corre (Coolify): Node ejecuta el TypeScript
+├── docker-compose.yml      orquestador en Coolify
+├── docker/                 compose viejo: no coincide con el host actual. No se usa
 ├── docs/
 │   ├── fijos/              documentación permanente
 │   └── dev/<rama-git>/     documentación de la rama en curso
@@ -27,13 +32,18 @@ motor-colaborativo/
 | Paquete | Responsabilidad | Escala y falla |
 |---------|-----------------|----------------|
 | `apps/orchestrator` | Registro de salas y relay por identificador. No persiste el tablero | Por conexiones. Si se reinicia, hosts e invitados reconectan |
-| `apps/host` | Autoridad de la sala y dueño del commit. Base local, repositorio, IA, exportación | Por sala. Su caída cierra esa sala, no las demás |
-| `apps/web` | Interfaz y base local del navegador | En el cliente |
+| `apps/host` | Autoridad de la sala y dueño del commit. Único que escribe en la réplica central. Base local, repositorio, IA, exportación | Por sala. Su caída cierra esa sala, no las demás |
+| `apps/web` | Pantallas de H1 en Vite. La app de la v1 es Expo (React Native); se construye cuando exista su diseño | En el cliente |
 | `apps/cli` | Arrancar el host, estado, materializar markdown | En la máquina del developer |
 | `packages/schema` | Contrato de datos entre web, host y CLI | — |
 | `packages/domain` | Reglas del dominio sin transporte ni almacenamiento | — |
+| `packages/registro` | Formato de log común. Un fallo se sigue entre los tres procesos filtrando por sala | — |
+| `packages/cliente-del-relay` | Lado invitado del túnel: presenta el token, espera la aceptación y entrega un socket normal al proveedor de la sala. Lo usan la web y las pruebas. Es transporte, por eso no vive en `domain` | — |
+| `packages/pruebas-entre-procesos` | Pruebas sin un único dueño: las que levantan más de un proceso. Las unitarias viven junto al código que prueban | — |
 
 El criterio para crear un proceso nuevo está en [por-que-no-microservicios.md](./arquitectura/por-que-no-microservicios.md). Una capacidad nueva es un módulo dentro de uno de estos paquetes hasta que cumpla alguna de las cuatro condiciones de ahí.
+
+**Réplica central.** La arquitectura agrega Postgres, PowerSync Service y un backend de escritura en la nube ([v2, sección 4](./arquitectura/analisis-arquitectura-v2.md#4-topología)). Todavía no tienen paquete ni contenedor. Dónde vive el backend de escritura es un punto abierto y se cierra en el diseño de la réplica, antes de H4. Cómo lo cableó IOKOIA Space (compose, buckets, JWT, SQLite/secrets): [referencia-space-powersync-sqlite-secrets.md](./referencia-space-powersync-sqlite-secrets.md). Cuando entre una app nueva, se registra como dice `.cursor/rules/pm2-app.mdc`.
 
 ## Arranque con PM2 y portless
 
@@ -68,6 +78,8 @@ PM2 → node → scripts/pm2-portless-run.mjs → apps/<app>/scripts/run-dev.mjs
                        y lo pasa al proceso en PORT
 ```
 
+Qué lleva cada `.env` y qué orquestador usar: [configuracion-del-entorno.md](./configuracion-del-entorno.md).
+
 El proceso **no elige puerto**: lo recibe en `PORT`. Por eso los `.env` de las apps no definen `PORT`. El proxy portless atiende el hostname público y enruta al puerto registrado.
 
 No se envuelve la app con el CLI `portless` bajo PM2: en Windows abre consolas visibles y cerrarlas mata el proceso. El camino es `pm2-portless-run.mjs`.
@@ -97,17 +109,14 @@ Si el proxy no está arriba, el helper se detiene con el mensaje y el comando pa
 
 ## Contenedores
 
-El compose de `docker/` levanta los dos contenedores que fija la arquitectura: orquestador y host. El host incluye `git` y `pandoc`, porque comitea y exporta. Su volumen `/data` guarda la base local y la copia de trabajo.
+El día a día es PM2 y portless.
 
-```bash
-pnpm docker:up
-pnpm docker:down
-```
+La imagen que sí corre es el `Dockerfile` de la raíz, con `docker-compose.yml` al lado, para el orquestador en Coolify. Node ejecuta `apps/<app>/src/main.ts`. No hay etapa que produzca `dist`.
 
-El día a día es PM2 y portless. El compose sirve para probar la separación real y para la sala global.
+`docker/` es un compose anterior. Sus Dockerfiles arrancan `dist/main.js` y le pasan al host `ORCHESTRATOR_URL`, variable que el proceso no lee. No se usa. `pnpm docker:up` apunta ahí: no lo corras hasta que ese script apunte a la imagen de la raíz. La réplica central todavía no está en ningún compose; entra con el diseño de la réplica, antes de H4. PowerSync publica su imagen como `journeyapps/powersync-service`.
 
 ## Estado actual
 
-Los esqueletos responden `/health` y nada más. No hay sala, ni commit, ni réplica. Eso entra por las rebanadas de la [fase 1](./fases/fase-1-modulos-y-tareas.md), cada una con su análisis y su plan en `docs/dev/<rama>/`.
+El código de H0 y H1 está en la rama `dev/motor`: arranque, registro de salas, relay por túnel inverso, sala Yjs en vivo con presencia, roles mínimos y las pantallas de entrada. El cierre a mano de H1 está en [docs/dev/dev/motor/README.md](../dev/dev/motor/README.md).
 
-Pendiente de la máquina, no del repo: inicializar git. Sin rama no hay carpeta de documentación de desarrollo.
+Todavía no hay lienzo, ni persistencia de la sala, ni commit, ni réplica, ni app Expo. Lo siguiente, antes de construir H2, es el diseño de la app Expo. La réplica se diseña y se prueba antes de H4. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md).
