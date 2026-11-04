@@ -8,8 +8,8 @@ Primeras dos épicas del motor colaborativo: **H0 Cimientos** y **H1 Sala por li
 | [plan-h0-h1-cimientos-y-sala.md](./plan-h0-h1-cimientos-y-sala.md) | Quince pasos con verificación, criterios y errores previstos |
 | [checkpoint-2-dos-redes.md](./checkpoint-2-dos-redes.md) | Prueba del túnel entre dos redes con Makino Hara |
 | [checkpoint-3-y-4.md](./checkpoint-3-y-4.md) | Pruebas a mano para cerrar H1 y chequeo de calidad del código |
-| [analisis-stack-powersync-react-native.md](./analisis-stack-powersync-react-native.md) | Revisión del stack del 2026-10-19: sale RxDB, entra PowerSync con réplica central; React Native en evaluación |
-| [plan-pdc-stack-powersync-react-native.md](./plan-pdc-stack-powersync-react-native.md) | Las dos pruebas de concepto: tldraw en Expo y PowerSync con la réplica central |
+| [analisis-stack-powersync-react-native.md](./analisis-stack-powersync-react-native.md) | Decisión cerrada: PowerSync y React Native. Lo que falta escribir antes de construir |
+| [plan-pdc-stack-powersync-react-native.md](./plan-pdc-stack-powersync-react-native.md) | Prueba de la réplica central, antes de H4. La votación de React Native se retiró |
 
 Épicas y módulos de toda la fase: [fase-1-modulos-y-tareas.md](../../../fijos/fases/fase-1-modulos-y-tareas.md).
 Arquitectura vigente: [analisis-arquitectura-v2.md](../../../fijos/arquitectura/analisis-arquitectura-v2.md).
@@ -44,21 +44,20 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 
 El esqueleto del monorepo y el arranque con PM2 y portless ya existen del trabajo previo a esta rama; A2 es verificarlo en las dos máquinas, no construirlo.
 
-## Revisión del stack (2026-10-19)
+## Stack vigente
 
-Decisión de David; **falta la revisión de Kua**. Ya está en los documentos fijos.
+Ya está en los documentos fijos. No cambia lo construido en H0 y H1.
 
 | Qué | Cómo quedó |
 |---|---|
-| RxDB | **Sale.** Nunca llegó a instalarse |
 | Base local y réplica | **PowerSync.** El host escribe en su SQLite (SDK de Node) y su cola sube por una conexión saliente a una **réplica central** (backend de escritura, Postgres, PowerSync Service). Invitados, web y CLI solo leen |
 | Quién escribe en la réplica central | **Solo el host de cada sala.** Lo valida el backend de escritura, no PowerSync |
-| Relay | Sigue llevando **solo la sala en vivo**. La réplica no pasa por él |
-| React Native | **Prueba de concepto antes de H2.** La web sigue en Vite hasta decidirlo |
+| Relay | Lleva **solo la sala en vivo**. La réplica no pasa por él |
+| React Native | **Entra en la v1**, con Expo, en web y en móvil. La web de H1 sigue en Vite hasta el diseño de esa app |
 
-Siguiente paso: **P0** del [plan de las pruebas de concepto](./plan-pdc-stack-powersync-react-native.md), es decir, decidir rama y carpeta. Decisiones abiertas: S2, S3 y S5 a S10 del [análisis](./analisis-stack-powersync-react-native.md#7-decisiones-pendientes).
+Siguiente documento, antes de construir H2: el diseño de la app Expo. Antes de H4: el diseño y la [prueba de la réplica](./plan-pdc-stack-powersync-react-native.md). Lo que esas dos piezas tienen que cerrar está en el [registro de la decisión](./analisis-stack-powersync-react-native.md).
 
-Esto no cambia nada de lo construido en H0 y H1.
+Patrones ya cableados en IOKOIA Space (SQLite multi-runtime, secrets, PowerSync self-hosted): [referencia-space-powersync-sqlite-secrets.md](../../../fijos/referencia-space-powersync-sqlite-secrets.md). Al construir, abrir `/home/davesq/Documents/IoKoia/space/`.
 
 ## Reglas del contrato
 
@@ -75,7 +74,7 @@ Fijadas en el paso A5. Son lo más caro de cambiar después, así que **las dos 
 
 Lo que **no** se fijó aquí, a propósito: los campos de cada colección. Esos se cierran en la épica que los usa.
 
-Las reglas de orden, borrado y versión de esquema se fijaron pensando en RxDB. Si se ajustan al modelo de PowerSync se decide en H4 (S8 del análisis del stack). Hasta entonces siguen vigentes.
+Las reglas de orden, borrado y versión de esquema son las de H0. Si se quedan o se ajustan al modelo de PowerSync se decide en el diseño de la réplica, antes de H4. Hasta entonces siguen vigentes.
 
 ## Contrato del protocolo
 
@@ -89,7 +88,7 @@ Fijado en B1, en [`packages/domain`](../../../../packages/domain/README.md). Es 
 | Canales | `relay/canal/canal.ts` es el único archivo que los enumera. Hoy: `sesion` |
 | Emparejamiento | Desde B4 las **dos** puntas reciben confirmación: el invitado `entrada-aceptada`, la conexión de datos del host `emparejamiento-aceptado`. Sin la segunda, el host no distinguía un rechazo de los primeros bytes del invitado |
 
-**Pendiente de decidir, descubierto en este paso:** el protocolo **no lleva número de versión**. Orquestador y host se despliegan por separado, así que un día podrán tener versiones distintas del contrato. No lo agregué porque no estaba en el alcance de B1; hay que decidir si entra antes de B7.
+**Sigue abierto:** el protocolo **no lleva número de versión**. Orquestador y host se despliegan por separado, así que pueden tener versiones distintas del contrato. B7 se cerró sin él. Hay que decidir si entra antes de que esos dos procesos se desplieguen con contratos distintos.
 
 ## El túnel
 
@@ -358,7 +357,7 @@ Con D4 y D5 confirmadas, el **checkpoint 1 está cerrado** y la fase B puede emp
 3. **El orquestador no sabe qué transporta.** Si en su código aparece vocabulario de pizarra, está mal puesto.
 4. **El contrato del protocolo vive en `packages/domain`**, no dentro del orquestador ni del host.
 5. **Sin `enum`, `namespace`, propiedades declaradas en el constructor ni decoradores.** Node ejecuta TypeScript quitando los tipos, no transformándolos: esas construcciones compilan y fallan al correr.
-6. **Los imports relativos llevan su extensión real** (`./eco.ts`, `./app.tsx`). Es consecuencia de lo anterior: Node no adivina la extensión. Los paquetes de servidor compilan con la reescritura de extensión activada, para que la salida siga apuntando a `.js`. Hallazgo del paso A3; se formaliza en A5.
+6. **Los imports relativos llevan su extensión real** (`./sala.ts`, `./app.tsx`). Es consecuencia de lo anterior: Node no adivina la extensión. Los paquetes de servidor compilan con la reescritura de extensión activada, para que la salida siga apuntando a `.js`. Hallazgo del paso A3; se formaliza en A5.
 7. **El orden de épicas de este plan sustituye** al orden de la sección 12 del análisis de arquitectura v2.
 8. **La réplica central no es un maestro.** Guarda una copia de lectura y solo la alimenta el host. Si aparece código donde un invitado escribe en ella, está mal.
 9. **La réplica no es un canal del relay.** El bloque de mecanismo del relay la mencionaba como variante probable; desde el 2026-10-19 va fuera del relay.

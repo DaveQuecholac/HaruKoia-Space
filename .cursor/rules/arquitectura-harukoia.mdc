@@ -12,14 +12,15 @@ Este repositorio es el **motor colaborativo HaruKoia**, construido desde cero. I
 | Documento | Qué manda |
 |-----------|-----------|
 | `docs/fijos/arquitectura/analisis-arquitectura-v2.md` | **Documento vigente.** Decisión de arquitectura, componentes, flujo de sesión, modelo de datos, errores y plan de pruebas |
-| `docs/fijos/arquitectura/arquitectura-recomendada.md` | Vigente **solo** en lo que la v2 no cambió. Su encabezado dice qué quedó superado |
+| `docs/fijos/arquitectura/arquitectura-recomendada.md` | Lo que sigue de la propuesta anterior. Ya no es una arquitectura |
 | `docs/fijos/arquitectura/por-que-no-microservicios.md` | Criterio para decidir si una capacidad se convierte en proceso propio |
 | `docs/fijos/inicial/contexto-inicial.md` | Contexto del producto y alcance |
 | `docs/fijos/inicial/acuerdos-junta-fase2.md` | Acuerdos de la junta que originaron la v2 |
 | `docs/fijos/estructura-del-proyecto.md` | Paquetes, procesos y arranque con PM2 y portless |
 | `docs/fijos/fases/fase-1-modulos-y-tareas.md` | Módulos de la fase 1, dependencias y reparto |
-| `docs/dev/dev/motor/analisis-stack-powersync-react-native.md` | Por qué salió RxDB y entró PowerSync (revisión del 2026-10-19), y las decisiones S2 a S10 que siguen abiertas |
-| `docs/dev/dev/motor/plan-pdc-stack-powersync-react-native.md` | Las dos pruebas de concepto: React Native antes de H2, PowerSync antes de H4 |
+| `docs/fijos/referencia-space-powersync-sqlite-secrets.md` | Patrones de PowerSync, SQLite y secrets ya hechos en IOKOIA Space; al construir, abrir ese repo |
+| `docs/dev/dev/motor/analisis-stack-powersync-react-native.md` | Decisión cerrada: PowerSync y React Native, y qué documento falta antes de construir |
+| `docs/dev/dev/motor/plan-pdc-stack-powersync-react-native.md` | Prueba de la réplica central, antes de H4 |
 
 Layout de la documentación y puerta de las ramas: **`docs-layout.mdc`**.
 
@@ -40,7 +41,7 @@ El agente **no** propone un stack alternativo, **no** reabre estas decisiones y 
 - La pizarra tiene **staging, commit, historial y checkout**. Ramificación queda fuera de la v1.
 - **Contenedores**: orquestador, contenedor host genérico (sala de usuario o sala global) y la réplica central (Postgres, PowerSync Service y backend de escritura).
 - Identidad de la v1: **link de invitación y nombre**. El control de acceso viene después.
-- **React Native todavía no está decidido.** La web sigue en React DOM con Vite hasta que la prueba de concepto lo resuelva. No migres pantallas a React Native ni agregues una app Expo fuera de esa prueba.
+- **React Native entra en la v1** (Expo, web y móvil, tldraw en un componente DOM). Un teléfono no es host local. La web de H1 sigue en Vite. No agregues la app Expo ni migres pantallas hasta que exista el diseño de esa app y el usuario autorice la rebanada.
 
 Si el usuario pide algo que choca con una de estas decisiones, **dilo** y pregunta si quiere cambiar el diseño. Cambiar el diseño es editar el documento, no improvisar en el código.
 
@@ -51,11 +52,13 @@ El análisis v2 tiene una sección de **puntos abiertos** (entre otros: proveedo
 Abiertos por la revisión del 2026-10-19:
 - Qué sube a la réplica central: metadatos, o también el snapshot y el JSON del tablero.
 - Dónde vive el backend de escritura.
-- Quién emite el token de lectura de PowerSync.
-- El almacén de buckets.
-- Si las reglas del contrato de H0 se ajustan a PowerSync.
+- Quién emite el token de lectura de PowerSync (referencia Space: JWT tras Bearer).
+- El almacén de buckets (referencia Space: Postgres `powersync_storage`).
+- Si las reglas del contrato de H0 se ajustan a PowerSync (referencia Space: client schema / views).
 - Si `space update` baja de git o de la réplica.
-- Si React Native entra en la v1.
+- Cómo arranca la app Expo con PM2 y portless, y cuál es su diseño de pantallas y de lienzo. React Native ya entra.
+
+Para SQLite, secrets y PowerSync self-hosted, no reinventar: leer `docs/fijos/referencia-space-powersync-sqlite-secrets.md` y el repo `/home/davesq/Documents/IoKoia/space/`.
 
 Un punto abierto **no** se cierra implementando. Se cierra preguntando al usuario y actualizando el documento — **`design-first.mdc`**.
 

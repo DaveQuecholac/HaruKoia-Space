@@ -1,10 +1,10 @@
 # Análisis de arquitectura v2 — Motor colaborativo HaruKoia
 
-Documento de decisión para arrancar el desarrollo. Incorpora los acuerdos de la junta de Fase 2 (`docs/fijos/inicial/acuerdos-junta-fase2.md`) y sustituye, en los puntos que cambian, a [arquitectura-recomendada.md](./arquitectura-recomendada.md).
+Documento de decisión para arrancar el desarrollo. Incorpora los acuerdos de la junta de Fase 2 (`docs/fijos/inicial/acuerdos-junta-fase2.md`). Lo que quedó de la propuesta anterior, sin el stack que ya no se usa, está en [arquitectura-recomendada.md](./arquitectura-recomendada.md).
 
 Participantes de la decisión: David Quecholac, Kua Arreola Sojo.
 
-> **Revisión del 2026-10-19 — base local y réplica.** Sale RxDB. La base local y la réplica pasan a **PowerSync**, con una **copia central de lectura** que solo alimenta el host. React Native queda en prueba de concepto antes de H2. Análisis completo: [analisis-stack-powersync-react-native.md](../../dev/dev/motor/analisis-stack-powersync-react-native.md). Decisión de David; **falta la revisión de Kua**. Las secciones que cambian lo dicen.
+> **Stack vigente.** Base local y réplica: **PowerSync**, con una copia central de lectura que solo alimenta el host (2026-10-19). Frontend de la v1: **React Native con Expo**, en web y en móvil (2026-11-04). La web de H1 sigue en Vite hasta que exista el diseño de esa app y se autorice construirla. Un teléfono no es host local. Registro corto: [analisis-stack-powersync-react-native.md](../../dev/dev/motor/analisis-stack-powersync-react-native.md).
 
 ## 1. Resumen de la decisión
 
@@ -14,13 +14,13 @@ Desde la revisión del 2026-10-19 existe una **réplica central**: una copia de 
 
 | Pieza | Qué es | Dónde corre |
 |---|---|---|
-| Orquestador | Sirve la web, registra salas, genera links, enruta por `roomId`. No guarda datos | Nube |
+| Orquestador | Registra salas, genera links, enruta por identificador de sala. No guarda datos y no sirve la web | Nube |
 | Contenedor host | Sala Yjs, SQLite de PowerSync (SDK de Node), copia de trabajo del repo, IA, exportación | Máquina del usuario o nube (sala global) |
 | Réplica central | Backend de escritura que solo acepta al host de cada sala, Postgres con la copia de lectura, PowerSync Service | Nube |
-| Web | Pizarra tldraw, SQLite local de PowerSync (lectura de lo replicado), presencia | Navegador |
+| App | Pizarra tldraw, SQLite local de PowerSync (lectura de lo replicado), presencia | Expo (React Native), web y móvil. La de H1 sigue en Vite |
 | CLI | Arrancar host, estado, materializar markdown en el repo | Máquina del usuario |
 
-Lo que cambia respecto a la propuesta anterior: **fuera MongoDB**, el host persiste; roles host y espectadores; markdown solo al hacer push; la pizarra tiene commits e historial; orquestador y contenedor host separados; identidad por link en la v1. Y desde el 2026-10-19: **fuera RxDB**, PowerSync con copia central de lectura.
+Lo que cambia respecto a la propuesta anterior: **fuera MongoDB** y **fuera RxDB**; el host persiste; roles host y espectadores; markdown solo al hacer push; la pizarra tiene commits e historial; orquestador y contenedor host separados; identidad por link en la v1; base local y réplica con **PowerSync**; frontend de la v1 en **React Native**.
 
 ## 2. Qué cambia respecto a la v1
 
@@ -34,7 +34,8 @@ Lo que cambia respecto a la propuesta anterior: **fuera MongoDB**, el host persi
 | Procesos de servidor | Sync, réplica y worker separados | Orquestador y contenedor host. IA y exportación dentro del host. Desde el 2026-10-19, además, la réplica central | Ver sección 4 |
 | Identidad | OIDC con Authentik desde el inicio | Link de invitación y nombre | Primero que funcione. Los controles de acceso vienen después |
 | Salas | Una sala por space en un nodo de sync | Salas de usuario (host local) y salas globales (host en la nube) | No hace falta replicar todo con todos siempre |
-| Base local y réplica (revisión 2026-10-19) | RxDB en el host (SQLite) y en el navegador (Dexie), réplica contra el host por el relay | **PowerSync**: SQLite local en host y clientes; el host sube a una copia central; los demás leen de ahí, sin pasar por el relay | El SQLite de producción de RxDB es de pago (Pro, 99 dólares al mes con facturación anual). PowerSync autoalojado y sus SDK son gratis, funciona con el host detrás de NAT y quien no estuvo ve el historial con el host apagado |
+| Base local y réplica (2026-10-19) | Copia local de pago y réplica contra el host por el relay | **PowerSync**: SQLite local en host y clientes; el host sube a una copia central; los demás leen de ahí, sin pasar por el relay | PowerSync autoalojado y sus SDK son gratis, funciona con el host detrás de NAT y quien no estuvo ve el historial con el host apagado |
+| Frontend (2026-11-04) | React DOM con Vite | **React Native con Expo**, web y móvil, tldraw en un componente DOM | La misma app en el navegador y en el teléfono. El teléfono no es host local |
 
 Lo que se mantiene: local-first, monorepo, motor modular en lugar de microservicios, tldraw con Yjs, Hocuspocus como servidor de la sala, y la migración posterior de IOKOIA Space hacia este motor.
 
@@ -90,7 +91,7 @@ El contenedor host abre la conexión hacia el orquestador y hacia la réplica ce
 
 Se separan a nivel de código y de despliegue, con Docker Compose.
 
-**Orquestador.** Registro de salas en memoria (`roomId → socket del host`), generación de links, la web, y el reenvío de bytes. No tiene base de datos. Si se reinicia, los hosts se vuelven a registrar y los invitados reconectan.
+**Orquestador.** Registro de salas en memoria (identificador de sala → socket del host), generación de links y reenvío de bytes. No sirve la web y no tiene base de datos. Si se reinicia, los hosts se vuelven a registrar y los invitados reconectan.
 
 **Contenedor host.** Imagen única, igual para los dos modos:
 
@@ -208,9 +209,7 @@ La misma interfaz siempre, sin pantallas distintas por rol.
 - El estado de la réplica visible en el host: al día, o cambios pendientes de subir.
 - Controles de acceso (quién entra, link privado, contraseña) quedan para después.
 
-El lenguaje visual se mantiene alineado con IOKOIA Space (React, Tailwind, Lucide, tema claro y oscuro) para que las pantallas migradas no cambien de régimen.
-
-**React Native en prueba de concepto** (revisión 2026-10-19). Se evalúa Expo para web y móvil con tldraw dentro de un componente DOM. Hasta que se decida (sección 13), la web sigue en React DOM con Vite. Si se adopta, esta sección cambia: el régimen visual de IOKOIA Space, que es React DOM, ya no se trae tal cual. Un teléfono no puede ser host local: en el móvil solo se entra como espectador o a una sala global.
+**React Native entra en la v1** (2026-11-04). La app es Expo, para web y para móvil, con tldraw dentro de un componente DOM. La gramática visual de IOKOIA Space (React DOM, Tailwind, Base UI) no se trae tal cual: el diseño de componentes de esa app es el siguiente documento, antes de H2. Hasta que exista y se autorice construirla, las pantallas de H1 siguen en `apps/web` con Vite. Un teléfono no puede ser host local: en el móvil se entra como espectador o a una sala global.
 
 ## 10. Errores posibles y qué hacemos
 
@@ -329,7 +328,7 @@ Se mide y se fija objetivo, para poder decir si la v1 cumple:
 | Latencia de un trazo hasta otro participante | por debajo de 150 ms por el relay en la misma región |
 | Participantes por sala | 10 sin degradación perceptible |
 | Tiempo de commit de un tablero de mil formas | por debajo de 2 segundos |
-| Tiempo de un commit hasta que lo ve un lector de la réplica | se mide en la prueba de concepto de PowerSync y se fija ahí |
+| Tiempo de un commit hasta que lo ve un lector de la réplica | se mide en la prueba de la réplica central y se fija ahí |
 | Generación de markdown de una sesión típica | por debajo de 30 segundos |
 | `space update` con muchas versiones acumuladas | tiempo que no crece con el historial, por el checkpoint |
 
@@ -339,7 +338,7 @@ Dos contextos de navegador en la misma sala, con el modelo simulado: dibujar, ma
 
 ### Entorno de pruebas
 
-Docker Compose con orquestador, contenedor host, réplica central (Postgres, PowerSync Service y backend de escritura), un remoto git local y un modelo simulado. El mismo Compose que se usa para desarrollar.
+Cuando la réplica entre: orquestador, contenedor host, réplica central (Postgres, PowerSync Service y backend de escritura), un remoto git local y un modelo simulado. Hoy el día a día es PM2 y portless. La imagen que sí corre es el `Dockerfile` de la raíz. El compose de `docker/` no coincide con el host actual y no se usa.
 
 ## 12. Orden de construcción
 
@@ -358,7 +357,7 @@ El trabajo se agrupa en ocho épicas que se pueden probar una por una. El desglo
 
 Una versión anterior de esta sección ponía la publicación y el CLI antes de la sala, para probar primero la promesa que distingue al producto. Se cambió al orden de arriba porque **el riesgo técnico que hay que matar primero es el alcance del host detrás de NAT a través del relay** (H1): es la única pieza que no podemos copiar de una librería, y descubrir que no funciona después de construir la pizarra encima sale mucho más caro. La promesa de la entrega al repositorio sigue siendo prioritaria y por eso H5 llega antes que la IA, con una salida determinista que se verifica carácter por carácter.
 
-Revisión del 2026-10-19: antes de H2 va la **prueba de concepto de React Native** (decide dónde se monta el lienzo), y antes de H4 la **prueba de concepto de PowerSync** (valida la réplica central). Están en [plan-pdc-stack-powersync-react-native.md](../../dev/dev/motor/plan-pdc-stack-powersync-react-native.md).
+Antes de H2 se escribe el **diseño de la app Expo** (lienzo, pantallas y arranque). Antes de H4 va la **prueba de la réplica central**, en [plan-pdc-stack-powersync-react-native.md](../../dev/dev/motor/plan-pdc-stack-powersync-react-native.md). Ninguna de las dos se construye desde este párrafo: cada una espera su documento y la confirmación en el chat.
 
 ## 13. Puntos abiertos
 
@@ -374,10 +373,10 @@ Abiertos por la revisión del 2026-10-19:
 - **Qué sube a la réplica central**: solo metadatos (commits, autores, estados del push) o también el snapshot Yjs y el JSON del tablero.
 - **Dónde vive el backend de escritura**: dentro del orquestador, lo que cambia su papel, o como proceso propio.
 - **Quién emite el token de lectura** de PowerSync, contra qué credencial (por ejemplo el token de invitación) y con qué alcance.
-- **Almacén de buckets** de PowerSync: MongoDB o Postgres.
+- **Almacén de buckets** de PowerSync: MongoDB o Postgres. Referencia: Space usa Postgres `powersync_storage` en el mismo host ([referencia Space](../referencia-space-powersync-sqlite-secrets.md)).
 - Si `space update` sigue bajando de git o lee de la réplica central.
-- Si las reglas del contrato fijadas en H0 (orden por `actualizadoEn`, borrado lógico, migración al leer) siguen igual o se ajustan al modelo de PowerSync.
-- **Si React Native entra en la v1**, según la prueba de concepto, y cómo se arranca Expo con PM2 y portless.
+- Si las reglas del contrato fijadas en H0 (orden por `actualizadoEn`, borrado lógico, migración al leer) siguen igual o se ajustan al modelo de PowerSync. Referencia: Space fija client schema / views y prohíbe migrar el espejo ([referencia Space §5](../referencia-space-powersync-sqlite-secrets.md#5-evolución-de-esquema-en-el-device-146--respuesta-a-s8)).
+- **Cómo se arranca la app Expo** con PM2 y portless, y cuál es su diseño de pantallas y de lienzo. React Native ya entra; esto es el documento siguiente, antes de H2. Para SQLite RN y secrets: [referencia Space](../referencia-space-powersync-sqlite-secrets.md).
 
 ## 14. Fuera del alcance de la v1
 
@@ -387,15 +386,16 @@ Abiertos por la revisión del 2026-10-19:
 - Un maestro central que escriba. La réplica central solo la alimenta el host.
 - Markdown en tiempo real.
 - Los módulos de IOKOIA Space.
-- Aplicación móvil, salvo que la prueba de concepto de React Native la adelante.
+- El teléfono como host local. En el móvil se entra como espectador o a una sala global.
 
 ## 15. Referencias
 
 - Acuerdos de la junta: `docs/fijos/inicial/acuerdos-junta-fase2.md`.
-- Arquitectura previa, vigente en lo que no cambió: [arquitectura-recomendada.md](./arquitectura-recomendada.md).
+- Lo que sigue de la propuesta anterior, sin el stack retirado: [arquitectura-recomendada.md](./arquitectura-recomendada.md).
 - Criterio de no partir en microservicios: [por-que-no-microservicios.md](./por-que-no-microservicios.md).
 - Contexto del producto: [../inicial/contexto-inicial.md](../inicial/contexto-inicial.md).
-- Análisis de la revisión del 2026-10-19: [analisis-stack-powersync-react-native.md](../../dev/dev/motor/analisis-stack-powersync-react-native.md).
-- PowerSync: [arquitectura](https://docs.powersync.com/architecture/architecture-overview), [cliente y cola de subida](https://docs.powersync.com/architecture/client-architecture), [escrituras del cliente](https://docs.powersync.com/handling-writes/writing-client-changes), [SDK de Node](https://docs.powersync.com/client-sdks/reference/node), [autoalojado](https://docs.powersync.com/self-hosting/getting-started), [CRDT con Yjs](https://docs.powersync.com/client-sdks/advanced/crdts).
+- Análisis de la revisión del stack: [analisis-stack-powersync-react-native.md](../../dev/dev/motor/analisis-stack-powersync-react-native.md).
+- Lo cableado en IOKOIA Space (SQLite, secrets, PowerSync): [referencia-space-powersync-sqlite-secrets.md](../referencia-space-powersync-sqlite-secrets.md). Repo: `/home/davesq/Documents/IoKoia/space/`.
+- PowerSync: [arquitectura](https://docs.powersync.com/architecture/architecture-overview), [cliente y cola de subida](https://docs.powersync.com/architecture/client-architecture), [escrituras del cliente](https://docs.powersync.com/handling-writes/writing-client-changes), [SDK de Node](https://docs.powersync.com/client-sdks/reference/node), [autoalojado](https://docs.powersync.com/self-hosting/getting-started), [cambios de esquema](https://docs.powersync.com/maintenance-ops/implementing-schema-changes), [CRDT con Yjs](https://docs.powersync.com/client-sdks/advanced/crdts).
 - Expo: [componentes DOM](https://docs.expo.dev/guides/dom-components/), [monorepos](https://docs.expo.dev/guides/monorepos/).
 - Yjs y Hocuspocus para la sala en vivo. Patrón de relay host-autoritativo: Live Share, Jackbox, Photon, `y-websocket`.

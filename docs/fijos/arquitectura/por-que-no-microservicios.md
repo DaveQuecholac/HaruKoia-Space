@@ -56,4 +56,4 @@ Una capacidad nueva que no cumpla ninguna entra como módulo del motor: esquema,
 
 ## Relación con la arquitectura
 
-La arquitectura vigente está en [analisis-arquitectura-v2.md](./analisis-arquitectura-v2.md). El detalle previo, en lo que la v2 no cambió, está en [arquitectura-recomendada.md](./arquitectura-recomendada.md).
+La arquitectura vigente está en [analisis-arquitectura-v2.md](./analisis-arquitectura-v2.md). Lo que sigue de la propuesta anterior, sin el stack retirado, está en [arquitectura-recomendada.md](./arquitectura-recomendada.md).

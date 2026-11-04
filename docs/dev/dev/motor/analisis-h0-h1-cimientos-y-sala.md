@@ -224,4 +224,4 @@ Si algo de esta lista aparece en un diff de esta rama, está fuera de alcance.
 
 ## 7. Qué hay que confirmar antes de empezar
 
-D1, D3 y D8 están confirmadas. Faltan, en orden de urgencia: **D4** (token del link separado del identificador de sala) y **D5** (qué pasa cuando el mismo host reconecta), las dos antes del paso B2. **D2** antes de B5, y **D6**, **D7** y **D9** en el paso donde aparecen.
+D1, D2, D3, D4, D5, D7, D8 y D9 están confirmadas. Queda pendiente **D6**: una sala por proceso host en la v1.

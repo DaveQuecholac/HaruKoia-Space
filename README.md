@@ -33,12 +33,12 @@ Requiere el proxy portless instalado en la máquina (`iokoia install portless`) 
 |------|---------|
 | `apps/orchestrator` | Registro de salas, links y relay |
 | `apps/host` | Sala en vivo, SQLite de PowerSync, repositorio, markdown y exportación |
-| `apps/web` | Pizarra, presencia y lectura de lo replicado |
+| `apps/web` | Pantallas de H1. La app de la v1 es Expo |
 | `apps/cli` | Binario `space` |
 | `packages/schema`, `packages/domain` | Contrato de datos y dominio |
-| `docker/` | Contenedores de orquestador y host |
+| `Dockerfile` | Imagen del orquestador para Coolify |
 
-La base local y la réplica son **PowerSync**, con una réplica central de lectura que solo alimenta el host (revisión del 2026-10-19). RxDB salió del diseño. Ver la [arquitectura v2](./docs/fijos/arquitectura/analisis-arquitectura-v2.md#5-datos).
+La base local y la réplica son **PowerSync**. El frontend de la v1 es **React Native con Expo**. La arquitectura vigente es la [v2](./docs/fijos/arquitectura/analisis-arquitectura-v2.md).
 
 ## Documentación
 
@@ -48,4 +48,5 @@ La base local y la réplica son **PowerSync**, con una réplica central de lectu
 | [Estructura del proyecto](./docs/fijos/estructura-del-proyecto.md) | Paquetes, procesos y arranque |
 | [Configuración del entorno](./docs/fijos/configuracion-del-entorno.md) | Cómo armar cada `.env` y qué orquestador usar |
 | [Fase 1 — módulos y tareas](./docs/fijos/fases/fase-1-modulos-y-tareas.md) | Qué se construye, en qué orden y quién |
+| [Referencia desde Space](./docs/fijos/referencia-space-powersync-sqlite-secrets.md) | PowerSync, SQLite y secrets ya cableados en el repo hermano |
 | [Índice de documentación](./docs/README.md) | Cómo está organizada |

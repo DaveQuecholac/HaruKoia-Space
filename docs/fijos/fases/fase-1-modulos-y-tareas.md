@@ -17,7 +17,7 @@ Un módulo aparece en varias épicas: el relay (M5) nace en H1 y se endurece en 
 
 > **Orden de construcción.** Este documento manda sobre el orden. La sección 12 del análisis v2 propone otro (publicación antes que sala) y quedó superada por la decisión de empezar por la sala, donde está el riesgo técnico real.
 
-> **Revisión del 2026-10-19.** Sale RxDB: la base local y la réplica (M3) pasan a **PowerSync**, con una réplica central de lectura que solo alimenta el host y que **no pasa por el relay**. Antes de H2 va la prueba de concepto de React Native, y antes de H4 la de PowerSync. Ver la v2, secciones 4, 5 y 13, y el [plan de las pruebas de concepto](../../dev/dev/motor/plan-pdc-stack-powersync-react-native.md).
+> **Stack vigente.** La base local y la réplica (M3) son **PowerSync**, con una réplica central de lectura que solo alimenta el host y que **no pasa por el relay** (2026-10-19). El frontend de la v1 es **React Native con Expo** (2026-11-04). Antes de H2 se escribe el diseño de esa app. Antes de H4 va la prueba de la réplica, en [plan-pdc-stack-powersync-react-native.md](../../dev/dev/motor/plan-pdc-stack-powersync-react-native.md). Ver la v2, secciones 4, 5 y 13.
 
 ---
 
@@ -166,7 +166,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 
 **Pruebas.** Convergencia con escrituras simultáneas; un invitado se va y vuelve sin duplicar ni perder su trabajo; latencia medida contra el objetivo.
 
-**Decisión que la bloquea.** Dónde se monta el lienzo: React DOM con Vite, o Expo con tldraw en un componente DOM. La decide la prueba de concepto de React Native (PdC 1).
+**Lo que la bloquea.** El diseño de la app Expo: pantallas, tldraw en un componente DOM, y el arranque con PM2 y portless. React Native ya entra. Ese documento se escribe antes de construir H2. Las pantallas de H1 siguen en Vite hasta entonces.
 
 **Definition of done.**
 1. El trazo de una persona aparece en la otra pantalla por debajo del objetivo de latencia.
@@ -227,7 +227,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. El archivo JSON se entiende en un diff de git.
 4. El commit después de un checkout cuelga del commit correcto.
 
-**Decisiones que la bloquean.** Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra. Y, para H4-T9, el resultado de la prueba de concepto de PowerSync (PdC 2) con lo que deja abierto: qué sube a la réplica central y quién emite el token de lectura.
+**Decisiones que la bloquean.** Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra. Y, para H4-T9, el diseño y la prueba de la réplica central: qué sube, dónde vive el backend de escritura, quién emite el token de lectura, y el almacén de buckets.
 
 ---
 
@@ -356,7 +356,7 @@ Propuesta de asignación, a ajustar entre ustedes:
 
 Mientras la pista B lleva H1 a H4 por el camino crítico, la pista A construye la base local y la réplica —que H4 ya necesita para el historial— y el esqueleto del CLI contra el contrato. Cuando B termine H4, H5 tiene la mitad hecha.
 
-Desde la revisión del 2026-10-19, cada pista abre con su prueba de concepto: la **PdC 1** (React Native y tldraw) es de la pista B y va antes de H2; la **PdC 2** (PowerSync con la réplica central) es de la pista A y va antes de H4.
+La pista B, antes de H2, escribe el diseño de la app Expo. La pista A, antes de H4, hace la prueba de la réplica central. Ninguna de las dos se arranca sin ese documento y sin confirmación en el chat.
 
 ### Puntos de contacto
 
@@ -382,19 +382,19 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 | Si git entra en el alcance inicial | H5, y con ella H7 | **H4** — cambia la forma de la épica siguiente |
 | Qué parte del tablero entra en staging | H4 | H4 |
 | ~~Licencia del almacenamiento en disco de la base local~~ | — | Resuelta el 2026-10-19: PowerSync autoalojado, gratis |
-| Si React Native entra en la v1 (PdC 1), y cómo se arranca Expo con PM2 y portless | H2 | **H2** |
-| Qué sube a la réplica central: metadatos, o también snapshot y JSON del tablero | H4, H5 | PdC 2 |
-| Dónde vive el backend de escritura: en el orquestador o como proceso propio | H4, H5 | PdC 2 |
-| Quién emite el token de lectura de PowerSync y con qué alcance | H4 | PdC 2 |
-| Almacén de buckets de PowerSync: MongoDB o Postgres | H4 | PdC 2 |
-| Si las reglas del contrato de H0 (orden, borrado, migración al leer) se ajustan al modelo de PowerSync | H4 | H4 |
+| Diseño de la app Expo: pantallas, lienzo y arranque con PM2 y portless. React Native ya entra | H2 | **H2** |
+| Qué sube a la réplica central: metadatos, o también snapshot y JSON del tablero | H4, H5 | Diseño de la réplica |
+| Dónde vive el backend de escritura: en el orquestador o como proceso propio | H4, H5 | Diseño de la réplica |
+| Quién emite el token de lectura de PowerSync y con qué alcance (Space: JWT tras Bearer) | H4 | Diseño de la réplica |
+| Almacén de buckets de PowerSync: MongoDB o Postgres (Space usa Postgres `powersync_storage`) | H4 | Diseño de la réplica |
+| Si las reglas del contrato de H0 se ajustan a PowerSync (Space: client schema / views; [referencia](../referencia-space-powersync-sqlite-secrets.md)) | H4 | H4 |
 | Si `space update` baja de git o lee de la réplica central | H5 | H5 |
 | Alcance del CLI en la v1: solo materializar, o también unirse a una sala | H5 | H5 |
 | Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
 | Qué secciones exactas lleva el markdown | H6 | H6 |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-Las urgentes son las dos primeras y la de React Native, que bloquea H2.
+Las urgentes son git, qué entra en staging, y el diseño de la app Expo, que bloquea H2.
 
 ---
 
@@ -406,6 +406,6 @@ Las urgentes son las dos primeras y la de React Native, que bloquea H2.
 - Un maestro central que escriba. La réplica central solo la alimenta el host.
 - Markdown en tiempo real mientras se dibuja.
 - Los módulos de IOKOIA Space (diseño, git, tareas, minutas, calendario, correo, agentes, depuración, metas, procedimientos, entidades, autenticación).
-- Aplicación móvil, salvo que la PdC 1 la adelante.
+- El teléfono como host local. En el móvil se entra como espectador o a una sala global.
 
 Cuando lleguen, esos módulos entran como colecciones, pantallas y comandos de este motor, reutilizando la tubería de M11 y el contrato de M2.

@@ -9,7 +9,7 @@ motor-colaborativo/
 ├── apps/
 │   ├── orchestrator/       orquestador: registro de salas, links, relay
 │   ├── host/               contenedor host: sala Yjs, SQLite de PowerSync, repo, IA, exportación
-│   ├── web/                pizarra, presencia, lectura local de lo replicado
+│   ├── web/                pantallas de H1 (Vite). La app de la v1 pasa a Expo; su diseño va antes de H2
 │   └── cli/                binario `space`
 ├── packages/
 │   ├── schema/             esquemas de las tablas replicadas
@@ -18,7 +18,9 @@ motor-colaborativo/
 │   ├── cliente-del-relay/  entrada del invitado por el túnel, en navegador y Node
 │   └── pruebas-entre-procesos/  pruebas que levantan orquestador y host a la vez
 ├── scripts/                kit PM2 + portless y orquestador de la raíz
-├── docker/                 compose de orquestador y host (la réplica central entra con la PdC 2)
+├── Dockerfile              imagen que sí corre (Coolify): Node ejecuta el TypeScript
+├── docker-compose.yml      orquestador en Coolify
+├── docker/                 compose viejo: no coincide con el host actual. No se usa
 ├── docs/
 │   ├── fijos/              documentación permanente
 │   └── dev/<rama-git>/     documentación de la rama en curso
@@ -31,7 +33,7 @@ motor-colaborativo/
 |---------|-----------------|----------------|
 | `apps/orchestrator` | Registro de salas y relay por identificador. No persiste el tablero | Por conexiones. Si se reinicia, hosts e invitados reconectan |
 | `apps/host` | Autoridad de la sala y dueño del commit. Único que escribe en la réplica central. Base local, repositorio, IA, exportación | Por sala. Su caída cierra esa sala, no las demás |
-| `apps/web` | Interfaz y lectura local de lo replicado. Puede cambiar a Expo según la PdC 1 | En el cliente |
+| `apps/web` | Pantallas de H1 en Vite. La app de la v1 es Expo (React Native); se construye cuando exista su diseño | En el cliente |
 | `apps/cli` | Arrancar el host, estado, materializar markdown | En la máquina del developer |
 | `packages/schema` | Contrato de datos entre web, host y CLI | — |
 | `packages/domain` | Reglas del dominio sin transporte ni almacenamiento | — |
@@ -41,7 +43,7 @@ motor-colaborativo/
 
 El criterio para crear un proceso nuevo está en [por-que-no-microservicios.md](./arquitectura/por-que-no-microservicios.md). Una capacidad nueva es un módulo dentro de uno de estos paquetes hasta que cumpla alguna de las cuatro condiciones de ahí.
 
-**Réplica central** (revisión 2026-10-19). La arquitectura agrega Postgres, PowerSync Service y un backend de escritura en la nube ([v2, sección 4](./arquitectura/analisis-arquitectura-v2.md#4-topología)). Todavía no tienen paquete ni contenedor: si el backend vive dentro de `apps/orchestrator` o en una app propia es un punto abierto, y se decide con la prueba de concepto de PowerSync. Cuando entre una app nueva, se registra como dice `.cursor/rules/pm2-app.mdc`.
+**Réplica central.** La arquitectura agrega Postgres, PowerSync Service y un backend de escritura en la nube ([v2, sección 4](./arquitectura/analisis-arquitectura-v2.md#4-topología)). Todavía no tienen paquete ni contenedor. Dónde vive el backend de escritura es un punto abierto y se cierra en el diseño de la réplica, antes de H4. Cómo lo cableó IOKOIA Space (compose, buckets, JWT, SQLite/secrets): [referencia-space-powersync-sqlite-secrets.md](./referencia-space-powersync-sqlite-secrets.md). Cuando entre una app nueva, se registra como dice `.cursor/rules/pm2-app.mdc`.
 
 ## Arranque con PM2 y portless
 
@@ -107,19 +109,14 @@ Si el proxy no está arriba, el helper se detiene con el mensaje y el comando pa
 
 ## Contenedores
 
-El compose de `docker/` levanta hoy dos contenedores: orquestador y host. El host incluye `git` y `pandoc`, porque comitea y exporta. Su volumen `/data` guarda la base local y la copia de trabajo.
+El día a día es PM2 y portless.
 
-La réplica central (Postgres, PowerSync Service y el backend de escritura) todavía no está en el compose: entra con la prueba de concepto de PowerSync. PowerSync publica su imagen como `journeyapps/powersync-service` y tiene guía para desplegarse en Coolify.
+La imagen que sí corre es el `Dockerfile` de la raíz, con `docker-compose.yml` al lado, para el orquestador en Coolify. Node ejecuta `apps/<app>/src/main.ts`. No hay etapa que produzca `dist`.
 
-```bash
-pnpm docker:up
-pnpm docker:down
-```
-
-El día a día es PM2 y portless. El compose sirve para probar la separación real y para la sala global.
+`docker/` es un compose anterior. Sus Dockerfiles arrancan `dist/main.js` y le pasan al host `ORCHESTRATOR_URL`, variable que el proceso no lee. No se usa. `pnpm docker:up` apunta ahí: no lo corras hasta que ese script apunte a la imagen de la raíz. La réplica central todavía no está en ningún compose; entra con el diseño de la réplica, antes de H4. PowerSync publica su imagen como `journeyapps/powersync-service`.
 
 ## Estado actual
 
-H0 y H1 están hechas en la rama `dev/motor`: arranque, registro de salas, relay por túnel inverso, sala Yjs en vivo con presencia, roles mínimos y las pantallas de entrada. Detalle y lo que falta para cerrar H1 en [docs/dev/dev/motor/README.md](../dev/dev/motor/README.md).
+El código de H0 y H1 está en la rama `dev/motor`: arranque, registro de salas, relay por túnel inverso, sala Yjs en vivo con presencia, roles mínimos y las pantallas de entrada. El cierre a mano de H1 está en [docs/dev/dev/motor/README.md](../dev/dev/motor/README.md).
 
-Todavía no hay lienzo, ni persistencia de la sala, ni commit, ni réplica. Eso entra por las rebanadas de la [fase 1](./fases/fase-1-modulos-y-tareas.md), cada una con su análisis y su plan en `docs/dev/<rama>/`. Lo siguiente son las dos pruebas de concepto de la revisión del 2026-10-19.
+Todavía no hay lienzo, ni persistencia de la sala, ni commit, ni réplica, ni app Expo. Lo siguiente, antes de construir H2, es el diseño de la app Expo. La réplica se diseña y se prueba antes de H4. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md).
