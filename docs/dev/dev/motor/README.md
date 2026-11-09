@@ -24,23 +24,26 @@ Si algo de la segunda lista aparece en un diff de esta rama, está fuera de alca
 
 ## Estado
 
+> **H1 cerrada en código (2026-11-08).** El trabajo de producto de H0/H1 está hecho. Lo que quedaba era checklist humano residual ([checkpoint 3 y 4](checkpoint-3-y-4.md), verificación en la segunda máquina). No bloqueó el avance a H2. H2 está cerrada y aprobada (2026-11-09) en [docs/dev/dev/pizarra-colaborativa/](../pizarra-colaborativa/README.md).
+
 | Paso | Qué | Estado |
 |------|-----|--------|
 | A1 | Rama y documentación | Hecho |
-| A2 | Arranque en las dos máquinas | Parcial — verificado aquí; falta la máquina de Kua |
+| A2 | Arranque en las dos máquinas | Hecho en código — checklist humano residual en segunda máquina |
 | A3 | Humo de WebSocket por el proxy | Hecho — 6 de 6 comprobaciones |
 | A4 | Andamio de pruebas | Hecho — Vitest, 5 pruebas |
-| A5 | Reglas del contrato | Hecho — falta que Kua las revise |
+| A5 | Reglas del contrato | Hecho — revisión humana residual |
 | A6 | Formato de log | Hecho |
 | B1 | Contrato del protocolo | Hecho |
 | B2 | Registro de salas | Hecho |
 | B3 | Túnel del orquestador | Hecho — checkpoint 2 pasado entre dos redes |
-| B4 | Conexión del host | Hecho — falta probar a mano suspender y despertar la máquina |
-| B5 | Sala en vivo y presencia | Hecho — sin interfaz: la pantalla llega en B6 |
-| B6 | Web: nombre, volverme host, unirme | Hecho — **checkpoint 3 pasado** el 2026-10-04: dos máquinas en redes distintas por Makino Hara |
-| B7 | Resistencia y reconexión | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
-| B8 | Roles mínimos | Hecho — probado a mano en la web el 2026-10-04, con el orquestador de Makino Hara redesplegado |
-| B9 | Varios participantes y cierre | Hecho — diez participantes convergen y la latencia quedó medida. Falta recorrer a mano [checkpoint 3 y 4](checkpoint-3-y-4.md) para cerrar H1 |
+| B4 | Conexión del host | Hecho — humo residual suspender/despertar opcional |
+| B5 | Sala en vivo y presencia | Hecho |
+| B6 | Web: nombre, volverme host, unirme | Hecho — checkpoint 3 pasado el 2026-10-04 (Makino Hara) |
+| B7 | Resistencia y reconexión | Hecho — 2026-10-04 |
+| B8 | Roles mínimos | Hecho — 2026-10-04 |
+| B9 | Varios participantes y cierre | Hecho en código — checklist manual completo opcional en checkpoint 3–4 |
+| **H1** | Épica | **Cerrada en código** → H2 cerrada y aprobada el 2026-11-09 |
 
 El esqueleto del monorepo y el arranque con PM2 y portless ya existen del trabajo previo a esta rama; A2 es verificarlo en las dos máquinas, no construirlo.
 

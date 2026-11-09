@@ -12,7 +12,7 @@
 
 import type * as Y from 'yjs';
 
-/** El mapa que usa la medición. No lo toca ninguna otra prueba. */
+/** El mapa de la medición de la sala. Un trazo usa el mapa `tablero`. */
 const MAPA_DE_LA_MEDICION = 'latencia';
 
 export type MedicionDeLatencia = {
@@ -23,8 +23,8 @@ export type MedicionDeLatencia = {
 };
 
 /** Espera a que a este documento le llegue la clave, y devuelve cuándo llegó. */
-function esperarLaLlegada(documento: Y.Doc, clave: string, limite: number): Promise<number> {
-  const mapa = documento.getMap<unknown>(MAPA_DE_LA_MEDICION);
+function esperarLaLlegada(documento: Y.Doc, mapaNombre: string, clave: string, limite: number): Promise<number> {
+  const mapa = documento.getMap<unknown>(mapaNombre);
 
   return new Promise((resolver, rechazar) => {
     const mirar = (evento: Y.YMapEvent<unknown>) => {
@@ -57,8 +57,14 @@ export async function medirLatencia(opciones: {
   readonly observadores: readonly Y.Doc[];
   readonly rondas: number;
   readonly espera?: number;
+  /** Por omisión, el mapa de la medición de la sala. Un trazo pasa `tablero`. */
+  readonly mapa?: string;
+  /** Por omisión, el número de ronda. Un trazo pasa el registro en JSON. */
+  readonly valor?: (ronda: number) => unknown;
 }): Promise<MedicionDeLatencia> {
   const { escritor, rondas, espera = 10_000 } = opciones;
+  const mapa = opciones.mapa ?? MAPA_DE_LA_MEDICION;
+  const valor = opciones.valor ?? ((ronda: number) => ronda);
   const observadores = opciones.observadores.filter((documento) => documento !== escritor);
   if (observadores.length === 0) throw new Error('la medición necesita al menos un observador');
 
@@ -66,10 +72,10 @@ export async function medirLatencia(opciones: {
 
   for (let ronda = 0; ronda < rondas; ronda++) {
     const clave = `ronda-${ronda}`;
-    const llegadas = observadores.map((documento) => esperarLaLlegada(documento, clave, espera));
+    const llegadas = observadores.map((documento) => esperarLaLlegada(documento, mapa, clave, espera));
 
     const salida = performance.now();
-    escritor.getMap<unknown>(MAPA_DE_LA_MEDICION).set(clave, ronda);
+    escritor.getMap<unknown>(mapa).set(clave, valor(ronda));
 
     const tiempos = await Promise.all(llegadas);
     medidas.push(Math.max(...tiempos) - salida);
