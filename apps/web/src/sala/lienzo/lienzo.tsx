@@ -50,10 +50,13 @@ export function Lienzo(props: {
     enlace.current?.alCambiarLaSesion({ sincronizado, sembrar });
   }, [sincronizado, sembrar]);
 
+  const licencia = import.meta.env.VITE_TLDRAW_LICENSE_KEY;
+
   return (
     <div className="sala-lienzo-tldraw">
       <Tldraw
         store={store}
+        {...(licencia ? { licenseKey: licencia } : {})}
         onMount={(editor) => {
           editorListo.current = true;
           enlace.current?.editorMontado();

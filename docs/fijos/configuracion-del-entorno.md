@@ -39,6 +39,7 @@ cp apps/orchestrator/.env.example apps/orchestrator/.env
 | `apps/host` | `WEB_ORIGEN` | `https://web.harukoia.local.iokoia.dev` | Habilita "Volverme host" para la web de esta máquina |
 | `apps/web` | `VITE_ORQUESTADOR_URL` | Compartido | Por dónde entra a las salas. **Igual que `ORQUESTADOR_URL` del host** |
 | `apps/web` | `VITE_HOST_URL` | `https://host.harukoia.local.iokoia.dev` | A qué host le pide la invitación "Volverme host" |
+| `apps/web` | `VITE_TLDRAW_LICENSE_KEY` | Vacía en desarrollo | Licencia de tldraw. El build público la hornea. Sin ella el lienzo se apaga a los cinco segundos |
 | `apps/orchestrator` | — | — | No necesita variables en desarrollo |
 
 Ningún `.env` define `PORT`: lo asigna portless.
@@ -82,7 +83,7 @@ Para actualizar:
 
 ## Probar H2 con alguien que no tiene el repositorio
 
-La web pública es `https://web.harukoia.makinohara.sys.iokoia.com`. Ahí está horneado el orquestador compartido y `VITE_HOST_URL=https://host.harukoia.local.iokoia.dev`.
+La web pública es `https://web.harukoia.makinohara.sys.iokoia.com`. Ahí está horneado el orquestador compartido, `VITE_HOST_URL=https://host.harukoia.local.iokoia.dev` y `VITE_TLDRAW_LICENSE_KEY`. La key no va en el repositorio: es un argumento de construcción de esa imagen. El dominio autorizado tiene que cubrir ese host.
 
 En la laptop del host, `apps/host/.env` queda así y se aplica con `pm2 delete` y `dev:start`:
 
