@@ -41,6 +41,7 @@ import { HocuspocusProvider, HocuspocusProviderWebsocket } from '@hocuspocus/pro
 import * as Y from 'yjs';
 
 import type { Invitacion } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
+import { abrirLogLocal } from '../log-local/log-local.ts';
 
 /** Dos minutos de espera al host antes de dar la sala por cerrada. */
 export const ESPERA_MAXIMA_DEL_HOST = 120_000;
@@ -86,7 +87,25 @@ export type InstantaneaDeLaSala = {
   readonly accionRechazada: AccionRechazada | undefined;
 };
 
+export type CursorDePresencia = { readonly x: number; readonly y: number };
+
+/**
+ * El canal de presencia que ya usa el nombre. El lienzo le agrega cursor,
+ * selección y página sin reemplazar el resto del estado.
+ */
+export type PresenciaDelLienzo = {
+  readonly propio: number;
+  publicar(cursor: CursorDePresencia | null, seleccion: readonly string[], pagina: string): void;
+  alCambiar(oyente: (estados: ReadonlyMap<number, Record<string, unknown>>) => void): () => void;
+};
+
 export type ConexionALaSala = {
+  /** El documento de esta sala. El lienzo escribe ahí; esta conexión no sabe de pizarra. */
+  readonly documento: Y.Doc;
+  /** Avisa cuando el documento ya recibió el estado del host, y cuando deja de estarlo. */
+  alSincronizar(oyente: (sincronizado: boolean) => void): () => void;
+  /** Cursor y selección junto al nombre. No crea otro canal. */
+  presenciaDelLienzo(): PresenciaDelLienzo;
   /** Pide al host un link de invitación nuevo. Solo el host lo acepta. */
   cambiarInvitacion(): void;
   salir(): void;
@@ -101,6 +120,8 @@ export type OpcionesDeLaConexion = {
   readonly alCambiar: (instantanea: InstantaneaDeLaSala) => void;
   /** El host cambió el link. El anterior ya no deja entrar. */
   readonly alCambiarLaInvitacion: (tokenDeInvitacion: TokenDeInvitacion) => void;
+  /** Este navegador no pudo abrir el log local del documento. */
+  readonly alNoGuardarElLog?: () => void;
   /** Solo para pruebas. */
   readonly esperaMaximaDelHost?: number;
 };
@@ -151,10 +172,12 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
     }),
   });
 
+  const documento = new Y.Doc();
+  const logLocal = abrirLogLocal(invitacion.sala, documento, () => opciones.alNoGuardarElLog?.());
   const proveedor = new HocuspocusProvider({
     websocketProvider: websocket,
     name: invitacion.sala,
-    document: new Y.Doc(),
+    document: documento,
     ...(opciones.tokenDeWebDelHost === undefined ? {} : { token: opciones.tokenDeWebDelHost }),
     onStateless: ({ payload }) => {
       const leido = interpretarMensajeDeSala(payload);
@@ -217,6 +240,39 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
   emitir();
 
   return {
+    documento,
+    alSincronizar(oyente) {
+      const avisar = ({ state }: { state: boolean }) => oyente(state);
+      proveedor.on('synced', avisar);
+      if (proveedor.synced) oyente(true);
+      return () => proveedor.off('synced', avisar);
+    },
+    presenciaDelLienzo() {
+      const awareness = proveedor.awareness;
+      if (!awareness) throw new Error('la conexión no tiene presencia');
+      return {
+        propio: awareness.clientID,
+        publicar(cursor, seleccion, pagina) {
+          const actual = awareness.getLocalState() ?? {};
+          if (
+            JSON.stringify(actual.cursor) === JSON.stringify(cursor) &&
+            JSON.stringify(actual.seleccion) === JSON.stringify(seleccion) &&
+            actual.pagina === pagina
+          ) {
+            return;
+          }
+          awareness.setLocalState({ ...actual, cursor, seleccion, pagina });
+        },
+        alCambiar(oyente) {
+          const avisar = () => {
+            oyente(awareness.getStates() as ReadonlyMap<number, Record<string, unknown>>);
+          };
+          awareness.on('change', avisar);
+          avisar();
+          return () => awareness.off('change', avisar);
+        },
+      };
+    },
     cambiarInvitacion() {
       accionRechazada = undefined;
       proveedor.sendStateless(serializarMensajeDeSala({ tipo: 'pedir-accion', accion: 'cambiar-invitacion' }));
@@ -224,6 +280,7 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
     },
     salir() {
       clearTimeout(vencimiento);
+      logLocal.cerrar();
       proveedor.destroy();
       websocket.destroy();
     },

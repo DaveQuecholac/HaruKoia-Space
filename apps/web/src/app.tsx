@@ -44,12 +44,20 @@ export function App() {
     setUbicacion(window.location.href);
   }
 
+  const enSala = estaEnLaSala();
+
   return (
-    <main>
-      <h1>HaruKoia</h1>
+    <main className={enSala ? 'sala-pagina' : undefined}>
+      {enSala ? null : <h1>HaruKoia</h1>}
       {contenido()}
     </main>
   );
+
+  function estaEnLaSala() {
+    if ('falta' in configuracion || !nombre || cambiandoNombre) return false;
+    if (!esRutaDeSala(new URL(ubicacion).pathname)) return false;
+    return Boolean(leerEnlace(ubicacion));
+  }
 
   function contenido() {
     if ('falta' in configuracion) {

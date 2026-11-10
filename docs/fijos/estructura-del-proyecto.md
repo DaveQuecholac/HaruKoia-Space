@@ -94,6 +94,8 @@ Desde el 2026-10-02 las máquinas IOKOIA usan el sufijo `.local.iokoia` con el T
 | `apps/host` | `harukoia-host-dev` | `https://host.harukoia.local.iokoia.dev/` |
 | `apps/web` | `harukoia-web-dev` | `https://web.harukoia.local.iokoia.dev/` |
 
+`pnpm dev` también levanta Open Design si existe `~/tools/open-design`. No es una app del motor ni un proceso de PM2: lo arranca su propio `tools-dev`, en `http://127.0.0.1:7456/`, y registra la ruta `https://diseno.harukoia.local.iokoia.dev/`. Si esa carpeta no está, el arranque de orquestador, host y web sigue igual. `pnpm dev:stop` lo apaga junto con las apps.
+
 Identidad completa y qué actualizar al agregar una app: `.cursor/rules/pm2-app.mdc`. Operación y prohibiciones del agente: `.cursor/rules/pm2-dev.mdc`.
 
 ### Requisitos de la máquina
@@ -119,4 +121,6 @@ La imagen que sí corre es el `Dockerfile` de la raíz, con `docker-compose.yml`
 
 El código de H0 y H1 está en la rama `dev/motor`: arranque, registro de salas, relay por túnel inverso, sala Yjs en vivo con presencia, roles mínimos y las pantallas de entrada. El cierre a mano de H1 está en [docs/dev/dev/motor/README.md](../dev/dev/motor/README.md).
 
-Todavía no hay lienzo, ni persistencia de la sala, ni commit, ni réplica, ni app Expo. Lo siguiente, antes de construir H2, es el diseño de la app Expo. La réplica se diseña y se prueba antes de H4. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md).
+H2 está cerrada y aprobada (2026-11-09). El lienzo vive en `apps/web`: escribe el tablero en el documento Yjs de la sala, el cursor y la selección van en el awareness junto al nombre, y el navegador guarda el log de ese documento en IndexedDB. El cierre está en [docs/dev/dev/pizarra-colaborativa/README.md](../dev/dev/pizarra-colaborativa/README.md).
+
+Todavía no hay persistencia de la sala en el disco del host, ni commit, ni réplica, ni app Expo. Eso empieza en H3. La réplica se diseña y se prueba antes de H4. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md).

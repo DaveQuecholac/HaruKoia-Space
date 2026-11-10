@@ -1,13 +1,17 @@
 import type { CausaDeRechazoDeEntrada } from '@harukoia/cliente-del-relay';
 import type { CausaDeAccionRechazada, CausaDeCierre, Rol, TokenDeInvitacion, TokenDeWebDelHost } from '@harukoia/domain';
 import { useEffect, useRef, useState } from 'react';
+import type * as Y from 'yjs';
 
 import { type Invitacion, crearEnlace } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
+import { Lienzo } from '../lienzo/lienzo.tsx';
 import {
   type ConexionALaSala,
   type InstantaneaDeLaSala,
+  type PresenciaDelLienzo,
   conectarALaSala,
 } from '../conexion-a-la-sala/conexion-a-la-sala.ts';
+import './pantalla-de-sala.css';
 
 /** Lo que ve la persona por cada causa. Una causa nueva no compila sin su mensaje. */
 const POR_QUE_NO_ENTRASTE: Record<CausaDeRechazoDeEntrada, string> = {
@@ -68,11 +72,17 @@ export function PantallaDeSala(props: {
   const [copiado, setCopiado] = useState(false);
   const [cambiando, setCambiando] = useState(false);
   const [linkCambiado, setLinkCambiado] = useState(false);
+  const [documento, setDocumento] = useState<Y.Doc | undefined>(undefined);
+  const [presencia, setPresencia] = useState<PresenciaDelLienzo | undefined>(undefined);
+  const [generacion, setGeneracion] = useState(0);
+  const [sincronizado, setSincronizado] = useState(false);
+  const [logFallido, setLogFallido] = useState(false);
   const conexion = useRef<ConexionALaSala>(undefined);
   const alCambiarLaInvitacion = useRef(props.alCambiarLaInvitacion);
   alCambiarLaInvitacion.current = props.alCambiarLaInvitacion;
 
   useEffect(() => {
+    setLogFallido(false);
     const abierta = conectarALaSala({
       orquestador,
       invitacion,
@@ -88,13 +98,29 @@ export function PantallaDeSala(props: {
         setLinkCambiado(true);
         alCambiarLaInvitacion.current(nuevo);
       },
+      alNoGuardarElLog: () => setLogFallido(true),
     });
     conexion.current = abierta;
-    return () => abierta.salir();
+    setGeneracion((n) => n + 1);
+    setDocumento(abierta.documento);
+    setPresencia(abierta.presenciaDelLienzo());
+    const dejarDeOir = abierta.alSincronizar(setSincronizado);
+    return () => {
+      dejarDeOir();
+      abierta.salir();
+      setDocumento(undefined);
+      setPresencia(undefined);
+      setSincronizado(false);
+    };
   }, [orquestador, invitacion.sala, invitacion.tokenDeInvitacion, nombre, tokenDeWebDelHost, intento]);
 
   const { estado, participantes, miRol, accionRechazada } = instantanea;
   const enlace = crearEnlace(window.location.origin, invitacion);
+  const enElTablero =
+    estado.tipo === 'conectando' ||
+    estado.tipo === 'conectada' ||
+    estado.tipo === 'reconectando' ||
+    estado.tipo === 'esperando-al-host';
 
   async function copiar() {
     await navigator.clipboard.writeText(enlace);
@@ -108,64 +134,79 @@ export function PantallaDeSala(props: {
   }
 
   return (
-    <>
-      <h2>Sala {invitacion.sala}</h2>
+    <div className="sala">
+      <header className="sala-barra">
+        <span className="sala-marca">HaruKoia</span>
+        <span>{invitacion.sala}</span>
+        {enElTablero ? (
+          <span className="sala-estado" aria-live="polite">
+            {ESTADO_VISIBLE[estado.tipo]}
+          </span>
+        ) : null}
+        <span className="sala-orquestador">{new URL(orquestador).host}</span>
+        <span className="sala-espacio" />
+        {enElTablero && participantes.length > 0 ? (
+          <span className="sala-personas">
+            {participantes
+              .map((p) => `${p.nombre ?? '(sin nombre)'} · ${p.rol ? NOMBRE_DEL_ROL[p.rol] : 'sin rol'}${p.soyYo ? ' (tú)' : ''}`)
+              .join(' · ')}
+          </span>
+        ) : null}
+        {miRol === 'host' ? (
+          <>
+            <button type="button" className="sala-primario" onClick={copiar}>
+              {copiado ? 'Copiado' : 'Copiar link'}
+            </button>
+            <button type="button" onClick={cambiarLink} disabled={cambiando || estado.tipo !== 'conectada'}>
+              {cambiando ? 'Cambiando…' : 'Cambiar link'}
+            </button>
+          </>
+        ) : null}
+        <button type="button" onClick={props.alSalir}>
+          Salir
+        </button>
+      </header>
 
       {estado.tipo === 'rechazada' || estado.tipo === 'sin-host' ? (
-        <p role="alert">
+        <p className="sala-aviso" role="alert">
           {estado.tipo === 'rechazada' ? POR_QUE_NO_ENTRASTE[estado.causa] : 'La sala se cerró.'}{' '}
           <button type="button" onClick={() => setIntento((n) => n + 1)}>
             Reintentar
           </button>
         </p>
-      ) : estado.tipo === 'cerrada' ? (
-        <p role="alert">{POR_QUE_SE_CERRO[estado.causa]}</p>
-      ) : (
-        <p aria-live="polite">Estado: {ESTADO_VISIBLE[estado.tipo]}</p>
-      )}
-      <p>
-        <small>Orquestador: {new URL(orquestador).host}</small>
-      </p>
+      ) : null}
+      {estado.tipo === 'cerrada' ? (
+        <p className="sala-aviso" role="alert">
+          {POR_QUE_SE_CERRO[estado.causa]}
+        </p>
+      ) : null}
+      {linkCambiado ? (
+        <p className="sala-aviso" aria-live="polite">
+          Link nuevo. El anterior ya no deja entrar; quienes ya están en la sala siguen dentro.
+        </p>
+      ) : null}
+      {accionRechazada ? (
+        <p className="sala-aviso" role="alert">
+          {POR_QUE_NO_SE_PUDO[accionRechazada.causa]}
+        </p>
+      ) : null}
+      {logFallido ? (
+        <p className="sala-aviso" role="alert">
+          Este navegador no guardó el dibujo. Si te quedas sin red, lo que dibujes ahora se puede perder.
+        </p>
+      ) : null}
 
-      {miRol === 'host' && (
-        <section>
-          <h3>Invitar</h3>
-          <input readOnly value={enlace} size={70} onFocus={(e) => e.target.select()} />{' '}
-          <button type="button" onClick={copiar}>
-            {copiado ? 'Copiado' : 'Copiar link'}
-          </button>{' '}
-          <button type="button" onClick={cambiarLink} disabled={cambiando || estado.tipo !== 'conectada'}>
-            {cambiando ? 'Cambiando…' : 'Cambiar link'}
-          </button>
-          {linkCambiado && (
-            <p aria-live="polite">
-              Link nuevo. El anterior ya no deja entrar; quienes ya están en la sala siguen dentro.
-            </p>
-          )}
-          {accionRechazada && <p role="alert">{POR_QUE_NO_SE_PUDO[accionRechazada.causa]}</p>}
-        </section>
-      )}
-
-      {(estado.tipo === 'conectando' ||
-        estado.tipo === 'conectada' ||
-        estado.tipo === 'reconectando' ||
-        estado.tipo === 'esperando-al-host') && (
-        <section>
-          <h3>Participantes ({participantes.length})</h3>
-          <ul>
-            {participantes.map((p) => (
-              <li key={p.cliente}>
-                {p.nombre ?? '(sin nombre)'} — {p.rol ? NOMBRE_DEL_ROL[p.rol] : 'sin rol'}
-                {p.soyYo && ' (tú)'}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <button type="button" onClick={props.alSalir}>
-        Salir de la sala
-      </button>
-    </>
+      {enElTablero && documento && presencia ? (
+        <div className="sala-lienzo">
+          <Lienzo
+            key={generacion}
+            documento={documento}
+            sincronizado={sincronizado}
+            sembrar={miRol === 'host'}
+            presencia={presencia}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

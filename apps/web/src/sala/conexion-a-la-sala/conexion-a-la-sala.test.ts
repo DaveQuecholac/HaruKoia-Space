@@ -136,6 +136,32 @@ describe('conexión a la sala ante fallas', () => {
     expect(intentos).toBe(hechos);
   }, 10_000);
 
+  it('el cursor se publica junto al nombre y no lo reemplaza', () => {
+    const { sala, tokenDeInvitacion } = generarIdentidadDeSala();
+    const conexion = conectarALaSala({
+      orquestador: base,
+      invitacion: { sala, tokenDeInvitacion },
+      nombre: 'Ana',
+      tokenDeWebDelHost: undefined,
+      alCambiar: () => {},
+      alCambiarLaInvitacion: () => {},
+    });
+    conexiones.push(conexion);
+    const canal = conexion.presenciaDelLienzo();
+    let propio: Record<string, unknown> | undefined;
+    canal.alCambiar((estados) => {
+      propio = estados.get(canal.propio);
+    });
+
+    canal.publicar({ x: 10, y: 20 }, ['shape:uno'], 'page:inicio');
+    canal.publicar({ x: 10, y: 20 }, ['shape:uno'], 'page:inicio');
+
+    expect(propio?.nombre).toBe('Ana');
+    expect(propio?.cursor).toEqual({ x: 10, y: 20 });
+    expect(propio?.seleccion).toEqual(['shape:uno']);
+    expect(propio?.pagina).toBe('page:inicio');
+  });
+
   it('una caída cualquiera reconecta sola', async () => {
     const { ultimo, estados } = conectar();
     await hasta(() => ultimo() === 'conectada');
