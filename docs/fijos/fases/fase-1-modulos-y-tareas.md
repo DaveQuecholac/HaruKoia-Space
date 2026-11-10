@@ -44,6 +44,23 @@ Un módulo aparece en varias épicas: el relay (M5) nace en H1 y se endurece en 
 
 **H5 publica sin IA.** La primera publicación que llega al repositorio es un markdown **determinista** —versión, participantes, fecha, notas del tablero— verificable carácter por carácter. Así se depura el transporte sin depurar al mismo tiempo una salida que cambia en cada corrida, y no depende del proveedor de IA, que es una decisión abierta. No es un simulacro que se tire: queda como una variante más del mecanismo de publicación de M11, al lado de la variante con IA.
 
+### Despliegue al cerrar cada épica
+
+Cada épica se demuestra en el **entorno compartido** (Coolify, Makino Hara), no solo con `pnpm dev`. La rama que se despliega es **`development`**. Al cerrar la épica se redespliega el proceso que esa épica dejó usable para otra persona.
+
+| Épica | Qué se despliega | Qué no se sube |
+|-------|------------------|----------------|
+| **H0** | Nada. La prueba es local | Todo |
+| **H1** | Orquestador (`APP=orchestrator`, `GET /health`) | Host y web. El host marca hacia el orquestador compartido desde la laptop |
+| **H2** | Orquestador y **web** (`APP=web`). Dominio `https://web.harukoia.makinohara.sys.iokoia.com`. El build hornea `VITE_ORQUESTADOR_URL` al orquestador compartido y `VITE_HOST_URL` a `https://host.harukoia.local.iokoia.dev` | El host de la sala de usuario. Sigue en la laptop. `WEB_ORIGEN` de ese host es el origen de la web pública, para que "Volverme host" salga de esa web en la misma máquina. Un teléfono solo abre el link; no es host |
+| **H3** | Orquestador y web, si el cambio los tocó. El disco de la sala sigue en la laptop del host | El host |
+| **H4** | La **réplica central** (Postgres, PowerSync Service y backend de escritura), aparte del orquestador. No pasa por el relay. Solo el host la alimenta | El host, que sigue siendo quien escribe |
+| **H5** | Lo que esa épica cambie en orquestador, web o réplica. El CLI se corre en la máquina | El CLI no es un proceso de Coolify |
+| **H6** | El proceso nuevo, si la épica agrega uno | — |
+| **H7** | El contenedor host de la **sala global** | La sala de usuario puede seguir con el host en la laptop |
+
+El orquestador no guarda el tablero. La web pública tampoco: sirve el lienzo y habla con el orquestador. La réplica no entra en el despliegue de H2.
+
 ---
 
 ## 2. Matriz de épicas y módulos
@@ -172,6 +189,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 1. El trazo de una persona aparece en la otra pantalla por debajo del objetivo de latencia.
 2. Con diez clientes el tablero converge al mismo estado.
 3. Quien se queda sin red sigue dibujando y al volver no pierde nada.
+4. La web está desplegada en el entorno compartido desde `development`. Otra persona abre el link de invitación sin clonar el repositorio. El host de esa sala sigue en la laptop.
 
 ---
 

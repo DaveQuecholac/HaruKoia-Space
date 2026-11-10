@@ -113,7 +113,7 @@ Si el proxy no está arriba, el helper se detiene con el mensaje y el comando pa
 
 El día a día es PM2 y portless.
 
-La imagen que sí corre es el `Dockerfile` de la raíz, con `docker-compose.yml` al lado, para el orquestador en Coolify. Node ejecuta `apps/<app>/src/main.ts`. No hay etapa que produzca `dist`.
+La imagen que sí corre es el `Dockerfile` de la raíz. Coolify la construye dos veces desde `development`: orquestador (`APP=orchestrator`) y web (`APP=web`). Node ejecuta `apps/<app>/src/main.ts`. El orquestador no produce `dist`. La web sí: Vite genera `apps/web/dist` dentro de la imagen y `main.ts` lo sirve, con respaldo a `index.html` para `/s/<sala>`. `docker-compose.yml` describe solo el orquestador. El host de la sala de usuario no va a Coolify.
 
 `docker/` es un compose anterior. Sus Dockerfiles arrancan `dist/main.js` y le pasan al host `ORCHESTRATOR_URL`, variable que el proceso no lee. No se usa. `pnpm docker:up` apunta ahí: no lo corras hasta que ese script apunte a la imagen de la raíz. La réplica central todavía no está en ningún compose; entra con el diseño de la réplica, antes de H4. PowerSync publica su imagen como `journeyapps/powersync-service`.
 

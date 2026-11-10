@@ -13,10 +13,15 @@
 # Añadir otra variante no cuesta un archivo nuevo:
 #
 #   docker build --build-arg APP=orchestrator -t harukoia-orquestador .
-#   docker build --build-arg APP=host         -t harukoia-host .
+#   docker build --build-arg APP=web \
+#     --build-arg VITE_ORQUESTADOR_URL=wss://orquestador.harukoia.makinohara.sys.iokoia.com \
+#     --build-arg VITE_HOST_URL=https://host.harukoia.local.iokoia.dev \
+#     -t harukoia-web .
 #
-# No hay etapa de construcción: Node ejecuta el TypeScript quitándole los
-# tipos. Por eso Node ≥ 23.6 es un requisito real. Se fija 24.
+# El orquestador y el host no tienen etapa de construcción: Node ejecuta el
+# TypeScript quitándole los tipos. Por eso Node ≥ 23.6 es un requisito real.
+# Se fija 24. La web sí: Vite produce `apps/web/dist` y `main.ts` lo sirve.
+# Esas dos variables se hornean en el build; no viven en un `.env` de la imagen.
 
 FROM node:24-slim
 
@@ -41,7 +46,19 @@ COPY . .
 # `/motor/packages/*`, fuera de `node_modules`. Esa es la condición para que
 # Node les quite los tipos. **No** usar `pnpm deploy`: los copiaría adentro
 # y el proceso fallaría al arrancar.
-RUN corepack enable && pnpm install --frozen-lockfile --prod
+#
+# La web necesita Vite, que es devDependency, y un `vite build`. El resto
+# se queda en `--prod`.
+RUN corepack enable \
+  && if [ "$APP" = "web" ]; then pnpm install --frozen-lockfile; \
+     else pnpm install --frozen-lockfile --prod; fi
+
+ARG VITE_ORQUESTADOR_URL
+ARG VITE_HOST_URL
+ENV VITE_ORQUESTADOR_URL=${VITE_ORQUESTADOR_URL}
+ENV VITE_HOST_URL=${VITE_HOST_URL}
+
+RUN if [ "$APP" = "web" ]; then pnpm --filter @harukoia/web build; fi
 
 ENV HOST=0.0.0.0
 ENV PORT=8080

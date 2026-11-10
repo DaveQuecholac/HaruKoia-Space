@@ -3,7 +3,9 @@
 # En Coolify:
 #   1. Nueva aplicación → Docker Compose (o Dockerfile; este archivo es la vía
 #      con el build arg ya fijado).
-#   2. Rama: `dev/motor`
+#   2. Rama: `development`
+#      La web es otra aplicación Coolify con el mismo Dockerfile y APP=web.
+#      No va en este compose: el host de la sala de usuario se queda en la laptop.
 #   3. Dominio público con HTTPS en el servicio `orquestador`
 #   4. **No** publiques un puerto del host: Coolify enruta por el dominio.
 #

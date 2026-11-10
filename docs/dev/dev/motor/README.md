@@ -140,7 +140,8 @@ El arnés está en `apps/orchestrator/src/tunel/humo.mjs`. Importa el contrato d
 
 `Dockerfile` en la raíz + `docker-compose.yml` para **Coolify en Makino Hara**.
 
-- Build Arg / compose: `APP=orchestrator`
+- Build Arg / compose del orquestador: `APP=orchestrator`
+- Desde H2, la misma imagen también construye la web con `APP=web` (otra aplicación Coolify, rama `development`). El build hornea `VITE_ORQUESTADOR_URL` y `VITE_HOST_URL`
 - Puerto interno: **8080**
 - Healthcheck: `GET /health` (curl dentro de la imagen)
 - Por defecto `APP=orchestrator` si Coolify no pasa el arg

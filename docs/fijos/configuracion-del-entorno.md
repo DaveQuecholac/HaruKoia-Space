@@ -80,6 +80,21 @@ Para actualizar:
 4. Aplica el cambio con `pm2 delete` y `dev:start`, como en [Aplicar un cambio de `.env`](#aplicar-un-cambio-de-env).
 5. Abre la web, entra a una sala y confirma que abajo del estado dice **Orquestador: orquestador.harukoia.makinohara.sys.iokoia.com**.
 
+## Probar H2 con alguien que no tiene el repositorio
+
+La web pública es `https://web.harukoia.makinohara.sys.iokoia.com`. Ahí está horneado el orquestador compartido y `VITE_HOST_URL=https://host.harukoia.local.iokoia.dev`.
+
+En la laptop del host, `apps/host/.env` queda así y se aplica con `pm2 delete` y `dev:start`:
+
+```bash
+ORQUESTADOR_URL=wss://orquestador.harukoia.makinohara.sys.iokoia.com
+WEB_ORIGEN=https://web.harukoia.makinohara.sys.iokoia.com
+```
+
+"Volverme host" se pulsa en **esa** web, en el navegador de la laptop: la invitación solo sale si el origen coincide y la petición llega por loopback. El teléfono abre el link que salga de ahí. No llama al host y no necesita el repositorio.
+
+La web local (`web.harukoia.local.iokoia.dev`) deja de poder pedir la invitación mientras `WEB_ORIGEN` apunte a la web pública. Para volver al día a día local, `WEB_ORIGEN` regresa a `https://web.harukoia.local.iokoia.dev`.
+
 ## Síntomas y causa
 
 | Ves | Causa | Arreglo |
