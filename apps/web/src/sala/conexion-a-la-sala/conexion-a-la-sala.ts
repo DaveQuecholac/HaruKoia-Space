@@ -9,10 +9,10 @@
  *
  *   - Una caída de red o del orquestador: el proveedor reintenta solo, con
  *     espera creciente, sin límite. La persona ve "Reconectando…".
- *   - Un rechazo **temporal** después de haber estado dentro (el host está
- *     volviendo): se sigue intentando hasta `ESPERA_MAXIMA_DEL_HOST`, con
- *     "Esperando al host…". Al vencer, "La sala se cerró" y Reintentar.
- *   - Un rechazo **definitivo**, o cualquier rechazo en la primera entrada:
+ *   - Un rechazo temporal después de haber estado dentro (el host está
+ *     volviendo): se sigue intentando, sin tope, con "Esperando al host…".
+ *     Al volver el host, entra sola (H3, E4).
+ *   - Un rechazo definitivo, o cualquier rechazo en la primera entrada:
  *     se detiene y se muestra la causa. Reintentar es decisión de la persona.
  *   - El host cerró la sala a propósito: se detiene. No hay a qué volver.
  *
@@ -42,9 +42,6 @@ import * as Y from 'yjs';
 
 import type { Invitacion } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
 import { abrirLogLocal } from '../log-local/log-local.ts';
-
-/** Dos minutos de espera al host antes de dar la sala por cerrada. */
-export const ESPERA_MAXIMA_DEL_HOST = 120_000;
 
 /**
  * Reintentos del proveedor, explícitos para no depender de sus valores por
@@ -122,8 +119,6 @@ export type OpcionesDeLaConexion = {
   readonly alCambiarLaInvitacion: (tokenDeInvitacion: TokenDeInvitacion) => void;
   /** Este navegador no pudo abrir el log local del documento. */
   readonly alNoGuardarElLog?: () => void;
-  /** Solo para pruebas. */
-  readonly esperaMaximaDelHost?: number;
 };
 
 /** Estados en los que ya no se reintenta. */
@@ -133,16 +128,12 @@ function esFinal(estado: EstadoDeLaSala): boolean {
 
 export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala {
   const { invitacion } = opciones;
-  const esperaMaxima = opciones.esperaMaximaDelHost ?? ESPERA_MAXIMA_DEL_HOST;
   let estado: EstadoDeLaSala = { tipo: 'conectando' };
   let miRol: Rol | undefined;
   let accionRechazada: AccionRechazada | undefined;
   let yaConecto = false;
-  let vencimiento: ReturnType<typeof setTimeout> | undefined;
 
   function detener(final: EstadoDeLaSala): void {
-    clearTimeout(vencimiento);
-    vencimiento = undefined;
     estado = final;
     websocket.disconnect();
     emitir();
@@ -150,7 +141,6 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
 
   function esperarAlHost(): void {
     estado = { tipo: 'esperando-al-host' };
-    vencimiento ??= setTimeout(() => detener({ tipo: 'sin-host' }), esperaMaxima);
     emitir();
   }
 
@@ -204,8 +194,6 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
     if (esFinal(estado)) return;
     if (status === 'connected') {
       yaConecto = true;
-      clearTimeout(vencimiento);
-      vencimiento = undefined;
       estado = { tipo: 'conectada' };
     } else if (estado.tipo !== 'esperando-al-host') {
       estado = { tipo: yaConecto ? 'reconectando' : 'conectando' };
@@ -279,7 +267,6 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
       emitir();
     },
     salir() {
-      clearTimeout(vencimiento);
       logLocal.cerrar();
       proveedor.destroy();
       websocket.destroy();

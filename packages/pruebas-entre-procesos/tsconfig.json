@@ -2,9 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "allowImportingTsExtensions": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
   "include": ["src/**/*.ts"]

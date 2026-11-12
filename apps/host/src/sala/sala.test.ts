@@ -6,7 +6,10 @@
  * Hocuspocus suelte cada conexión y siga con un solo documento.
  */
 
+import { mkdtemp, rm } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 
@@ -27,13 +30,16 @@ let sockets: WebSocketServer;
 let sala: SalaEnVivo;
 let url: string;
 let nombreDeLaSala: string;
+let directorio: string;
 
 beforeEach(async () => {
+  directorio = await mkdtemp(path.join(tmpdir(), 'sala-'));
   const registro = crearRegistro({ proceso: 'host', destino: () => {} });
   const identidad = generarIdentidadDeSala();
   nombreDeLaSala = identidad.sala;
   sala = await abrirSalaEnVivo({
     sala: identidad.sala,
+    archivoSqlite: path.join(directorio, 'sala.sqlite'),
     tokenDeWebDelHost: identidad.tokenDeWebDelHost,
     acciones: { 'cambiar-invitacion': async () => ({ ok: true, avisos: [] }) },
     registro,
@@ -57,9 +63,10 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await sala.cerrar();
-  sockets.close();
-  await new Promise<void>((listo) => servidor.close(() => listo()));
+  if (sala) await sala.cerrar();
+  sockets?.close();
+  if (servidor) await new Promise<void>((listo) => servidor.close(() => listo()));
+  if (directorio) await rm(directorio, { recursive: true, force: true });
 });
 
 /** Un invitado entra, escribe algo, se sincroniza y se va. */
