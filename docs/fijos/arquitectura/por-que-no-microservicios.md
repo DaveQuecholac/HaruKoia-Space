@@ -52,7 +52,7 @@ El orquestador, el host y la réplica central cumplen eso:
 
 Una capacidad nueva que no cumpla ninguna entra como módulo del motor: esquema, pantalla y comando. Sacarla después, con la frontera ya probada, es directo. Volver a unir servicios mal cortados implica reescribir el producto.
 
-**Pendiente de aplicar este criterio:** si el backend de escritura de la réplica central vive dentro del orquestador o como proceso propio. Es un punto abierto de la sección 13 de la v2. Postgres y PowerSync Service son procesos de terceros y van aparte de todas formas.
+**Cerrado el 2026-11-17:** el backend de escritura es **proceso propio** junto a la réplica central, no vive dentro del orquestador (cumple 3 y 4: guarda datos que el relay no debe tocar; su fallo no tumba el enrutamiento). Postgres y PowerSync Service son procesos de terceros y van aparte de todas formas.
 
 ## Relación con la arquitectura
 

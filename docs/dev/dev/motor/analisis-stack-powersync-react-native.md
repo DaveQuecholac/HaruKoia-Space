@@ -13,6 +13,4 @@ El detalle está en [analisis-arquitectura-v2.md](../../../fijos/arquitectura/an
 ## Qué falta escribir antes de construir
 
 1. **Antes de H2.** El diseño de la app Expo: pantallas, lienzo, y cómo arranca con PM2 y portless. Las pantallas de H1 siguen en Vite hasta que ese diseño exista y se autorice construir la app. Para SQLite RN, secrets (`expo-secure-store`) y Metro: partir de [referencia Space](../../../fijos/referencia-space-powersync-sqlite-secrets.md).
-2. **Antes de H4.** El diseño de la réplica central, y con él: qué sube (metadatos, o también el snapshot y el JSON del tablero), dónde vive el backend de escritura, quién emite el token de lectura, almacén de buckets, y esquema cliente vs reglas de H0. Space ya cableó compose, buckets en Postgres, JWT RS256 y evolución por client schema: [referencia Space](../../../fijos/referencia-space-powersync-sqlite-secrets.md). Al diseñar, abrir ese repo; no reinventar el compose.
-
-La prueba de la réplica, cuando se autorice, está en [plan-pdc-stack-powersync-react-native.md](./plan-pdc-stack-powersync-react-native.md).
+2. **Antes de H4.** El diseño de la réplica central. **Cerrado el 2026-11-17** en [analisis-replica-central.md](../versiones-pizarra/analisis-replica-central.md). Plan de la PdC: [plan-replica-central.md](../versiones-pizarra/plan-replica-central.md). Índice histórico: [plan-pdc-stack-powersync-react-native.md](./plan-pdc-stack-powersync-react-native.md).

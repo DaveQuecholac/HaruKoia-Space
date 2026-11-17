@@ -1,0 +1,16 @@
+{
+  "name": "harukoia-pdc-lector",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "install:pdc": "pnpm install --ignore-workspace",
+    "leer": "node --env-file=../.env src/leer-commit.ts",
+    "test": "node --test src/sin-orquestador.test.ts"
+  },
+  "dependencies": {
+    "@powersync/node": "^1.2.0"
+  }
+}

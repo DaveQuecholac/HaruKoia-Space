@@ -43,7 +43,7 @@ motor-colaborativo/
 
 El criterio para crear un proceso nuevo está en [por-que-no-microservicios.md](./arquitectura/por-que-no-microservicios.md). Una capacidad nueva es un módulo dentro de uno de estos paquetes hasta que cumpla alguna de las cuatro condiciones de ahí.
 
-**Réplica central.** La arquitectura agrega Postgres, PowerSync Service y un backend de escritura en la nube ([v2, sección 4](./arquitectura/analisis-arquitectura-v2.md#4-topología)). Todavía no tienen paquete ni contenedor. Dónde vive el backend de escritura es un punto abierto y se cierra en el diseño de la réplica, antes de H4. Cómo lo cableó IOKOIA Space (compose, buckets, JWT, SQLite/secrets): [referencia-space-powersync-sqlite-secrets.md](./referencia-space-powersync-sqlite-secrets.md). Cuando entre una app nueva, se registra como dice `.cursor/rules/pm2-app.mdc`.
+**Réplica central.** Postgres, PowerSync Service y un **backend de escritura como proceso propio** (cerrado 2026-11-17; no vive en el orquestador). La prueba desechable arranca en `pruebas/replica-central/` bajo la rama [versiones-pizarra](../dev/dev/versiones-pizarra/README.md); no bajo `apps/`. Cómo lo cableó IOKOIA Space (compose, buckets, JWT): [referencia-space-powersync-sqlite-secrets.md](./referencia-space-powersync-sqlite-secrets.md). Cuando entre una app nueva de producto, se registra como dice `.cursor/rules/pm2-app.mdc`.
 
 ## Arranque con PM2 y portless
 

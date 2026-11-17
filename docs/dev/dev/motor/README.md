@@ -58,7 +58,7 @@ Ya está en los documentos fijos. No cambia lo construido en H0 y H1.
 | Relay | Lleva **solo la sala en vivo**. La réplica no pasa por él |
 | React Native | **Entra en la v1**, con Expo, en web y en móvil. La web de H1 sigue en Vite hasta el diseño de esa app |
 
-Siguiente documento, antes de construir H2: el diseño de la app Expo. Antes de H4: el diseño y la [prueba de la réplica](./plan-pdc-stack-powersync-react-native.md). Lo que esas dos piezas tienen que cerrar está en el [registro de la decisión](./analisis-stack-powersync-react-native.md).
+H2 y H3 ya cerraron. Siguiente: rama [versiones-pizarra](../versiones-pizarra/README.md) — primero la [prueba de la réplica](../versiones-pizarra/plan-replica-central.md), luego H4. El índice corto histórico de la PdC sigue en [plan-pdc-stack-powersync-react-native.md](./plan-pdc-stack-powersync-react-native.md).
 
 Patrones ya cableados en IOKOIA Space (SQLite multi-runtime, secrets, PowerSync self-hosted): [referencia-space-powersync-sqlite-secrets.md](../../../fijos/referencia-space-powersync-sqlite-secrets.md). Al construir, abrir `/home/davesq/Documents/IoKoia/space/`.
 

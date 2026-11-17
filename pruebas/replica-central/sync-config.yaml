@@ -1,0 +1,11 @@
+# PdC — edition 3. Filtra por claim JWT `sala` (F-R6 / D-R3).
+# yaml-language-server: $schema=https://unpkg.com/@powersync/service-sync-rules@latest/schema/sync_rules.json
+config:
+  edition: 3
+
+streams:
+  commits_prueba:
+    auto_subscribe: true
+    query: >
+      SELECT * FROM commits_prueba AS commits_prueba
+      WHERE commits_prueba.sala = auth.parameter('sala')

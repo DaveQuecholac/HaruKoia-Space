@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "n": "yLRJrGYavLG0T1RW5xNtELWmFV3fKGZaOMEDfuyyqUTjo9G1YROjhrnQKnXOovC6RxffpS_D_aA1hrg67omAET2Rb7Nr2igMwgYkMFHqKf4wE3wtUSsH80pvF87FxhgfAqXqiUQXgDyfWS9fIX5G3tZXsVJsuYVDutlDbJn-VJwZyQ1F1vtzVysEgmEMoorO65Iy2wk6l7s-OLFSydhtE8xz4v39aIjnyqCzD1xHRRboas62syI2-ckFOrP0LaxKxY8ieCOAHlEeCu33NzwkpGtlA0c8Vxyl1NCUuDT8PlU8mmMsamnPI3QA1c5l5z_69DYfqEFcSnnFrmaZ_KOnhw",
+      "e": "AQAB",
+      "alg": "RS256",
+      "use": "sig",
+      "kid": "harukoia-pdc-local-1"
+    }
+  ]
+}

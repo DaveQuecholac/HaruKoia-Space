@@ -1,0 +1,66 @@
+# PdC réplica central — Postgres + PowerSync (no es producto).
+#
+# Desde esta carpeta:
+#   cp .env.example .env   # si aún no existe
+#   docker compose up -d
+#   ./apply-replication.sh   # solo si el volumen ya existía sin el init
+#
+# Puertos distintos a Space (54329 / 18080) para coexistir en la misma máquina.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: harukoia
+      POSTGRES_PASSWORD: harukoia
+      POSTGRES_DB: harukoia
+    ports:
+      - "54339:5432"
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+    volumes:
+      - harukoia_pdc_pg_data:/var/lib/postgresql/data
+      # :Z — SELinux (Fedora) para que postgres lea los scripts de init
+      - ./init:/docker-entrypoint-initdb.d:ro,Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harukoia -d harukoia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  powersync:
+    image: journeyapps/powersync-service:1.27
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["start", "-r", "unified"]
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/service.yaml
+      NODE_OPTIONS: --max-old-space-size=1000
+      PS_PORT: "8080"
+      PS_DATA_SOURCE_URI: postgresql://powersync_role:powersync@postgres:5432/harukoia
+      PS_STORAGE_SOURCE_URI: postgresql://powersync_storage:powersync@postgres:5432/powersync_storage
+    volumes:
+      - ./service.yaml:/config/service.yaml:ro,Z
+      - ./sync-config.yaml:/config/sync-config.yaml:ro,Z
+    ports:
+      - "18090:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8080/probes/liveness').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  harukoia_pdc_pg_data:

@@ -1,0 +1,18 @@
+{
+  "name": "harukoia-pdc-host-harness",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "install:pdc": "pnpm install --ignore-workspace && node -e \"try{require('node:fs').accessSync('node_modules/@powersync/node/download_core.js');require('node:child_process').execFileSync(process.execPath,['node_modules/@powersync/node/download_core.js'],{stdio:'inherit'})}catch(e){if(e.code!=='ENOENT')throw e;console.log('download_core.js no viene en este paquete; se omite')}\"",
+    "escribir": "node --env-file=../.env src/escribir-commit.ts",
+    "resistencia": "node --env-file=../.env src/resistencia.ts",
+    "test": "node --test src/ruta-sqlite.test.ts"
+  },
+  "dependencies": {
+    "@powersync/node": "^1.2.0",
+    "pg": "^8.16.3"
+  }
+}
