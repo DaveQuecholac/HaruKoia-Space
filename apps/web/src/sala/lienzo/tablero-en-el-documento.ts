@@ -4,13 +4,15 @@
  * Un `Y.Map` llamado `tablero`. Cada entrada es el id de un registro del
  * documento de tldraw y el valor es ese registro en JSON. Va en texto para
  * que Yjs no lo convierta en otro mapa. La cámara y la presencia no entran:
- * la presencia sigue en awareness.
+ * la presencia sigue en awareness. Si el store o un mapa viejo trae `user`
+ * u otro typeName de sesión, se filtra y no se publica.
  *
  * El store escucha solo cambios locales del documento (`source: 'user'`,
  * `scope: 'document'`). Lo que llega de otro cliente se aplica con
  * `mergeRemoteChanges`, así no rebota.
  */
 
+import { esRegistroDelDocumentoDelTablero } from '@harukoia/domain';
 import { type TLRecord, type TLStore } from 'tldraw';
 import * as Y from 'yjs';
 
@@ -47,6 +49,7 @@ export function enlazarTablero(store: TLStore, documento: Y.Doc, alEstarListo: (
     const registros = registrosLocales();
     documento.transact(() => {
       for (const registro of Object.values(registros)) {
+        if (!esRegistroDelDocumentoDelTablero(registro.typeName)) continue;
         mapa.set(registro.id, JSON.stringify(registro));
       }
     }, ORIGEN_LOCAL);
@@ -65,12 +68,15 @@ export function enlazarTablero(store: TLStore, documento: Y.Doc, alEstarListo: (
       (entrada) => {
         documento.transact(() => {
           for (const registro of Object.values(entrada.changes.added)) {
+            if (!esRegistroDelDocumentoDelTablero(registro.typeName)) continue;
             mapa.set(registro.id, JSON.stringify(registro));
           }
           for (const [, registro] of Object.values(entrada.changes.updated)) {
+            if (!esRegistroDelDocumentoDelTablero(registro.typeName)) continue;
             mapa.set(registro.id, JSON.stringify(registro));
           }
           for (const registro of Object.values(entrada.changes.removed)) {
+            if (!esRegistroDelDocumentoDelTablero(registro.typeName)) continue;
             mapa.delete(registro.id);
           }
         }, ORIGEN_LOCAL);
@@ -152,5 +158,6 @@ function leerRegistro(valor: unknown, id: string): TLRecord | undefined {
   if (typeof leido !== 'object' || leido === null) return undefined;
   if (!('id' in leido) || leido.id !== id) return undefined;
   if (!('typeName' in leido) || typeof leido.typeName !== 'string') return undefined;
+  if (!esRegistroDelDocumentoDelTablero(leido.typeName)) return undefined;
   return leido as TLRecord;
 }

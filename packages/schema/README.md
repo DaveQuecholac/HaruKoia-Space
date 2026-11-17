@@ -4,7 +4,16 @@ Esquemas de las colecciones replicadas: salas, commits, snapshots, documentos y 
 
 Lo consumen la web, el host y el CLI. Es el contrato que evita que el markdown que escribe el host y el que lee el CLI se definan en dos lugares.
 
-> La réplica es **PowerSync**: el host escribe en su SQLite, sube a una réplica central y los demás leen de ahí. Las reglas de abajo son las de H0. PowerSync ordena por checkpoints, borra con `DELETE` y aplica el esquema de cliente como views (sin migrar el espejo con Drizzle). Cómo lo cerró Space: [referencia Space §5](../../docs/fijos/referencia-space-powersync-sqlite-secrets.md#5-evolución-de-esquema-en-el-device-146--respuesta-a-s8). El ajuste definitivo es del diseño de la réplica, antes de H4. Hasta entonces estas reglas siguen vigentes.
+> La réplica es **PowerSync**: el host escribe en su SQLite, sube a una réplica central y los demás leen de ahí. PowerSync ordena por checkpoints; el espejo usa client schema / views (D-R5). Cómo lo cerró Space: [referencia Space §5](../../docs/fijos/referencia-space-powersync-sqlite-secrets.md#5-evolución-de-esquema-en-el-device-146--respuesta-a-s8). PdC cerrada: [evidencia-replica-central.md](../../docs/dev/dev/versiones-pizarra/evidencia-replica-central.md).
+
+## Colecciones H4 (V0)
+
+| Colección | Tipo | Notas |
+|-----------|------|-------|
+| `commits` | `FilaDeCommit` | Metadatos del commit; `id` = commit |
+| `snapshots` | `FilaDeSnapshot` | `id` = mismo que el commit (1:1); Yjs en base64 + JSON del tablero |
+
+Solo H4: sin documents ni attachments en estas filas. documents/adjuntos entran en H5/H6.
 
 ## Reglas de lo replicado (fijadas en A5)
 

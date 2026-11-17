@@ -14,7 +14,7 @@ describe('cambiar invitación', () => {
       (token) => {
         guardados.push(token);
       },
-    )();
+    )({ tipo: 'pedir-accion', accion: 'cambiar-invitacion' }, { autor: 'Marco' });
 
     expect(resultado.ok).toBe(true);
     expect(guardados).toHaveLength(1);
@@ -33,7 +33,7 @@ describe('cambiar invitación', () => {
       () => {
         guardados += 1;
       },
-    )();
+    )({ tipo: 'pedir-accion', accion: 'cambiar-invitacion' }, { autor: 'Marco' });
 
     expect(resultado).toEqual({ ok: false, causa: 'orquestador-no-disponible' });
     expect(guardados).toBe(0);
@@ -47,7 +47,7 @@ describe('cambiar invitación', () => {
         () => {
           throw new Error('el keyring no aceptó la identidad');
         },
-      )(),
+      )({ tipo: 'pedir-accion', accion: 'cambiar-invitacion' }, { autor: 'Marco' }),
     ).rejects.toThrow(/keyring/);
   });
 });

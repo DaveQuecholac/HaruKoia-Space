@@ -6,10 +6,11 @@
  * cualquier cosa fuera del contrato se devuelve como ilegible, con detalle.
  */
 
+import { comoIdentificadorDeCommit } from '../../commit/identificador-de-commit/identificador-de-commit.ts';
 import { ACCIONES_DE_SALA, CAUSAS_DE_ACCION_RECHAZADA } from '../accion-de-sala/accion-de-sala.ts';
 import { comoTokenDeInvitacion } from '../identidad-de-sala/identidad-de-sala.ts';
 import { ROLES } from '../rol/rol.ts';
-import type { MensajeDeSala, TipoDeMensajeDeSala } from './mensaje-de-sala.ts';
+import type { EntradaDeHistorial, MensajeDeSala, TipoDeMensajeDeSala } from './mensaje-de-sala.ts';
 
 export type InterpretacionDeSala =
   | { readonly ok: true; readonly mensaje: MensajeDeSala }
@@ -28,7 +29,21 @@ function unoDe<T extends string>(datos: Record<string, unknown>, clave: string, 
 }
 
 const LECTORES: Record<TipoDeMensajeDeSala, (datos: Record<string, unknown>) => MensajeDeSala> = {
-  'pedir-accion': (datos) => ({ tipo: 'pedir-accion', accion: unoDe(datos, 'accion', ACCIONES_DE_SALA) }),
+  'pedir-accion': (datos) => {
+    const accion = unoDe(datos, 'accion', ACCIONES_DE_SALA);
+    if (accion === 'commitear') {
+      if (typeof datos.mensaje !== 'string') throw new Error('"mensaje" no es texto');
+      return { tipo: 'pedir-accion', accion: 'commitear', mensaje: datos.mensaje };
+    }
+    if (accion === 'hacer-checkout') {
+      return {
+        tipo: 'pedir-accion',
+        accion: 'hacer-checkout',
+        id: comoIdentificadorDeCommit(datos.id),
+      };
+    }
+    return { tipo: 'pedir-accion', accion: 'cambiar-invitacion' };
+  },
   'tu-rol': (datos) => ({ tipo: 'tu-rol', rol: unoDe(datos, 'rol', ROLES) }),
   'accion-rechazada': (datos) => ({
     tipo: 'accion-rechazada',
@@ -39,7 +54,62 @@ const LECTORES: Record<TipoDeMensajeDeSala, (datos: Record<string, unknown>) => 
     tipo: 'invitacion-cambiada',
     tokenDeInvitacion: comoTokenDeInvitacion(datos['tokenDeInvitacion']),
   }),
+  historial: (datos) => {
+    if (!Array.isArray(datos.commits)) throw new Error('"commits" no es una lista');
+    return {
+      tipo: 'historial',
+      commits: datos.commits.map((entrada, indice) => leerEntradaDeHistorial(entrada, indice)),
+      tip:
+        datos.tip === null || datos.tip === undefined
+          ? null
+          : comoIdentificadorDeCommit(datos.tip),
+    };
+  },
+  'commit-guardado': (datos) => ({
+    tipo: 'commit-guardado',
+    id: comoIdentificadorDeCommit(datos.id),
+    mensaje: textoObligatorio(datos, 'mensaje'),
+    autor: textoObligatorio(datos, 'autor'),
+    creadoEn: numeroObligatorio(datos, 'creadoEn'),
+    padre: datos.padre === null || datos.padre === undefined
+      ? null
+      : comoIdentificadorDeCommit(datos.padre),
+  }),
+  'checkout-hecho': (datos) => ({
+    tipo: 'checkout-hecho',
+    id: comoIdentificadorDeCommit(datos.id),
+  }),
 };
+
+function textoObligatorio(datos: Record<string, unknown>, clave: string): string {
+  const valor = datos[clave];
+  if (typeof valor !== 'string') throw new Error(`"${clave}" no es texto`);
+  return valor;
+}
+
+function numeroObligatorio(datos: Record<string, unknown>, clave: string): number {
+  const valor = datos[clave];
+  if (typeof valor !== 'number' || !Number.isFinite(valor)) {
+    throw new Error(`"${clave}" no es un número`);
+  }
+  return valor;
+}
+
+function leerEntradaDeHistorial(valor: unknown, indice: number): EntradaDeHistorial {
+  if (valor === null || typeof valor !== 'object' || Array.isArray(valor)) {
+    throw new Error(`"commits[${indice}]" no es un objeto`);
+  }
+  const datos = valor as Record<string, unknown>;
+  return {
+    id: comoIdentificadorDeCommit(datos.id),
+    mensaje: textoObligatorio(datos, 'mensaje'),
+    autor: textoObligatorio(datos, 'autor'),
+    creadoEn: numeroObligatorio(datos, 'creadoEn'),
+    padre: datos.padre === null || datos.padre === undefined
+      ? null
+      : comoIdentificadorDeCommit(datos.padre),
+  };
+}
 
 export function interpretarMensajeDeSala(texto: string): InterpretacionDeSala {
   let datos: unknown;

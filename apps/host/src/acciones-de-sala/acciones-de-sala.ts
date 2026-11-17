@@ -11,6 +11,7 @@ import {
   type AccionDeSala,
   type CausaDeAccionRechazada,
   type MensajeDelHostDeLaSala,
+  type PedidoDeAccion,
   type Rol,
   puedePedir,
 } from '@harukoia/domain';
@@ -25,16 +26,25 @@ export type ResultadoDeAccion =
     }
   | { readonly ok: false; readonly causa: CausaDeAccionRechazada };
 
-export type ManejadorDeAccion = () => Promise<ResultadoDeAccion>;
+/** Quién pidió la acción (nombre de presencia al momento). */
+export type ContextoDeAccion = {
+  readonly autor: string;
+};
+
+export type ManejadorDeAccion = (
+  pedido: PedidoDeAccion,
+  contexto: ContextoDeAccion,
+) => Promise<ResultadoDeAccion>;
 
 /** Un manejador por acción. `Record` para que una acción nueva no compile sin el suyo. */
 export type ManejadoresDeAccion = Readonly<Record<AccionDeSala, ManejadorDeAccion>>;
 
 export async function atenderAccion(
-  accion: AccionDeSala,
+  pedido: PedidoDeAccion,
   rol: Rol,
   manejadores: ManejadoresDeAccion,
+  contexto: ContextoDeAccion,
 ): Promise<ResultadoDeAccion> {
-  if (!puedePedir(rol, accion)) return { ok: false, causa: 'rol-insuficiente' };
-  return manejadores[accion]();
+  if (!puedePedir(rol, pedido.accion)) return { ok: false, causa: 'rol-insuficiente' };
+  return manejadores[pedido.accion](pedido, contexto);
 }

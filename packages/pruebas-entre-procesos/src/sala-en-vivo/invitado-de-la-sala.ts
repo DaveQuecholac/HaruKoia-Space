@@ -6,6 +6,7 @@ import {
   type MensajeDelHostDeLaSala,
   type TokenDeInvitacion,
   type TokenDeWebDelHost,
+  comoIdentificadorDeCommit,
   interpretarMensajeDeSala,
   serializarMensajeDeSala,
 } from '@harukoia/domain';
@@ -27,7 +28,8 @@ export type InvitadoDeLaSala = {
   /** El rol que la presencia muestra para ese nombre, visto por este invitado. */
   rolVistoDe(nombre: string): unknown;
   /** Pide una acción con el mensaje del contrato, sin pasar por ninguna interfaz. */
-  pedirAccion(accion: AccionDeSala): void;
+  pedirAccion(accion: 'cambiar-invitacion'): void;
+  pedirAccion(accion: 'commitear', mensaje: string): void;
   salir(): void;
 };
 
@@ -103,8 +105,29 @@ export function invitadoDeLaSala(opciones: {
     rolVistoDe(nombre) {
       return [...estados().values()].find((estado) => estado.nombre === nombre)?.rol;
     },
-    pedirAccion(accion) {
-      proveedor.sendStateless(serializarMensajeDeSala({ tipo: 'pedir-accion', accion }));
+    pedirAccion(accion: AccionDeSala, mensajeOId?: string) {
+      if (accion === 'commitear') {
+        proveedor.sendStateless(
+          serializarMensajeDeSala({
+            tipo: 'pedir-accion',
+            accion: 'commitear',
+            mensaje: mensajeOId ?? '',
+          }),
+        );
+        return;
+      }
+      if (accion === 'hacer-checkout') {
+        if (typeof mensajeOId !== 'string') throw new Error('hacer-checkout exige id');
+        proveedor.sendStateless(
+          serializarMensajeDeSala({
+            tipo: 'pedir-accion',
+            accion: 'hacer-checkout',
+            id: comoIdentificadorDeCommit(mensajeOId),
+          }),
+        );
+        return;
+      }
+      proveedor.sendStateless(serializarMensajeDeSala({ tipo: 'pedir-accion', accion: 'cambiar-invitacion' }));
     },
     salir() {
       proveedor.destroy();
