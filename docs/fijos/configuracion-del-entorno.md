@@ -55,7 +55,7 @@ pnpm exec pm2 delete harukoia-host-dev && pnpm dev:start
 pnpm exec pm2 delete harukoia-web-dev && pnpm dev:start
 ```
 
-Al reiniciar el host se crea una **sala nueva**: los links anteriores dejan de servir y hay que volver a pulsar "Volverme host". La sala vive en memoria hasta H3.
+Al reiniciar el host vuelve la misma sala: el documento está en su SQLite y la identidad en el keyring. El link que ya se compartió sigue abriendo esa sala. El registro del orquestador sigue en memoria; si el orquestador se reinicia, el host se vuelve a registrar.
 
 ## Si ya lo tenías corriendo
 

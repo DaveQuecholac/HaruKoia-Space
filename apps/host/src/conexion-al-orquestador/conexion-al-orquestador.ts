@@ -90,8 +90,11 @@ export function conectarAlOrquestador(opciones: OpcionesDeConexion): ConexionAlO
 
   function abrir(): void {
     estado = 'conectando';
+    // Un orquestador que acepta el TCP y no contesta el upgrade dejaría la
+    // sala sin registrar para siempre: el apretón de manos tiene límite.
     const socket = new WebSocket(urlDelRelay(opciones.url, RUTAS.control), {
       maxPayload: TAMANO_MAXIMO_DE_MENSAJE,
+      handshakeTimeout: intervaloDeLatido,
     });
     control = socket;
 

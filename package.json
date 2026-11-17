@@ -25,5 +25,11 @@
     "concurrently": "^9.1.2",
     "pm2": "^6.0.5",
     "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@hocuspocus/extension-database": "4.7.0",
+      "@hocuspocus/server": "4.7.0"
+    }
   }
 }

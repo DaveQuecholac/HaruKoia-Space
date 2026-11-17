@@ -50,7 +50,7 @@ afterEach(async () => {
   await new Promise((listo) => servidor.close(listo));
 });
 
-function conectar(esperaMaximaDelHost?: number) {
+function conectar() {
   const estados: EstadoDeLaSala[] = [];
   const { sala, tokenDeInvitacion } = generarIdentidadDeSala();
   const conexion = conectarALaSala({
@@ -60,7 +60,6 @@ function conectar(esperaMaximaDelHost?: number) {
     tokenDeWebDelHost: undefined,
     alCambiar: ({ estado }) => estados.push(estado),
     alCambiarLaInvitacion: () => {},
-    ...(esperaMaximaDelHost === undefined ? {} : { esperaMaximaDelHost }),
   });
   conexiones.push(conexion);
   return { estados, ultimo: () => estados.at(-1)?.tipo };
@@ -99,18 +98,22 @@ describe('conexión a la sala ante fallas', () => {
     await hasta(() => ultimo() === 'conectada', 15_000);
   }, 20_000);
 
-  it('si el host no vuelve a tiempo, la sala se da por cerrada y deja de intentar', async () => {
-    const { ultimo } = conectar(1_500);
+  it('un rechazo temporal no se rinde: sigue esperando y, al volver el host, entra sola', async () => {
+    const { ultimo } = conectar();
     await hasta(() => ultimo() === 'conectada');
 
     modo = 'sala-no-encontrada';
     cerrarATodos(1000);
-    await hasta(() => ultimo() === 'sin-host', 5_000);
+    await hasta(() => ultimo() === 'esperando-al-host');
 
     const hechos = intentos;
     await new Promise((listo) => setTimeout(listo, 2_500));
-    expect(intentos).toBe(hechos);
-  }, 15_000);
+    expect(ultimo()).toBe('esperando-al-host');
+    expect(intentos).toBeGreaterThan(hechos);
+
+    modo = 'aceptar';
+    await hasta(() => ultimo() === 'conectada', 15_000);
+  }, 20_000);
 
   it('un rechazo definitivo después de estar dentro detiene', async () => {
     const { ultimo, estados } = conectar();

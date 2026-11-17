@@ -268,7 +268,7 @@ La misma interfaz siempre, sin pantallas distintas por rol.
 
 | Riesgo | Solución |
 |---|---|
-| El link de invitación se filtra | El identificador es largo y aleatorio, la sala muere con el host y el link no sobrevive a la sesión |
+| El link de invitación se filtra | El identificador es largo y aleatorio. El link sobrevive en el disco de ese host: al volver el proceso, abre la misma sala. No migra a otra máquina. Un cierre pedido sigue siendo definitivo para quien estaba en la página |
 | Un invitado comitea o toca el repo | No tiene esa capacidad. Solo el host comitea |
 | Una sala global expone un repo sensible | Mientras no haya autenticación, las salas globales se limitan a repos que el equipo acepte exponer con link |
 | La réplica central expone el historial de una sala | PowerSync solo entrega datos con un JWT. El token de lectura se emite por sala. Quién lo emite y contra qué credencial es un punto abierto (sección 13). Mientras no haya autenticación, quien tenga acceso a la sala puede leer su historial |

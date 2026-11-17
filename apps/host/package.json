@@ -21,12 +21,16 @@
     "@harukoia/domain": "workspace:*",
     "@harukoia/registro": "workspace:*",
     "@harukoia/schema": "workspace:*",
+    "@hocuspocus/extension-sqlite": "4.7.0",
     "@hocuspocus/server": "^4.7.0",
+    "@napi-rs/keyring": "2.1.2",
+    "better-sqlite3": "12.11.1",
     "ws": "^8.22.0",
     "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@hocuspocus/provider": "^4.7.0",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.10.7",
     "@types/ws": "^8.18.2",
     "typescript": "^5.7.3",

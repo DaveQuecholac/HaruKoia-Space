@@ -203,6 +203,41 @@ describe('reconexión', () => {
     await esperarQue(() => orquestador.deTipo('registrar').length >= 2);
     expect(conexion.estado()).not.toBe('rechazada');
   });
+
+  it('si el orquestador no contesta el upgrade, se rinde y se vuelve a registrar', async () => {
+    const servidor = createServer();
+    const sockets = new WebSocketServer({ noServer: true });
+    let pedidos = 0;
+    const colgados: { destroy(): void }[] = [];
+    servidor.on('upgrade', (peticion, socket, cabeza) => {
+      pedidos += 1;
+      if (pedidos === 1) {
+        colgados.push(socket);
+        return;
+      }
+      sockets.handleUpgrade(peticion, socket, cabeza, (abierto) => {
+        abierto.on('message', (bytes: Buffer) => {
+          const leido = interpretarControl(bytes.toString('utf8'));
+          if (leido.ok && leido.mensaje.tipo === 'registrar') {
+            abierto.send(serializarControl({ tipo: 'registro-aceptado', sala: leido.mensaje.sala }));
+          }
+        });
+      });
+    });
+    await new Promise<void>((listo) => servidor.listen(0, '127.0.0.1', listo));
+    const puerto = (servidor.address() as AddressInfo).port;
+
+    try {
+      const conexion = conectar(`ws://127.0.0.1:${puerto}`, generarIdentidadDeSala(), { intervaloDeLatido: 50 });
+      await esperarQue(() => conexion.estado() === 'registrada');
+      expect(pedidos).toBeGreaterThanOrEqual(2);
+    } finally {
+      for (const colgado of colgados) colgado.destroy();
+      for (const cliente of sockets.clients) cliente.terminate();
+      sockets.close();
+      await new Promise<void>((listo) => servidor.close(() => listo()));
+    }
+  });
 });
 
 describe('rechazos', () => {
