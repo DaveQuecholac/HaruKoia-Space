@@ -28,12 +28,16 @@ describe('commitear', () => {
     documento.getMap(MAPA_DEL_TABLERO);
 
     const tip = crearTipDeTrabajo();
+    let compactaciones = 0;
     const manejador = commitear({
       sala,
       almacen,
       documento: () => documento,
       tip,
       nombresPresentes: () => ['Marco', 'Ana'],
+      compactarDocumentoVivo: async () => {
+        compactaciones += 1;
+      },
     });
 
     const resultado = await manejador(
@@ -43,6 +47,7 @@ describe('commitear', () => {
 
     expect(resultado.ok).toBe(true);
     if (!resultado.ok) return;
+    expect(compactaciones).toBe(1);
     expect(resultado.avisos[0]?.destino).toBe('todos');
     expect(resultado.avisos[0]?.mensaje).toMatchObject({
       tipo: 'commit-guardado',
@@ -75,6 +80,7 @@ describe('commitear', () => {
       documento: () => documento,
       tip,
       nombresPresentes: () => ['Marco'],
+      compactarDocumentoVivo: async () => {},
     });
 
     const primero = await manejador(

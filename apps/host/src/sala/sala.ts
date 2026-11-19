@@ -84,6 +84,12 @@ export type SalaEnVivo = {
   participantes(): Participante[];
   /** Documento Yjs vivo de la sala (estado de trabajo). */
   documento(): import('yjs').Doc;
+  /**
+   * Compactación H4/V8: escribe ya el estado codificado en `sala.sqlite`
+   * (sin esperar el debounce). No reinicia el Doc vivo: los clientes siguen
+   * sincronizados; el disco queda con estado, no con un log de deltas.
+   */
+  persistirDocumentoAhora(): Promise<void>;
   /** Conexiones de invitados vivas en Hocuspocus. La directa del host no cuenta. */
   conexiones(): number;
   /** Documentos cargados en memoria. Siempre uno: el de la sala. */
@@ -305,6 +311,23 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
       const documento = directa.document;
       if (!documento) throw new Error('documento de la sala no está cargado');
       return documento;
+    },
+    async persistirDocumentoAhora() {
+      const documento = directa.document;
+      if (!documento) throw new Error('documento de la sala no está cargado');
+      // immediately=true → debounce 0: la extensión SQLite guarda encodeStateAsUpdate.
+      await hocuspocus.storeDocumentHooks(
+        documento,
+        {
+          clientsCount: documento.getConnectionsCount(),
+          document: documento,
+          documentName: sala,
+          instance: hocuspocus,
+          lastContext: undefined,
+          lastTransactionOrigin: 'compactacion-tras-commit',
+        },
+        true,
+      );
     },
     // Hocuspocus cuenta también la conexión directa del host.
     conexiones: () => hocuspocus.getConnectionsCount() - 1,

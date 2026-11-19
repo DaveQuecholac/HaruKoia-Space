@@ -2,7 +2,8 @@
  * Acción "commitear" (H4 / V3): staging = toda la pizarra (D-H4-1).
  *
  * Toma snapshot Yjs + JSON del mapa `tablero`, cuelga del tip del historial
- * (o raíz si está vacío) y guarda en `replica.sqlite`. No toca `sala.sqlite`.
+ * (o raíz si está vacío) y guarda en `replica.sqlite`. Tras el snapshot
+ * confirmado, compacta el documento vivo en `sala.sqlite` (V8 / F-V7).
  *
  * Participantes = nombres presentes en la presencia al momento (regla V3).
  */
@@ -31,6 +32,11 @@ export type DependenciasDeCommitear = {
   readonly tip: TipDeTrabajo;
   /** Nombres en la presencia ahora mismo (snapshot al commitear). */
   readonly nombresPresentes: () => readonly string[];
+  /**
+   * V8: tras snapshot en la réplica local, persistir el estado codificado
+   * del Doc vivo en `sala.sqlite`. Si falla, el commit ya quedó; solo se loguea.
+   */
+  readonly compactarDocumentoVivo: () => Promise<void>;
 };
 
 export function commitear(deps: DependenciasDeCommitear): ManejadorDeAccion {
@@ -84,6 +90,22 @@ export function commitear(deps: DependenciasDeCommitear): ManejadorDeAccion {
     }
 
     deps.tip.fijar(guardado.commit.id);
+
+    // F-V7: snapshot ya estable → compactar disco del Doc vivo. No revertir el commit.
+    try {
+      await deps.compactarDocumentoVivo();
+    } catch (error) {
+      console.warn(
+        JSON.stringify({
+          nivel: 'aviso',
+          sala: deps.sala,
+          accion: 'commitear',
+          causa: 'compactacion-fallida',
+          detalle: error instanceof Error ? error.message : String(error),
+          commit: guardado.commit.id,
+        }),
+      );
+    }
 
     return {
       ok: true,

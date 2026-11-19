@@ -1,6 +1,7 @@
 /**
- * Staging de versión (H4 / V3): preparar el guardado de toda la pizarra.
+ * Staging de versión (H4 / V3): preparar el **commit** de toda la pizarra.
  * Solo lo ve el host. No filtra formas (D-H4-1).
+ * Copy: commit = versión oficial (historial + réplica), no un borrador.
  * El historial vive en su propio componente (V4).
  */
 
@@ -20,9 +21,11 @@ export function StagingDeVersion(props: {
   readonly alHacerCheckout: (id: string) => void;
 }) {
   return (
-    <aside className="staging" aria-label="Guardar versión">
-      <h2 className="staging-titulo">Guardar versión</h2>
-      <p className="staging-ayuda">Se guarda toda la pizarra actual.</p>
+    <aside className="staging" aria-label="Crear versión">
+      <h2 className="staging-titulo">Crear versión</h2>
+      <p className="staging-ayuda">
+        Versión oficial de toda la pizarra: entra al historial y a la réplica. No es un borrador.
+      </p>
       <label className="staging-campo">
         <span>Mensaje</span>
         <input
@@ -43,7 +46,7 @@ export function StagingDeVersion(props: {
         onClick={props.alCommitear}
         disabled={props.guardando || props.deshabilitado}
       >
-        {props.guardando ? 'Guardando…' : 'Confirmar guardado'}
+        {props.guardando ? 'Commiteando…' : 'Commitear'}
       </button>
       <HistorialDeVersiones
         commits={props.commits}

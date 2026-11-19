@@ -9,6 +9,8 @@ Puerta de **réplica central** (antes de H4) y épica **H4 — Guardo una versi�
 | [analisis-h4-versiones-pizarra.md](./analisis-h4-versiones-pizarra.md) | Staging, commit, historial, checkout, traductor |
 | [plan-h4-versiones-pizarra.md](./plan-h4-versiones-pizarra.md) | Pasos de H4, con errores, pruebas y verificación |
 | [evidencia-replica-central.md](./evidencia-replica-central.md) | Cierre de la PdC: criterios, mediciones, qué se adopta |
+| [evidencia-h4-v7.md](./evidencia-h4-v7.md) | V7: historial vía PowerSync con host apagado |
+| [evidencia-h4-cierre.md](./evidencia-h4-cierre.md) | V9: DoD, suites, checklist de humo |
 
 Épicas: [fase-1-modulos-y-tareas.md](../../../fijos/fases/fase-1-modulos-y-tareas.md).  
 Arquitectura: [analisis-arquitectura-v2.md](../../../fijos/arquitectura/analisis-arquitectura-v2.md).  
@@ -25,7 +27,7 @@ R0…R7   Prueba de la réplica central (no es producto)
 V0…V9   H4: traductor, staging, commit, historial, checkout, réplica del historial
 ```
 
-La PdC cerró en verde (R7, 2026-11-17). **V0–V6 de H4 hechos.** Siguiente: **V7** (lectura con host apagado), cuando el chat lo confirme.
+La PdC cerró en verde (R7, 2026-11-17). **V0–V8 de H4 hechos.** **V9** listo para humo (suites verdes); cierre completo cuando el chat apruebe el checklist en [evidencia-h4-cierre.md](./evidencia-h4-cierre.md).
 
 ## Alcance
 
@@ -35,7 +37,7 @@ La PdC cerró en verde (R7, 2026-11-17). **V0–V6 de H4 hechos.** Siguiente: **
 
 ## Estado
 
-> **V6 hecho.** Subida a la réplica. Siguiente: **V7** (lectura con host apagado), cuando el chat lo confirme.
+> **V9 listo para humo.** Suites y typecheck verdes; evidencia: [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). H4 se cierra del todo cuando el chat confirme el humo en la app.
 
 | Paso | Qué | Estado |
 |------|-----|--------|
@@ -55,7 +57,9 @@ La PdC cerró en verde (R7, 2026-11-17). **V0–V6 de H4 hechos.** Siguiente: **
 | V4 | Historial en la web | Hecho |
 | V5 | Checkout | Hecho |
 | V6 | Subida a la réplica | Hecho |
-| V7–V9 | Lectura con host apagado, compactación, cierre | Pendiente |
+| V7 | Historial con host apagado | Hecho |
+| V8 | Compactación tras commit | Hecho |
+| V9 | Cierre H4 | Listo para humo |
 
 ## Decisiones cerradas en esta rama (2026-11-17)
 

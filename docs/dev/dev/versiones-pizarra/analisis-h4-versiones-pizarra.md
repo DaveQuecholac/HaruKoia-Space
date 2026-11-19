@@ -28,8 +28,8 @@ H2/H3 dan un tablero vivo que sobrevive reinicios. Todavía **no** hay versión 
 **Entra (H4-T1…T10):**
 
 1. Traductor tablero ↔ JSON (formas, coordenadas, orden) con versión de formato propia.
-2. Staging = intención de guardar **toda la pizarra** (mensaje + confirmación).
-3. Commit: snapshot Yjs + JSON + padre + autor + participantes + fecha.
+2. Staging = intención de **commitear** toda la pizarra (mensaje + confirmación). En UI: “Crear versión” / “Commitear”; no se llama “guardar” (2026-11-18).
+3. Commit: snapshot Yjs + JSON + padre + autor + participantes + fecha. Único gesto que escribe historial y réplica.
 4. Historial navegable en la UI.
 5. Checkout: cargar un commit como nuevo estado de trabajo; el siguiente commit cuelga de ese.
 6. Solo el host comitea (servidor).
@@ -56,7 +56,7 @@ H2/H3 dan un tablero vivo que sobrevive reinicios. Todavía **no** hay versión 
 - El commit de la v2 ya es “snapshot + JSON del tablero” de la sesión, no un fragmento.
 - El checkout carga “un commit anterior como nuevo estado de trabajo”: eso es el tablero entero.
 - Elementos/marcos selectivos complican el traductor, el grafo y la UI sin desbloquear H5.
-- “Staging” en la v1 = zona de **preparar el guardado** (mensaje, lista de participantes que estaban, botón de confirmar), no un subset del canvas.
+- “Staging” en la v1 = zona de **preparar el commit** (mensaje, lista de participantes que estaban, botón Commitear), no un subset del canvas ni un “guardado” ambiguo.
 
 **Qué queda para después.** Si el producto pide “commitear solo este marco”, será una variante del mecanismo de commit (filtro al construir snapshot/JSON), no un segundo sistema. La prueba de extensión del mecanismo lo exige así.
 
@@ -64,11 +64,11 @@ H2/H3 dan un tablero vivo que sobrevive reinicios. Todavía **no** hay versión 
 
 ```text
 Mecanismo de la capacidad: versionar el estado de trabajo de la pizarra (staging → commit → historial → checkout)
-Variantes de hoy: commit de pizarra completa (snapshot Yjs + JSON)
-Variantes probables siguientes: commit filtrado por marco; adjuntos por commit (H5/H6)
+Variantes de hoy: commit de pizarra completa (snapshot Yjs + JSON) — único acto de publicación
+Variantes probables siguientes: borrador local del host (sin grafo ni réplica); commit filtrado por marco; adjuntos (H5/H6)
 Módulo dueño: packages/domain (commit, grafo) + packages/schema (filas) + apps/host (autoridad)
 Plugins: traductor JSON como pieza con pruebas propias; UI de historial consume el contrato genérico
-Prueba de extensión: filtro por marco = opción al crear el snapshot, sin nuevo tipo de “commit de marco” paralelo
+Prueba de extensión: borrador = otro miembro de persistencia, no un commit disfrazado; filtro por marco = opción al snapshot
 Patrón existente: identidad tipada Identificador<'commit'>; presencia ya sella roles
 ```
 
@@ -105,7 +105,7 @@ Al commitear, el host escribe en su SQLite PowerSync (producto, post-PdC) y la c
 | F-V4 | Commit sin padre cuando debería colgar | Grafo inválido; prueba de grafo |
 | F-V5 | Réplica caída al commitear | Commit local OK; estado “pendiente de subir” (UI mínima o log); cola reintenta |
 | F-V6 | Mezclar escritura de commit en `sala.sqlite` Yjs | Prohibido; almacenes separados |
-| F-V7 | Compactar Yjs al commitear | Permitido aquí (H3 dejó compactación “al commitear” para H4): tras snapshot estable, se puede compactar el doc vivo sin perder el commit |
+| F-V7 | Compactar Yjs al commitear | **Cerrado en V8 (2026-11-18).** Tras snapshot en `replica.sqlite`, `persistirDocumentoAhora` reescribe `sala.sqlite` con estado codificado. Si falla la compactación, el commit no se revierte |
 
 ## 10. Tensiones / abiertos que H4 no cierra
 
@@ -114,6 +114,7 @@ Al commitear, el host escribe en su SQLite PowerSync (producto, post-PdC) y la c
 | Si git entra en el alcance inicial | Sigue abierto; no bloquea traductor/staging/commit local; sí la forma de H5 |
 | `space update` desde git o réplica | H5 |
 | UI detallada de “pendiente de subir” | Mínimo viable en H4; pulir con H5 |
+| Borrador local del host (checkpoints sin historial/réplica) | **Abierto / post-H4.** En H4 solo se aclaró el copy del commit (2026-11-18). No implementar almacén de borradores hasta que el chat lo autorice tras V7 |
 
 ## 11. Definition of done (fase 1)
 
@@ -121,3 +122,5 @@ Al commitear, el host escribe en su SQLite PowerSync (producto, post-PdC) y la c
 2. Un tablero exportado y reimportado es idéntico.
 3. El archivo JSON se entiende en un diff de git (aunque el push sea H5).
 4. El commit después de un checkout cuelga del commit correcto.
+
+**Estado V9 (2026-11-18).** Los cuatro criterios tienen evidencia automatizada en [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). Cierre de producto: humo en la app aprobado por el chat.

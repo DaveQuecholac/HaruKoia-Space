@@ -30,6 +30,7 @@ export type InvitadoDeLaSala = {
   /** Pide una acción con el mensaje del contrato, sin pasar por ninguna interfaz. */
   pedirAccion(accion: 'cambiar-invitacion'): void;
   pedirAccion(accion: 'commitear', mensaje: string): void;
+  pedirAccion(accion: 'hacer-checkout', id: string): void;
   salir(): void;
 };
 

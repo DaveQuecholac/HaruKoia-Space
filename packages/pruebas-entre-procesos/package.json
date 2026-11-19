@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "humo:v7": "node --env-file=../../pruebas/replica-central/.env src/versionado/historial-con-host-apagado/leer-historial-replica.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
@@ -18,6 +19,7 @@
     "@harukoia/cliente-del-relay": "workspace:^",
     "@harukoia/domain": "workspace:^",
     "@hocuspocus/provider": "^4.7.0",
+    "@powersync/node": "^1.2.0",
     "ws": "^8.22.0",
     "yjs": "^13.6.33"
   }

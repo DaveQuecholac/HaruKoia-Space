@@ -135,6 +135,7 @@ try {
             .participantes()
             .map((p) => (typeof p.estado.nombre === 'string' ? p.estado.nombre : ''))
             .filter((n) => n.trim() !== ''),
+        compactarDocumentoVivo: () => sala.persistirDocumentoAhora(),
       }),
       'hacer-checkout': hacerCheckout({
         sala: identidad.sala,

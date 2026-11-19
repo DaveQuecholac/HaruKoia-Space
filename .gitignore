@@ -26,5 +26,8 @@ pruebas/replica-central/keys/*.pem
 pruebas/replica-central/**/*.db
 pruebas/replica-central/**/*.db-*
 
+# Lector V7 (PowerSync temporal)
+packages/pruebas-entre-procesos/tmp/
+
 # Sistema
 .DS_Store

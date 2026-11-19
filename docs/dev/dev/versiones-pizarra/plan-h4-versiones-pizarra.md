@@ -2,7 +2,7 @@
 
 Rama: `dev/versiones-pizarra`.  
 Análisis: [analisis-h4-versiones-pizarra.md](./analisis-h4-versiones-pizarra.md).  
-**Estado.** PdC cerrada (R7). **V0–V6 hechos.** Siguiente: V7 cuando el chat lo confirme.
+**Estado.** PdC cerrada (R7). **V0–V8 hechos.** **V9:** suites/typecheck/evidencia listos; **cierre completo cuando el chat apruebe el humo en la app.**
 
 ## Reglas de trabajo
 
@@ -228,21 +228,27 @@ Infra Postgres/PowerSync: se reutiliza el compose de `pruebas/replica-central/` 
 
 **Verificación.** Evidencia en `evidencia-h4-*.md` o sección del README. **Parar.**
 
+**Estado.** Hecho (2026-11-18). Lector `pnpm --filter @harukoia/pruebas-entre-procesos humo:v7` con host stopped: 4 commits + snapshot vía PowerSync; F-R6 ok. Evidencia: [evidencia-h4-v7.md](./evidencia-h4-v7.md). Web in-app con host apagado queda fuera (mixed content HTTPS→HTTP); documentado ahí.
+
 ---
 
-## V8 — Compactación tras commit
+## V8 — Compactación tras commit — **hecho**
 
 **Objetivo.** H3 dejó la compactación “al commitear” para H4. Tras un commit exitoso, compactar el documento Yjs vivo de forma segura (sin perder el snapshot ya guardado).
 
 **Errores.** Compactar antes de persistir el snapshot → pérdida; orden: snapshot confirmado **después** compactar.
 
-**Pruebas.** Commit → compactar → rearrancar host (H3) → tablero sigue; historial intacto.
+**Qué se hizo.** Tras `guardar` en `replica.sqlite`, el host llama `persistirDocumentoAhora()`: Hocuspocus fuerza `onStoreDocument` (debounce 0) y la extensión SQLite reescribe `sala.sqlite` con `encodeStateAsUpdate` (estado, no log de deltas). **No** se reinicia el Doc vivo (clientes conectados). Si la compactación falla, el commit ya quedó; solo se loguea.
 
-**Verificación.** Test de resistencia corto. **Parar.** Si se decide no compactar en H4, anotar en el análisis y saltar sin código.
+**Pruebas.** Commit → compactar → rearrancar host (H3) → tablero sigue; historial intacto. Compactación que lanza → commit igual OK.
+
+**Verificación.** `pnpm --filter @harukoia/host test -- src/acciones-de-sala/commitear/` (4 verdes). Typecheck host OK. **Parar.**
+
+**Estado.** Hecho (2026-11-18).
 
 ---
 
-## V9 — Cierre H4
+## V9 — Cierre H4 — **listo para humo**
 
 **Objetivo.** Definition of done de la fase 1; suites host/web/entre-procesos; typecheck; actualizar README de la rama; promover a fijos lo que falte.
 
@@ -253,7 +259,18 @@ Infra Postgres/PowerSync: se reutiliza el compose de `pruebas/replica-central/` 
 3. JSON legible en diff  
 4. Padre correcto tras checkout  
 
-**Hecho cuando.** Chat aprueba el humo en la app. **Parar.** Siguiente épica: H5 (otra rama).
+**Qué se hizo (2026-11-18).**
+
+| Pieza | Resultado |
+|-------|-----------|
+| Suites domain/schema/host/web/entre-procesos | Todas verdes (76+29+70+24+30) |
+| Typecheck de esos paquetes | OK (arreglo menor: overload `pedirAccion('hacer-checkout')`) |
+| Evidencia | [evidencia-h4-cierre.md](./evidencia-h4-cierre.md) |
+| Fijos | Nota en fase-1 § H4 (copy Commitear + estado) |
+
+**Hecho cuando.** Chat aprueba el humo en la app (checklist en la evidencia). **Parar.** Siguiente épica: H5 (otra rama).
+
+**Estado.** Suites + docs listos; **pendiente humo del chat.**
 
 ---
 
