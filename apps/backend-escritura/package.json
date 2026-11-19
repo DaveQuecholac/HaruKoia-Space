@@ -1,0 +1,31 @@
+{
+  "name": "@harukoia/backend-escritura",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Backend de escritura de la réplica central — solo el host alimenta Postgres",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/pm2-dev.mjs start && node scripts/pm2-dev.mjs logs",
+    "dev:start": "node scripts/pm2-dev.mjs start",
+    "dev:stop": "node scripts/pm2-dev.mjs stop",
+    "dev:restart": "node scripts/pm2-dev.mjs restart",
+    "dev:logs": "node scripts/pm2-dev.mjs logs",
+    "dev:status": "node scripts/pm2-dev.mjs status",
+    "dev:plain": "node --watch --env-file=.env src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "node --env-file=.env src/main.ts"
+  },
+  "dependencies": {
+    "@harukoia/schema": "workspace:*",
+    "jose": "^6.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/pg": "^8.15.5",
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,4 +1,6 @@
-# PdC — edition 3. Filtra por claim JWT `sala` (F-R6 / D-R3).
+# Estación réplica — edition 3.
+# Producto H4 (V6): commits + snapshots. PdC humo: commits_prueba (referencia).
+# Filtra por claim JWT `sala` (D-R3 / F-R6).
 # yaml-language-server: $schema=https://unpkg.com/@powersync/service-sync-rules@latest/schema/sync_rules.json
 config:
   edition: 3
@@ -9,3 +11,16 @@ streams:
     query: >
       SELECT * FROM commits_prueba AS commits_prueba
       WHERE commits_prueba.sala = auth.parameter('sala')
+  commits:
+    auto_subscribe: true
+    query: >
+      SELECT * FROM commits AS commits
+      WHERE commits.sala = auth.parameter('sala')
+        AND commits.borrado = false
+  snapshots:
+    auto_subscribe: true
+    query: >
+      SELECT snapshots.* FROM snapshots AS snapshots
+      INNER JOIN commits ON commits.id = snapshots.id
+      WHERE commits.sala = auth.parameter('sala')
+        AND snapshots.borrado = false

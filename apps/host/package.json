@@ -24,6 +24,7 @@
     "@hocuspocus/extension-sqlite": "4.7.0",
     "@hocuspocus/server": "^4.7.0",
     "@napi-rs/keyring": "2.1.2",
+    "@powersync/node": "^1.2.0",
     "better-sqlite3": "12.11.1",
     "ws": "^8.22.0",
     "yjs": "^13.6.33"

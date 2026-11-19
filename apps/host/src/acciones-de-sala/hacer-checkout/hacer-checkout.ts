@@ -36,12 +36,12 @@ export function hacerCheckout(deps: DependenciasDeCheckout): ManejadorDeAccion {
       return { ok: false, causa: 'commit-inexistente' };
     }
 
-    const enSala = deps.almacen.listarHistorial(deps.sala).some((c) => c.id === id);
+    const enSala = (await deps.almacen.listarHistorial(deps.sala)).some((c) => c.id === id);
     if (!enSala) {
       return { ok: false, causa: 'commit-inexistente' };
     }
 
-    const snap = deps.almacen.leerSnapshot(id);
+    const snap = await deps.almacen.leerSnapshot(id);
     if (!snap) {
       return { ok: false, causa: 'checkout-fallido' };
     }

@@ -25,7 +25,7 @@ R0…R7   Prueba de la réplica central (no es producto)
 V0…V9   H4: traductor, staging, commit, historial, checkout, réplica del historial
 ```
 
-La PdC cerró en verde (R7, 2026-11-17). **V0–V5 de H4 hechos.** Siguiente: **V6** (subida a la réplica) cuando el chat lo confirme.
+La PdC cerró en verde (R7, 2026-11-17). **V0–V6 de H4 hechos.** Siguiente: **V7** (lectura con host apagado), cuando el chat lo confirme.
 
 ## Alcance
 
@@ -35,7 +35,7 @@ La PdC cerró en verde (R7, 2026-11-17). **V0–V5 de H4 hechos.** Siguiente: **
 
 ## Estado
 
-> **V5 hecho.** Checkout (volver a una versión). Siguiente: **V6** (subida a la réplica), cuando el chat lo confirme.
+> **V6 hecho.** Subida a la réplica. Siguiente: **V7** (lectura con host apagado), cuando el chat lo confirme.
 
 | Paso | Qué | Estado |
 |------|-----|--------|
@@ -54,7 +54,8 @@ La PdC cerró en verde (R7, 2026-11-17). **V0–V5 de H4 hechos.** Siguiente: **
 | V3 | Staging + commit | Hecho |
 | V4 | Historial en la web | Hecho |
 | V5 | Checkout | Hecho |
-| V6–V9 | Réplica, compactación, cierre | Pendiente |
+| V6 | Subida a la réplica | Hecho |
+| V7–V9 | Lectura con host apagado, compactación, cierre | Pendiente |
 
 ## Decisiones cerradas en esta rama (2026-11-17)
 

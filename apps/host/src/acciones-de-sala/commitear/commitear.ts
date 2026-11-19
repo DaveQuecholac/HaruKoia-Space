@@ -60,7 +60,7 @@ export function commitear(deps: DependenciasDeCommitear): ManejadorDeAccion {
       return { ok: false, causa: 'commit-fallido' };
     }
 
-    const historial = deps.almacen.listarHistorial(deps.sala);
+    const historial = await deps.almacen.listarHistorial(deps.sala);
     const tipActual = deps.tip.leer();
     const padre = tipActual ?? historial.at(-1)?.id ?? null;
 
@@ -68,7 +68,7 @@ export function commitear(deps: DependenciasDeCommitear): ManejadorDeAccion {
     const autor = contexto.autor.trim() !== '' ? contexto.autor.trim() : 'host';
     const participantes = presentes.length > 0 ? presentes : [autor];
 
-    const guardado = deps.almacen.guardar({
+    const guardado = await deps.almacen.guardar({
       sala: deps.sala,
       padre,
       mensaje: pedido.mensaje,

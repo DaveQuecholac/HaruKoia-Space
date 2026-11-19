@@ -93,6 +93,8 @@ Pruebas propias: export → import → igualdad observable del tablero (H4-T10).
 
 Al commitear, el host escribe en su SQLite PowerSync (producto, post-PdC) y la cola sube metadatos + snapshot + JSON. Los invitados leen historial por PowerSync. El documento Yjs vivo de H3 **sigue** siendo el estado de trabajo; no se reemplaza por el espejo.
 
+**Cerrado en chat (2026-11-18) para V6.** Backend de escritura en `apps/backend-escritura`; espejo del host con `@powersync/node`; Postgres `commits`/`snapshots`; token de host en `.env` de desarrollo. Inspiración Space: estación compose + bootstrap JWT; **no** Nest como autoridad (el host alimenta).
+
 ## 9. Errores previstos (H4)
 
 | Código | Qué pasa | Qué hacemos |

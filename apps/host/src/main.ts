@@ -87,9 +87,28 @@ try {
 registro.info('documento de la sala en disco', { archivo: archivoSqlite });
 registro.info('grafo de commits en disco', { archivo: archivoReplica });
 
-const almacenDeCommits = abrirAlmacenDeCommits(archivoReplica);
+const backendUrl = process.env.BACKEND_ESCRITURA_URL?.trim();
+const tokenDeHost = process.env.TOKEN_DE_HOST?.trim();
+const subida =
+  backendUrl && tokenDeHost
+    ? {
+        backendUrl,
+        tokenDeHost,
+        sala: identidad.sala,
+        ...(process.env.POWERSYNC_PUBLIC_URL
+          ? { powersyncUrl: process.env.POWERSYNC_PUBLIC_URL }
+          : {}),
+      }
+    : undefined;
+if (subida) {
+  registro.info('cola de subida a la réplica activa', { backend: subida.backendUrl });
+} else {
+  registro.info('cola de subida a la réplica inactiva (falta BACKEND_ESCRITURA_URL o TOKEN_DE_HOST)');
+}
+
+const almacenDeCommits = await abrirAlmacenDeCommits(archivoReplica, subida);
 const tipDeTrabajo = crearTipDeTrabajo(
-  almacenDeCommits.listarHistorial(identidad.sala).at(-1)?.id ?? null,
+  (await almacenDeCommits.listarHistorial(identidad.sala)).at(-1)?.id ?? null,
 );
 
 let sala: Awaited<ReturnType<typeof abrirSalaEnVivo>>;
@@ -124,20 +143,23 @@ try {
         tip: tipDeTrabajo,
       }),
     },
-    historial: () => ({
-      commits: almacenDeCommits.listarHistorial(identidad.sala).map((c) => ({
-        id: c.id,
-        mensaje: c.mensaje,
-        autor: c.autor,
-        creadoEn: c.creadoEn,
-        padre: c.padre,
-      })),
-      tip: tipDeTrabajo.leer(),
-    }),
+    historial: async () => {
+      const commits = await almacenDeCommits.listarHistorial(identidad.sala);
+      return {
+        commits: commits.map((c) => ({
+          id: c.id,
+          mensaje: c.mensaje,
+          autor: c.autor,
+          creadoEn: c.creadoEn,
+          padre: c.padre,
+        })),
+        tip: tipDeTrabajo.leer(),
+      };
+    },
     registro,
   });
 } catch (error) {
-  almacenDeCommits.cerrar();
+  await almacenDeCommits.cerrar();
   registro.error('no se pudo abrir la sala', { archivo: archivoSqlite, causa: causaDe(error) });
   process.exit(1);
 }
@@ -177,7 +199,7 @@ async function apagar(senal: string): Promise<void> {
   registro.info('apagando', { senal });
   await conexion.detener();
   await sala.cerrar();
-  almacenDeCommits.cerrar();
+  await almacenDeCommits.cerrar();
   server.close();
   process.exit(0);
 }

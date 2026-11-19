@@ -28,10 +28,10 @@ function directorioTemporal(): string {
 }
 
 describe('almacén de commits', () => {
-  it('guarda raíz, hijo, lista ordenado y lee snapshot (bytes + JSON)', () => {
+  it('guarda raíz, hijo, lista ordenado y lee snapshot (bytes + JSON)', async () => {
     const dir = directorioTemporal();
     const archivo = path.join(dir, 'replica.sqlite');
-    const almacen = abrirAlmacenDeCommits(archivo);
+    const almacen = await abrirAlmacenDeCommits(archivo);
     const sala = generarIdentidadDeSala().sala;
     const yjsRaiz = Uint8Array.from([1, 2, 3, 4]);
     const tableroRaiz: TableroEnJson = {
@@ -47,7 +47,7 @@ describe('almacén de commits', () => {
       ],
     };
 
-    const raiz = almacen.guardar({
+    const raiz = await almacen.guardar({
       sala,
       padre: null,
       mensaje: 'primera',
@@ -61,7 +61,7 @@ describe('almacén de commits', () => {
     if (!raiz.ok) return;
 
     const yjsHijo = Uint8Array.from([9, 8, 7]);
-    const hijo = almacen.guardar({
+    const hijo = await almacen.guardar({
       sala,
       padre: raiz.commit.id,
       mensaje: 'segunda',
@@ -74,48 +74,49 @@ describe('almacén de commits', () => {
     expect(hijo.ok).toBe(true);
     if (!hijo.ok) return;
 
-    const historial = almacen.listarHistorial(sala);
+    const historial = await almacen.listarHistorial(sala);
     expect(historial.map((c) => c.mensaje)).toEqual(['primera', 'segunda']);
     expect(historial[1]?.padre).toBe(raiz.commit.id);
 
-    const snapRaiz = almacen.leerSnapshot(raiz.commit.id);
+    const snapRaiz = await almacen.leerSnapshot(raiz.commit.id);
     expect(snapRaiz).not.toBeNull();
     expect(Array.from(snapRaiz!.estadoYjs)).toEqual([1, 2, 3, 4]);
     expect(snapRaiz!.tablero).toEqual(tableroRaiz);
 
-    const snapHijo = almacen.leerSnapshot(hijo.commit.id);
+    const snapHijo = await almacen.leerSnapshot(hijo.commit.id);
     expect(snapHijo).not.toBeNull();
     expect(Array.from(snapHijo!.estadoYjs)).toEqual([9, 8, 7]);
     expect(snapHijo!.tablero.formas).toEqual([]);
 
-    almacen.cerrar();
+    await almacen.cerrar();
 
-    // Reabrir: el grafo sigue en disco.
-    const otraVez = abrirAlmacenDeCommits(archivo);
-    expect(otraVez.listarHistorial(sala).map((c) => c.mensaje)).toEqual(['primera', 'segunda']);
-    otraVez.cerrar();
+    const otraVez = await abrirAlmacenDeCommits(archivo);
+    expect((await otraVez.listarHistorial(sala)).map((c) => c.mensaje)).toEqual(['primera', 'segunda']);
+    await otraVez.cerrar();
   });
 
-  it('rechaza una segunda raíz (F-V4)', () => {
+  it('rechaza una segunda raíz (F-V4)', async () => {
     const archivo = path.join(directorioTemporal(), 'replica.sqlite');
-    const almacen = abrirAlmacenDeCommits(archivo);
+    const almacen = await abrirAlmacenDeCommits(archivo);
     const sala = generarIdentidadDeSala().sala;
 
     expect(
-      almacen.guardar({
-        sala,
-        padre: null,
-        mensaje: 'uno',
-        autor: 'Marco',
-        participantes: [],
-        creadoEn: 1,
-        estadoYjs: new Uint8Array([1]),
-        tablero: tableroEnJsonVacio(),
-      }).ok,
+      (
+        await almacen.guardar({
+          sala,
+          padre: null,
+          mensaje: 'uno',
+          autor: 'Marco',
+          participantes: [],
+          creadoEn: 1,
+          estadoYjs: new Uint8Array([1]),
+          tablero: tableroEnJsonVacio(),
+        })
+      ).ok,
     ).toBe(true);
 
     expect(
-      almacen.guardar({
+      await almacen.guardar({
         sala,
         padre: null,
         mensaje: 'dos',
@@ -127,16 +128,16 @@ describe('almacén de commits', () => {
       }),
     ).toEqual({ ok: false, causa: 'raiz-ya-existe' });
 
-    almacen.cerrar();
+    await almacen.cerrar();
   });
 
-  it('rechaza un padre inexistente', () => {
+  it('rechaza un padre inexistente', async () => {
     const archivo = path.join(directorioTemporal(), 'replica.sqlite');
-    const almacen = abrirAlmacenDeCommits(archivo);
+    const almacen = await abrirAlmacenDeCommits(archivo);
     const sala = generarIdentidadDeSala().sala;
 
     expect(
-      almacen.guardar({
+      await almacen.guardar({
         sala,
         padre: generarIdentificadorDeCommit(),
         mensaje: 'huérfano',
@@ -148,11 +149,11 @@ describe('almacén de commits', () => {
       }),
     ).toEqual({ ok: false, causa: 'padre-inexistente' });
 
-    almacen.cerrar();
+    await almacen.cerrar();
   });
 
-  it('prohíbe abrir sala.sqlite como almacén (F-V6)', () => {
+  it('prohíbe abrir sala.sqlite como almacén (F-V6)', async () => {
     const archivo = path.join(directorioTemporal(), 'sala.sqlite');
-    expect(() => abrirAlmacenDeCommits(archivo)).toThrow(/sala\.sqlite/);
+    await expect(abrirAlmacenDeCommits(archivo)).rejects.toThrow(/sala\.sqlite/);
   });
 });

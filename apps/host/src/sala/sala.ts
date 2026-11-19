@@ -63,12 +63,17 @@ export type OpcionesDeLaSala = {
   readonly registro: Registro;
   /**
    * Historial local de commits (V4) + tip de trabajo (V5). Se manda al conectar.
-   * Hasta V6 no pasa por PowerSync: viaja por la sala.
+   * V6: el host sigue enviando la foto por la sala; la réplica central es otro camino.
    */
-  readonly historial?: () => {
-    readonly commits: readonly EntradaDeHistorial[];
-    readonly tip: IdentificadorDeCommit | null;
-  };
+  readonly historial?: () =>
+    | {
+        readonly commits: readonly EntradaDeHistorial[];
+        readonly tip: IdentificadorDeCommit | null;
+      }
+    | Promise<{
+        readonly commits: readonly EntradaDeHistorial[];
+        readonly tip: IdentificadorDeCommit | null;
+      }>;
   /** Solo para pruebas. */
   readonly tiempoDeEspera?: number;
 };
@@ -155,7 +160,7 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
     async connected({ socketId, connection, context }) {
       abiertas.set(socketId, connection);
       enviar(connection, { tipo: 'tu-rol', rol: context.rol });
-      const foto = opciones.historial?.() ?? { commits: [], tip: null };
+      const foto = (await opciones.historial?.()) ?? { commits: [], tip: null };
       enviar(connection, { tipo: 'historial', commits: foto.commits, tip: foto.tip });
       registro.info('rol asignado', { rol: context.rol, commits: foto.commits.length });
     },

@@ -2,7 +2,7 @@
 
 Rama: `dev/versiones-pizarra`.  
 Análisis: [analisis-h4-versiones-pizarra.md](./analisis-h4-versiones-pizarra.md).  
-**Estado.** PdC cerrada (R7). **V0–V5 hechos.** Siguiente: **V6** (subida a la réplica central) cuando el chat lo confirme.
+**Estado.** PdC cerrada (R7). **V0–V6 hechos.** Siguiente: V7 cuando el chat lo confirme.
 
 ## Reglas de trabajo
 
@@ -194,6 +194,17 @@ Local con `better-sqlite3`. Sin cola PowerSync (V6). Prohibido `sala.sqlite`.
 
 **Objetivo.** Sustituir/usar el backend real (adoptado de la PdC) desde `apps/host`: cola PowerSync, solo host. Payload completo (D-R1).
 
+**Decisiones de producto (2026-11-18, chat).**
+
+| # | Decisión |
+|---|----------|
+| 1 | Backend de escritura = proceso de producto (`apps/backend-escritura`), no dejarlo solo en `pruebas/` |
+| 2 | Espejo local del host = `@powersync/node` (un camino; no better-sqlite3 + subida paralela) |
+| 3 | Tablas Postgres = `commits` + `snapshots` (H4), no `commits_prueba` |
+| 4 | Token de host de escritura en `.env` de desarrollo (v1; auth de producto después) |
+
+Infra Postgres/PowerSync: se reutiliza el compose de `pruebas/replica-central/` (estación); el código de escritura ya no es el harness desechable.
+
 **Errores.** F-V5.
 
 **Pruebas.**
@@ -202,6 +213,8 @@ Local con `better-sqlite3`. Sin cola PowerSync (V6). Prohibido `sala.sqlite`.
 - Token de no-host no escribe
 
 **Verificación.** Criterios de la PdC aplicados al camino de producto. **Parar.**
+
+**Estado.** Hecho (2026-11-18). `apps/backend-escritura` (token malo → `host-no-autorizado`; token bueno → filas en `commits`/`snapshots`). Host con `@powersync/node` + `uploadData`. Humo: guardar local → fila en Postgres. Estación: compose de `pruebas/replica-central/` + `apply-tablas-h4.sh` + `sync-config` streams `commits`/`snapshots`.
 
 ---
 

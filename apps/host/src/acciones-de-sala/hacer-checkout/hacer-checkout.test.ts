@@ -19,17 +19,17 @@ afterEach(() => {
 });
 
 describe('hacer-checkout', () => {
-  it('A → B → checkout A → tip = A y tablero vuelve a A', () => {
+  it('A → B → checkout A → tip = A y tablero vuelve a A', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harukoia-checkout-'));
     temporales.push(dir);
-    const almacen = abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
+    const almacen = await abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
     const sala = generarIdentidadDeSala().sala;
     const tip = crearTipDeTrabajo();
     const documento = new Y.Doc();
 
     documento.getMap<string>(MAPA_DEL_TABLERO).set('shape:a', JSON.stringify({ id: 'shape:a' }));
     const snapA = Y.encodeStateAsUpdate(documento);
-    const a = almacen.guardar({
+    const a = await almacen.guardar({
       sala,
       padre: null,
       mensaje: 'A',
@@ -45,7 +45,7 @@ describe('hacer-checkout', () => {
 
     documento.getMap<string>(MAPA_DEL_TABLERO).set('shape:b', JSON.stringify({ id: 'shape:b' }));
     const snapB = Y.encodeStateAsUpdate(documento);
-    const b = almacen.guardar({
+    const b = await almacen.guardar({
       sala,
       padre: a.commit.id,
       mensaje: 'B',
@@ -66,38 +66,37 @@ describe('hacer-checkout', () => {
       tip,
     });
 
-    return manejador(
+    const resultado = await manejador(
       { tipo: 'pedir-accion', accion: 'hacer-checkout', id: a.commit.id },
       { autor: 'Marco' },
-    ).then((resultado) => {
-      expect(resultado.ok).toBe(true);
-      if (!resultado.ok) return;
-      expect(resultado.avisos[0]?.mensaje).toEqual({ tipo: 'checkout-hecho', id: a.commit.id });
-      expect(tip.leer()).toBe(a.commit.id);
-      expect([...documento.getMap<string>(MAPA_DEL_TABLERO).keys()].sort()).toEqual(['shape:a']);
+    );
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    expect(resultado.avisos[0]?.mensaje).toEqual({ tipo: 'checkout-hecho', id: a.commit.id });
+    expect(tip.leer()).toBe(a.commit.id);
+    expect([...documento.getMap<string>(MAPA_DEL_TABLERO).keys()].sort()).toEqual(['shape:a']);
 
-      const c = almacen.guardar({
-        sala,
-        padre: tip.leer(),
-        mensaje: 'C',
-        autor: 'Marco',
-        participantes: ['Marco'],
-        creadoEn: 3,
-        estadoYjs: Y.encodeStateAsUpdate(documento),
-        tablero: tableroEnJsonVacio(),
-      });
-      expect(c.ok).toBe(true);
-      if (!c.ok) return;
-      expect(c.commit.padre).toBe(a.commit.id);
-
-      almacen.cerrar();
+    const c = await almacen.guardar({
+      sala,
+      padre: tip.leer(),
+      mensaje: 'C',
+      autor: 'Marco',
+      participantes: ['Marco'],
+      creadoEn: 3,
+      estadoYjs: Y.encodeStateAsUpdate(documento),
+      tablero: tableroEnJsonVacio(),
     });
+    expect(c.ok).toBe(true);
+    if (!c.ok) return;
+    expect(c.commit.padre).toBe(a.commit.id);
+
+    await almacen.cerrar();
   });
 
   it('rechaza un commit que no existe (F-V3)', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harukoia-checkout-'));
     temporales.push(dir);
-    const almacen = abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
+    const almacen = await abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
     const sala = generarIdentidadDeSala().sala;
     const tip = crearTipDeTrabajo();
     const manejador = hacerCheckout({
@@ -112,6 +111,6 @@ describe('hacer-checkout', () => {
       { autor: 'Marco' },
     );
     expect(resultado).toEqual({ ok: false, causa: 'commit-inexistente' });
-    almacen.cerrar();
+    await almacen.cerrar();
   });
 });

@@ -22,7 +22,7 @@ describe('commitear', () => {
   it('guarda raíz con snapshot y avisa commit-guardado', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harukoia-commitear-'));
     temporales.push(dir);
-    const almacen = abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
+    const almacen = await abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
     const sala = generarIdentidadDeSala().sala;
     const documento = new Y.Doc();
     documento.getMap(MAPA_DEL_TABLERO);
@@ -49,23 +49,23 @@ describe('commitear', () => {
       mensaje: 'primera',
       autor: 'Marco',
     });
-    const historial = almacen.listarHistorial(sala);
+    const historial = await almacen.listarHistorial(sala);
     expect(historial).toHaveLength(1);
     expect(historial[0]?.mensaje).toBe('primera');
     expect(historial[0]?.participantes).toEqual(['Marco', 'Ana']);
     expect(historial[0]?.autor).toBe('Marco');
 
-    const snap = almacen.leerSnapshot(historial[0]!.id);
+    const snap = await almacen.leerSnapshot(historial[0]!.id);
     expect(snap).not.toBeNull();
     expect(snap!.estadoYjs.byteLength).toBeGreaterThan(0);
 
-    almacen.cerrar();
+    await almacen.cerrar();
   });
 
   it('el segundo commit cuelga del primero', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harukoia-commitear-'));
     temporales.push(dir);
-    const almacen = abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
+    const almacen = await abrirAlmacenDeCommits(path.join(dir, 'replica.sqlite'));
     const sala = generarIdentidadDeSala().sala;
     const documento = new Y.Doc();
     const tip = crearTipDeTrabajo();
@@ -88,7 +88,7 @@ describe('commitear', () => {
     );
     expect(segundo.ok).toBe(true);
     if (!segundo.ok || !primero.ok) return;
-    const historial = almacen.listarHistorial(sala);
+    const historial = await almacen.listarHistorial(sala);
     const uno = historial.find((c) => c.mensaje === 'uno');
     const dos = historial.find((c) => c.mensaje === 'dos');
     expect(uno).toBeDefined();
@@ -96,6 +96,6 @@ describe('commitear', () => {
     expect(dos?.padre).toBe(uno?.id);
     expect(tip.leer()).toBe(dos?.id);
 
-    almacen.cerrar();
+    await almacen.cerrar();
   });
 });

@@ -1,12 +1,15 @@
 /**
- * Almacén local del grafo de commits (V2).
+ * Almacén local del grafo de commits (V2 → V6).
  *
- * Archivo propio (`replica.sqlite`), tablas `commits` y `snapshots`.
- * No toca `sala.sqlite` (F-V6). Sin cola de subida todavía (V6).
+ * Espejo PowerSync (`replica.sqlite` / archivo propio). Tablas `commits` y
+ * `snapshots`. No toca `sala.sqlite` (F-V6). Con backend configurado, la cola
+ * sube por `uploadData` al backend de escritura.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Worker } from 'node:worker_threads';
 
 import {
   type Commit,
@@ -25,7 +28,9 @@ import {
   comoFilaDeCommit,
   comoFilaDeSnapshot,
 } from '@harukoia/schema';
-import Database from 'better-sqlite3';
+import { PowerSyncDatabase } from '@powersync/node';
+
+import { esquemaDeReplica } from '../esquema-de-replica/esquema-de-replica.ts';
 
 export type SnapshotDeCommit = {
   readonly commitId: IdentificadorDeCommit;
@@ -56,38 +61,27 @@ export type ResultadoDeGuardar =
         | 'tablero-invalido';
     };
 
-export type AlmacenDeCommits = {
-  readonly archivo: string;
-  guardar(datos: DatosParaGuardarCommit): ResultadoDeGuardar;
-  listarHistorial(sala: IdentificadorDeSala): readonly Commit[];
-  leerSnapshot(id: IdentificadorDeCommit): SnapshotDeCommit | null;
-  cerrar(): void;
+export type CredencialDeSubida = {
+  readonly backendUrl: string;
+  readonly tokenDeHost: string;
+  readonly sala: string;
+  readonly powersyncUrl?: string;
 };
 
-const DDL = `
-CREATE TABLE IF NOT EXISTS ${NOMBRE_DE_COLECCION_COMMITS} (
-  id TEXT PRIMARY KEY NOT NULL,
-  actualizado_en INTEGER NOT NULL,
-  borrado INTEGER NOT NULL,
-  sala TEXT NOT NULL,
-  padre TEXT,
-  mensaje TEXT NOT NULL,
-  autor TEXT NOT NULL,
-  participantes TEXT NOT NULL,
-  creado_en INTEGER NOT NULL
-);
+export type AlmacenDeCommits = {
+  readonly archivo: string;
+  guardar(datos: DatosParaGuardarCommit): Promise<ResultadoDeGuardar>;
+  listarHistorial(sala: IdentificadorDeSala): Promise<readonly Commit[]>;
+  leerSnapshot(id: IdentificadorDeCommit): Promise<SnapshotDeCommit | null>;
+  cerrar(): Promise<void>;
+};
 
-CREATE TABLE IF NOT EXISTS ${NOMBRE_DE_COLECCION_SNAPSHOTS} (
-  id TEXT PRIMARY KEY NOT NULL,
-  actualizado_en INTEGER NOT NULL,
-  borrado INTEGER NOT NULL,
-  estado_yjs_base64 TEXT NOT NULL,
-  tablero_json TEXT NOT NULL,
-  formato_de_tablero INTEGER NOT NULL
-);
-`;
+const workerPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../powersync.worker.cjs');
 
-export function abrirAlmacenDeCommits(archivo: string): AlmacenDeCommits {
+export async function abrirAlmacenDeCommits(
+  archivo: string,
+  subida?: CredencialDeSubida,
+): Promise<AlmacenDeCommits> {
   if (archivo === '' || archivo === ':memory:') {
     throw new Error('el almacén de commits exige un archivo en disco');
   }
@@ -96,69 +90,72 @@ export function abrirAlmacenDeCommits(archivo: string): AlmacenDeCommits {
   }
 
   fs.mkdirSync(path.dirname(archivo), { recursive: true });
-  const db = new Database(archivo);
-  db.exec(DDL);
+  const dbFilename = path.basename(archivo);
+  const dbLocation = path.dirname(archivo);
 
-  const insertarCommit = db.prepare(`
-    INSERT INTO ${NOMBRE_DE_COLECCION_COMMITS} (
-      id, actualizado_en, borrado, sala, padre, mensaje, autor, participantes, creado_en
-    ) VALUES (
-      @id, @actualizadoEn, @borrado, @sala, @padre, @mensaje, @autor, @participantes, @creadoEn
-    )
-  `);
-
-  const insertarSnapshot = db.prepare(`
-    INSERT INTO ${NOMBRE_DE_COLECCION_SNAPSHOTS} (
-      id, actualizado_en, borrado, estado_yjs_base64, tablero_json, formato_de_tablero
-    ) VALUES (
-      @id, @actualizadoEn, @borrado, @estadoYjsBase64, @tableroJson, @formatoDeTablero
-    )
-  `);
-
-  const seleccionarHistorial = db.prepare(`
-    SELECT id, actualizado_en AS actualizadoEn, borrado, sala, padre, mensaje, autor,
-           participantes, creado_en AS creadoEn
-    FROM ${NOMBRE_DE_COLECCION_COMMITS}
-    WHERE sala = ? AND borrado = 0
-  `);
-
-  const seleccionarSnapshot = db.prepare(`
-    SELECT id, actualizado_en AS actualizadoEn, borrado,
-           estado_yjs_base64 AS estadoYjsBase64,
-           tablero_json AS tableroJson,
-           formato_de_tablero AS formatoDeTablero
-    FROM ${NOMBRE_DE_COLECCION_SNAPSHOTS}
-    WHERE id = ? AND borrado = 0
-  `);
-
-  const guardarAmbos = db.transaction(
-    (commit: Commit, estadoYjs: Uint8Array, tablero: TableroEnJson, actualizadoEn: number) => {
-      insertarCommit.run({
-        id: commit.id,
-        actualizadoEn,
-        borrado: 0,
-        sala: commit.sala,
-        padre: commit.padre,
-        mensaje: commit.mensaje,
-        autor: commit.autor,
-        participantes: JSON.stringify(commit.participantes),
-        creadoEn: commit.creadoEn,
-      });
-      insertarSnapshot.run({
-        id: commit.id,
-        actualizadoEn,
-        borrado: 0,
-        estadoYjsBase64: Buffer.from(estadoYjs).toString('base64'),
-        tableroJson: JSON.stringify(tablero),
-        formatoDeTablero: tablero.formato,
-      });
+  const db = new PowerSyncDatabase({
+    schema: esquemaDeReplica,
+    database: {
+      dbFilename,
+      dbLocation,
+      openWorker: (_factoryPath, options) => new Worker(workerPath, options),
     },
-  );
+  });
+
+  if (subida) {
+    const credencial = subida;
+    await db.connect({
+      async fetchCredentials() {
+        const res = await fetch(
+          `${credencial.backendUrl}/sync/bootstrap?sala=${encodeURIComponent(credencial.sala)}`,
+        );
+        if (!res.ok) throw new Error(`bootstrap ${res.status}`);
+        const cuerpo = (await res.json()) as { powersyncUrl: string; token: string };
+        return {
+          endpoint: cuerpo.powersyncUrl || credencial.powersyncUrl || '',
+          token: cuerpo.token,
+        };
+      },
+      async uploadData(database) {
+        const tx = await database.getNextCrudTransaction();
+        if (!tx) return;
+
+        const batch = tx.crud.map((op) => ({
+          op: op.op,
+          table: op.table,
+          id: op.id,
+          data: op.opData,
+        }));
+
+        const res = await fetch(`${credencial.backendUrl}/api/data`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${credencial.tokenDeHost}`,
+          },
+          body: JSON.stringify({ sala: credencial.sala, batch }),
+        });
+
+        if (res.status >= 500) {
+          throw new Error(`backend temporal ${res.status}: ${await res.text()}`);
+        }
+
+        const cuerpo = (await res.json()) as { ok?: boolean; causa?: string };
+        if (cuerpo.ok === false) {
+          console.warn('subida rechazada', cuerpo.causa);
+          await tx.complete();
+          return;
+        }
+
+        await tx.complete();
+      },
+    });
+  }
 
   return {
     archivo,
 
-    guardar(datos) {
+    async guardar(datos) {
       if (
         typeof datos.tablero !== 'object' ||
         datos.tablero === null ||
@@ -181,23 +178,67 @@ export function abrirAlmacenDeCommits(archivo: string): AlmacenDeCommits {
         return { ok: false, causa: 'commit-invalido' };
       }
 
-      const historial = listarDesdeDb(datos.sala);
+      const historial = await listarDesdeDb(datos.sala);
       const padreOk = validarPadreDelCommit(historial, creado.commit.padre);
       if (!padreOk.ok) {
         return { ok: false, causa: padreOk.causa };
       }
 
       const actualizadoEn = Date.now();
-      guardarAmbos(creado.commit, datos.estadoYjs, datos.tablero, actualizadoEn);
+      const participantes = JSON.stringify(creado.commit.participantes);
+      const estadoYjsBase64 = Buffer.from(datos.estadoYjs).toString('base64');
+      const tableroJson = JSON.stringify(datos.tablero);
+
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(
+          `INSERT INTO ${NOMBRE_DE_COLECCION_COMMITS} (
+             id, actualizado_en, borrado, sala, padre, mensaje, autor, participantes, creado_en
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            creado.commit.id,
+            actualizadoEn,
+            0,
+            creado.commit.sala,
+            creado.commit.padre,
+            creado.commit.mensaje,
+            creado.commit.autor,
+            participantes,
+            creado.commit.creadoEn,
+          ],
+        );
+        await tx.execute(
+          `INSERT INTO ${NOMBRE_DE_COLECCION_SNAPSHOTS} (
+             id, actualizado_en, borrado, estado_yjs_base64, tablero_json, formato_de_tablero
+           ) VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            creado.commit.id,
+            actualizadoEn,
+            0,
+            estadoYjsBase64,
+            tableroJson,
+            datos.tablero.formato,
+          ],
+        );
+      });
+
       return { ok: true, commit: creado.commit };
     },
 
-    listarHistorial(sala) {
+    async listarHistorial(sala) {
       return listarDesdeDb(sala);
     },
 
-    leerSnapshot(id) {
-      const fila = seleccionarSnapshot.get(id) as
+    async leerSnapshot(id) {
+      const filas = await db.getAll(
+        `SELECT id, actualizado_en AS actualizadoEn, borrado,
+                estado_yjs_base64 AS estadoYjsBase64,
+                tablero_json AS tableroJson,
+                formato_de_tablero AS formatoDeTablero
+         FROM ${NOMBRE_DE_COLECCION_SNAPSHOTS}
+         WHERE id = ? AND borrado = 0`,
+        [id],
+      );
+      const fila = filas[0] as
         | {
             id: string;
             actualizadoEn: number;
@@ -231,13 +272,24 @@ export function abrirAlmacenDeCommits(archivo: string): AlmacenDeCommits {
       };
     },
 
-    cerrar() {
-      db.close();
+    async cerrar() {
+      try {
+        await db.disconnect();
+      } catch {
+        /* sin conexión */
+      }
+      await db.close();
     },
   };
 
-  function listarDesdeDb(sala: IdentificadorDeSala): Commit[] {
-    const filas = seleccionarHistorial.all(sala) as Array<{
+  async function listarDesdeDb(sala: IdentificadorDeSala): Promise<Commit[]> {
+    const filas = (await db.getAll(
+      `SELECT id, actualizado_en AS actualizadoEn, borrado, sala, padre, mensaje, autor,
+              participantes, creado_en AS creadoEn
+       FROM ${NOMBRE_DE_COLECCION_COMMITS}
+       WHERE sala = ? AND borrado = 0`,
+      [sala],
+    )) as Array<{
       id: string;
       actualizadoEn: number;
       borrado: number;
@@ -263,13 +315,24 @@ export function abrirAlmacenDeCommits(archivo: string): AlmacenDeCommits {
         participantes,
       });
       if (!interpretada.ok) continue;
-      commits.push({
-        id: comoIdentificadorDeCommit(interpretada.fila.id),
-        sala: comoIdentificadorDeSala(interpretada.fila.sala),
-        padre:
+      // Ids basura en la réplica (humo, harness) no deben tumbar el host.
+      let id: IdentificadorDeCommit;
+      let salaId: IdentificadorDeSala;
+      let padre: IdentificadorDeCommit | null;
+      try {
+        id = comoIdentificadorDeCommit(interpretada.fila.id);
+        salaId = comoIdentificadorDeSala(interpretada.fila.sala);
+        padre =
           interpretada.fila.padre === null
             ? null
-            : comoIdentificadorDeCommit(interpretada.fila.padre),
+            : comoIdentificadorDeCommit(interpretada.fila.padre);
+      } catch {
+        continue;
+      }
+      commits.push({
+        id,
+        sala: salaId,
+        padre,
         mensaje: interpretada.fila.mensaje,
         autor: interpretada.fila.autor,
         participantes: interpretada.fila.participantes,
