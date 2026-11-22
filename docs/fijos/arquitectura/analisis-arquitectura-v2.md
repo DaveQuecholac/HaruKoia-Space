@@ -362,11 +362,8 @@ Antes de H2 se escribe el **diseño de la app Expo** (lienzo, pantallas y arranq
 ## 13. Puntos abiertos
 
 - Qué proveedor de IA se usa y si hace falta un modo sin IA para repos sensibles.
-- Qué secciones exactas lleva el markdown generado.
-- Si el CLI de la v1 debe poder unirse a una sala o solo materializar y reportar.
+- Qué secciones exactas lleva el markdown generado (la variante determinista de H5 fija un mínimo; el “bonito” con modelo es H6).
 - Cuándo entra autenticación, y si llega antes de la primera sala global con repo real.
-- Si git queda dentro del alcance inicial. En la junta quedó como posible recorte, y conviene decidirlo antes de H5.
-- Si `space update` sigue bajando de git o lee de la réplica central.
 - **Cómo se arranca la app Expo** con PM2 y portless, y cuál es su diseño de pantallas y de lienzo. React Native ya entra; el diseño documentado en H2 no autoriza construirla. Para SQLite RN y secrets: [referencia Space](../referencia-space-powersync-sqlite-secrets.md).
 
 ### Cerrados el 2026-11-17 (rama `dev/versiones-pizarra`)
@@ -381,6 +378,18 @@ Detalle: [analisis-replica-central.md](../../dev/dev/versiones-pizarra/analisis-
 | Quién emite el token de lectura | JWT RS256 emitido por el backend de escritura (alcance por sala; en PdC claves local-dev) |
 | Almacén de buckets | Postgres `powersync_storage` en el mismo host, sin Mongo |
 | Reglas H0 vs PowerSync | Espejo: client schema / views, sin migrar el archivo sync. Yjs de H3 sigue en su SQLite aparte. Identificadores y borrado lógico de dominio se mantienen |
+
+### Cerrados el 2026-11-22 (rama `dev/publicaciones-pizarra`)
+
+Detalle: [analisis-h5-publicaciones-pizarra.md](../../dev/dev/publicaciones-pizarra/analisis-h5-publicaciones-pizarra.md).
+
+| Tema | Decisión |
+|------|----------|
+| ¿Git en el alcance inicial? | **Sí.** Commit + push + remoto adelantado (H5) |
+| ¿De dónde materializa `space update`? | **Desde git** (pull/fetch del remoto del proyecto). La réplica no sustituye el repo |
+| Alcance del CLI en v1 | Solo `space host`, `space status`, `space update`. **No** unirse a sala |
+| Vínculo sala ↔ repo | Al arrancar el host desde el checkout del proyecto |
+| Rutas de generados | Prefijo **`harukoia/publicado/…`**. No pisar docs manuales fuera de ese árbol |
 
 ## 14. Fuera del alcance de la v1
 
