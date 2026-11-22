@@ -1,7 +1,7 @@
 # Evidencia — H4 cierre (V9)
 
 Rama: `dev/versiones-pizarra`.  
-Fecha: **2026-11-18**.  
+Fecha: **2026-11-18** (suites). Cierre de producto: **2026-11-22**.  
 Plan: [plan-h4-versiones-pizarra.md](./plan-h4-versiones-pizarra.md) § V9.  
 Análisis: [analisis-h4-versiones-pizarra.md](./analisis-h4-versiones-pizarra.md) §11.  
 Réplica (puerta previa): [evidencia-replica-central.md](./evidencia-replica-central.md).
@@ -40,9 +40,11 @@ pnpm --filter @harukoia/domain typecheck
 pnpm --filter @harukoia/schema typecheck
 ```
 
-## Humo en la app (lo cierra el chat)
+## Humo en la app
 
-Hasta que el chat confirme este checklist, V9 no se declara cerrado del todo.
+**Aprobado por el chat (2026-11-22).** V9 / H4 cerrados.
+
+Checklist que se cerró:
 
 1. Host + web arriba; entra como host a la sala.
 2. Dibuja → **Crear versión** / **Commitear** con un mensaje.
@@ -52,6 +54,8 @@ Hasta que el chat confirme este checklist, V9 no se declara cerrado del todo.
 6. Dibuja y Commitear otra vez: el nuevo commit cuelga de la versión chequeada (se ve en el historial / padre).
 
 Opcional (V7, réplica): con host apagado, `pnpm --filter @harukoia/pruebas-entre-procesos humo:v7` (ver [evidencia-h4-v7.md](./evidencia-h4-v7.md)).
+
+Re-verificación de suites el 2026-11-22: domain 76, schema 29, host 70, web 24, entre-procesos 30 — todas verdes.
 
 ## Qué no entra / queda abierto
 

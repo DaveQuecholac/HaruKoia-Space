@@ -2,7 +2,7 @@
 
 Rama: `dev/versiones-pizarra`.  
 Análisis: [analisis-h4-versiones-pizarra.md](./analisis-h4-versiones-pizarra.md).  
-**Estado.** PdC cerrada (R7). **V0–V8 hechos.** **V9:** suites/typecheck/evidencia listos; **cierre completo cuando el chat apruebe el humo en la app.**
+**Estado.** PdC cerrada (R7). **V0–V9 hechos.** **H4 cerrada (2026-11-22).**
 
 ## Reglas de trabajo
 
@@ -248,7 +248,7 @@ Infra Postgres/PowerSync: se reutiliza el compose de `pruebas/replica-central/` 
 
 ---
 
-## V9 — Cierre H4 — **listo para humo**
+## V9 — Cierre H4 — **hecho**
 
 **Objetivo.** Definition of done de la fase 1; suites host/web/entre-procesos; typecheck; actualizar README de la rama; promover a fijos lo que falte.
 
@@ -270,7 +270,7 @@ Infra Postgres/PowerSync: se reutiliza el compose de `pruebas/replica-central/` 
 
 **Hecho cuando.** Chat aprueba el humo en la app (checklist en la evidencia). **Parar.** Siguiente épica: H5 (otra rama).
 
-**Estado.** Suites + docs listos; **pendiente humo del chat.**
+**Estado.** Hecho (2026-11-22). Suites verdes (domain 76, schema 29, host 70, web 24, entre-procesos 30). El chat autorizó el cierre. Siguiente: H5.
 
 ---
 

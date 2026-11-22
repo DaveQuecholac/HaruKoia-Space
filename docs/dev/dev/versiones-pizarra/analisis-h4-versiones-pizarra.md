@@ -123,4 +123,4 @@ Al commitear, el host escribe en su SQLite PowerSync (producto, post-PdC) y la c
 3. El archivo JSON se entiende en un diff de git (aunque el push sea H5).
 4. El commit después de un checkout cuelga del commit correcto.
 
-**Estado V9 (2026-11-18).** Los cuatro criterios tienen evidencia automatizada en [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). Cierre de producto: humo en la app aprobado por el chat.
+**Estado V9 (2026-11-22).** Los cuatro criterios tienen evidencia automatizada en [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). **H4 cerrada:** el chat aprobó el cierre.

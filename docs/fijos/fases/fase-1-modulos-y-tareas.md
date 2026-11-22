@@ -247,7 +247,7 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 
 **Decisiones que la bloqueaban (cerradas 2026-11-17).** Staging = **toda la pizarra**. Réplica: sube metadatos + snapshot + JSON; backend de escritura como proceso propio; token de lectura JWT RS256 desde ese backend; buckets en Postgres `powersync_storage`. Detalle y PdC: [docs/dev/dev/versiones-pizarra/](../../dev/dev/versiones-pizarra/README.md).
 
-**Cerrado en la rama (2026-11-18).** En UI el gesto de versión es **Crear versión / Commitear** (no “guardar”). Tras commit, el host compacta el Doc Yjs vivo en `sala.sqlite` (estado codificado). Implementación V0–V8 + suites V9 en verde; el DoD de producto queda cerrado cuando el chat apruebe el humo: [evidencia-h4-cierre.md](../../dev/dev/versiones-pizarra/evidencia-h4-cierre.md).
+**H4 cerrada (2026-11-22).** En UI el gesto de versión es **Crear versión / Commitear** (no “guardar”). Tras commit, el host compacta el Doc Yjs vivo en `sala.sqlite` (estado codificado). V0–V9 hechos; suites verdes; el chat aprobó el cierre. Evidencia: [evidencia-h4-cierre.md](../../dev/dev/versiones-pizarra/evidencia-h4-cierre.md). Siguiente: H5.
 
 ---
 
@@ -414,7 +414,7 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 | Qué secciones exactas lleva el markdown | H6 | H6 |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-Urgente antes de H5: si git entra en el alcance inicial. La PdC de la réplica vive en [versiones-pizarra](../../dev/dev/versiones-pizarra/README.md) y bloquea el código de H4 hasta cerrarse.
+Urgente antes de H5: si git entra en el alcance inicial. H4 y la PdC de la réplica están cerradas ([versiones-pizarra](../../dev/dev/versiones-pizarra/README.md)).
 
 ---
 

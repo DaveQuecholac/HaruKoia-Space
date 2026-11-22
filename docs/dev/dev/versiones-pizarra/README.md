@@ -27,7 +27,7 @@ R0…R7   Prueba de la réplica central (no es producto)
 V0…V9   H4: traductor, staging, commit, historial, checkout, réplica del historial
 ```
 
-La PdC cerró en verde (R7, 2026-11-17). **V0–V8 de H4 hechos.** **V9** listo para humo (suites verdes); cierre completo cuando el chat apruebe el checklist en [evidencia-h4-cierre.md](./evidencia-h4-cierre.md).
+La PdC cerró en verde (R7, 2026-11-17). **V0–V9 de H4 hechos.** **H4 cerrada (2026-11-22).** Evidencia: [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). Siguiente: H5.
 
 ## Alcance
 
@@ -37,7 +37,7 @@ La PdC cerró en verde (R7, 2026-11-17). **V0–V8 de H4 hechos.** **V9** listo 
 
 ## Estado
 
-> **V9 listo para humo.** Suites y typecheck verdes; evidencia: [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). H4 se cierra del todo cuando el chat confirme el humo en la app.
+> **H4 cerrada y aprobada (2026-11-22).** Suites verdes; el chat autorizó el cierre. Evidencia: [evidencia-h4-cierre.md](./evidencia-h4-cierre.md). Siguiente épica: H5.
 
 | Paso | Qué | Estado |
 |------|-----|--------|
@@ -59,7 +59,7 @@ La PdC cerró en verde (R7, 2026-11-17). **V0–V8 de H4 hechos.** **V9** listo 
 | V6 | Subida a la réplica | Hecho |
 | V7 | Historial con host apagado | Hecho |
 | V8 | Compactación tras commit | Hecho |
-| V9 | Cierre H4 | Listo para humo |
+| V9 | Cierre H4 | **Hecho** (2026-11-22) |
 
 ## Decisiones cerradas en esta rama (2026-11-17)
 

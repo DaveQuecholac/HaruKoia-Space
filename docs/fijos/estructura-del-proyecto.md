@@ -123,4 +123,4 @@ El código de H0 y H1 está en la rama `dev/motor`: arranque, registro de salas,
 
 H2 está cerrada y aprobada (2026-11-09). El lienzo vive en `apps/web`: escribe el tablero en el documento Yjs de la sala, el cursor y la selección van en el awareness junto al nombre, y el navegador guarda el log de ese documento en IndexedDB. El cierre está en [docs/dev/dev/pizarra-colaborativa/README.md](../dev/dev/pizarra-colaborativa/README.md).
 
-Todavía no hay persistencia de la sala en el disco del host, ni commit, ni réplica, ni app Expo. Eso empieza en H3. La réplica se diseña y se prueba antes de H4. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md).
+H3 (persistencia de la sala) y H4 (versiones / commits de pizarra + réplica central de historial) están cerradas. Todavía no hay publicación a git ni CLI `space update` (H5), ni app Expo construida. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md). Cierre H4: [docs/dev/dev/versiones-pizarra/](../dev/dev/versiones-pizarra/README.md).
