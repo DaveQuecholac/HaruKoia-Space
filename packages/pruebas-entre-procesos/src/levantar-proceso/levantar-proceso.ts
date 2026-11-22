@@ -127,6 +127,11 @@ function entornoDelProceso(
     directoriosTemporales.push(directorio);
     archivoSqlite = path.join(directorio, 'sala.sqlite');
     env.SALA_SQLITE = archivoSqlite;
+    if (entorno.REPLICA_SQLITE === undefined) {
+      env.REPLICA_SQLITE = path.join(directorio, 'replica.sqlite');
+    }
+  } else if (entorno.REPLICA_SQLITE === undefined) {
+    env.REPLICA_SQLITE = path.join(path.dirname(archivoSqlite), 'replica.sqlite');
   }
 
   return { env, archivoSqlite, cuentaIdentidad };

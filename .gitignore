@@ -18,5 +18,16 @@ data/
 *.sqlite
 *.sqlite-journal
 
+# PdC réplica central (no producto; ver pruebas/replica-central/README.md)
+pruebas/replica-central/.env
+pruebas/replica-central/tmp/*
+!pruebas/replica-central/tmp/.gitkeep
+pruebas/replica-central/keys/*.pem
+pruebas/replica-central/**/*.db
+pruebas/replica-central/**/*.db-*
+
+# Lector V7 (PowerSync temporal)
+packages/pruebas-entre-procesos/tmp/
+
 # Sistema
 .DS_Store

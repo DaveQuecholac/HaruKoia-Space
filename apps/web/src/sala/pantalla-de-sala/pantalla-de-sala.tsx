@@ -11,6 +11,8 @@ import {
   type PresenciaDelLienzo,
   conectarALaSala,
 } from '../conexion-a-la-sala/conexion-a-la-sala.ts';
+import { HistorialDeVersiones } from '../historial-de-versiones/historial-de-versiones.tsx';
+import { StagingDeVersion } from '../staging-de-version/staging-de-version.tsx';
 import './pantalla-de-sala.css';
 
 /** Lo que ve la persona por cada causa. Una causa nueva no compila sin su mensaje. */
@@ -39,6 +41,9 @@ const POR_QUE_SE_CERRO: Record<CausaDeCierre, string> = {
 const POR_QUE_NO_SE_PUDO: Record<CausaDeAccionRechazada, string> = {
   'rol-insuficiente': 'Solo el host puede hacer eso.',
   'orquestador-no-disponible': 'El orquestador no respondió y el link no cambió. Vuelve a intentar.',
+  'commit-fallido': 'No se pudo guardar la versión. Vuelve a intentar.',
+  'commit-inexistente': 'Esa versión ya no existe. El tablero no cambió.',
+  'checkout-fallido': 'No se pudo volver a esa versión. Vuelve a intentar.',
 };
 
 const NOMBRE_DEL_ROL: Record<Rol, string> = {
@@ -67,10 +72,15 @@ export function PantallaDeSala(props: {
     participantes: [],
     miRol: undefined,
     accionRechazada: undefined,
+    commits: [],
+    tipDeTrabajo: null,
   });
   const [intento, setIntento] = useState(0);
   const [copiado, setCopiado] = useState(false);
   const [cambiando, setCambiando] = useState(false);
+  const [guardandoVersion, setGuardandoVersion] = useState(false);
+  const [haciendoCheckout, setHaciendoCheckout] = useState(false);
+  const [mensajeDeVersion, setMensajeDeVersion] = useState('');
   const [linkCambiado, setLinkCambiado] = useState(false);
   const [documento, setDocumento] = useState<Y.Doc | undefined>(undefined);
   const [presencia, setPresencia] = useState<PresenciaDelLienzo | undefined>(undefined);
@@ -89,8 +99,21 @@ export function PantallaDeSala(props: {
       nombre,
       tokenDeWebDelHost,
       alCambiar: (nueva) => {
-        setInstantanea(nueva);
-        if (nueva.accionRechazada) setCambiando(false);
+        setInstantanea((previa) => {
+          if (nueva.commits.length > previa.commits.length) {
+            setGuardandoVersion(false);
+            setMensajeDeVersion('');
+          }
+          if (nueva.tipDeTrabajo !== previa.tipDeTrabajo) {
+            setHaciendoCheckout(false);
+          }
+          return nueva;
+        });
+        if (nueva.accionRechazada) {
+          setCambiando(false);
+          setGuardandoVersion(false);
+          setHaciendoCheckout(false);
+        }
       },
       alCambiarLaInvitacion: (nuevo) => {
         setCambiando(false);
@@ -114,7 +137,7 @@ export function PantallaDeSala(props: {
     };
   }, [orquestador, invitacion.sala, invitacion.tokenDeInvitacion, nombre, tokenDeWebDelHost, intento]);
 
-  const { estado, participantes, miRol, accionRechazada } = instantanea;
+  const { estado, participantes, miRol, accionRechazada, commits, tipDeTrabajo } = instantanea;
   const enlace = crearEnlace(window.location.origin, invitacion);
   const enElTablero =
     estado.tipo === 'conectando' ||
@@ -131,6 +154,16 @@ export function PantallaDeSala(props: {
     setCambiando(true);
     setLinkCambiado(false);
     conexion.current?.cambiarInvitacion();
+  }
+
+  function guardarVersion() {
+    setGuardandoVersion(true);
+    conexion.current?.commitear(mensajeDeVersion);
+  }
+
+  function volverAVersion(id: string) {
+    setHaciendoCheckout(true);
+    conexion.current?.hacerCheckout(id);
   }
 
   return (
@@ -197,14 +230,35 @@ export function PantallaDeSala(props: {
       ) : null}
 
       {enElTablero && documento && presencia ? (
-        <div className="sala-lienzo">
-          <Lienzo
-            key={generacion}
-            documento={documento}
-            sincronizado={sincronizado}
-            sembrar={miRol === 'host'}
-            presencia={presencia}
-          />
+        <div className="sala-cuerpo">
+          <div className="sala-lienzo">
+            <Lienzo
+              key={generacion}
+              documento={documento}
+              sincronizado={sincronizado}
+              sembrar={miRol === 'host'}
+              presencia={presencia}
+            />
+          </div>
+          {miRol === 'host' ? (
+            <StagingDeVersion
+              mensaje={mensajeDeVersion}
+              alCambiarMensaje={setMensajeDeVersion}
+              participantes={participantes
+                .map((p) => p.nombre)
+                .filter((n): n is string => typeof n === 'string' && n.trim() !== '')}
+              guardando={guardandoVersion || haciendoCheckout}
+              deshabilitado={estado.tipo !== 'conectada'}
+              commits={commits}
+              tipDeTrabajo={tipDeTrabajo}
+              alCommitear={guardarVersion}
+              alHacerCheckout={volverAVersion}
+            />
+          ) : miRol === 'espectador' ? (
+            <aside className="sala-panel-historial" aria-label="Historial de versiones">
+              <HistorialDeVersiones commits={commits} tipDeTrabajo={tipDeTrabajo} />
+            </aside>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -7,4 +7,9 @@ describe('acciones de sala', () => {
     expect(puedePedir('host', 'cambiar-invitacion')).toBe(true);
     expect(puedePedir('espectador', 'cambiar-invitacion')).toBe(false);
   });
+
+  it('commitear es solo del host', () => {
+    expect(puedePedir('host', 'commitear')).toBe(true);
+    expect(puedePedir('espectador', 'commitear')).toBe(false);
+  });
 });

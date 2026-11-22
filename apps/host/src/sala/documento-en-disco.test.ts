@@ -52,7 +52,11 @@ async function salaEn(
     sala: nombre,
     archivoSqlite: archivo,
     tokenDeWebDelHost,
-    acciones: { 'cambiar-invitacion': async () => ({ ok: true, avisos: [] }) },
+    acciones: {
+      'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
+      commitear: async () => ({ ok: true, avisos: [] }),
+      'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+    },
     registro,
   });
   const servidor = createServer();
@@ -156,7 +160,11 @@ describe('documento en disco', () => {
         sala: identidad.sala,
         archivoSqlite: path.join(directorio, 'no-es-directorio', 'sala.sqlite'),
         tokenDeWebDelHost: identidad.tokenDeWebDelHost,
-        acciones: { 'cambiar-invitacion': async () => ({ ok: true, avisos: [] }) },
+        acciones: {
+      'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
+      commitear: async () => ({ ok: true, avisos: [] }),
+      'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+    },
         registro: crearRegistro({ proceso: 'host', destino: (evento) => eventos.push(evento) }),
       }),
     ).rejects.toThrow();

@@ -1,6 +1,8 @@
 # Plan — prueba de la réplica central
 
-Rama: `dev/motor`. Decisión: [analisis-stack-powersync-react-native.md](./analisis-stack-powersync-react-native.md). Arquitectura: [v2](../../../fijos/arquitectura/analisis-arquitectura-v2.md).
+> **Plan detallado vigente (2026-11-17):** rama `dev/versiones-pizarra` — [plan-replica-central.md](../versiones-pizarra/plan-replica-central.md) y [analisis-replica-central.md](../versiones-pizarra/analisis-replica-central.md). Este archivo queda como índice histórico de la PdC 2.
+
+Rama original de la nota: `dev/motor`. Decisión: [analisis-stack-powersync-react-native.md](./analisis-stack-powersync-react-native.md). Arquitectura: [v2](../../../fijos/arquitectura/analisis-arquitectura-v2.md).
 
 PowerSync y React Native ya están decididos. Este plan ya no vota el stack.
 
@@ -13,13 +15,7 @@ Cada paso se confirma en el chat antes de implementarlo.
 
 ## Antes de empezar la prueba
 
-Hay que escribir el diseño de la réplica y cerrar ahí, o dejar explícito que la prueba los mide y no los cierra. Partir de lo que Space ya tiene en `/home/davesq/Documents/IoKoia/space/` — resumen: [referencia Space](../../../fijos/referencia-space-powersync-sqlite-secrets.md); detalle: `apps/server/deploy/powersync/` y `procedures/powersync-postgres-v1/`.
-
-- Qué sube a la copia central.
-- Dónde vive el backend de escritura. El de esta prueba es desechable y no decide eso.
-- Quién emite el token de lectura. Aquí se puede usar un token de desarrollo; Space emite JWT RS256 tras Bearer (`GET /sync/bootstrap`).
-- Almacén de buckets. Space eligió Postgres (`powersync_storage`) en el mismo host, sin Mongo. Si HaruKoia adopta eso, el compose se parece al de Space.
-- Dónde vive la prueba (rama y carpeta). La carpeta no puede ser un `apps/` que el arranque de la raíz trate como producto.
+**Cerrado el 2026-11-17** en [analisis-replica-central.md](../versiones-pizarra/analisis-replica-central.md): qué sube (metadatos + snapshot + JSON), backend de escritura como proceso propio, JWT RS256 desde ese backend, buckets Postgres, carpeta `pruebas/replica-central/`. Partir de Space: `/home/davesq/Documents/IoKoia/space/apps/server/deploy/powersync/`.
 
 ## P2.1 — Réplica central en Docker
 

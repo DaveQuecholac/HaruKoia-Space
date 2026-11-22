@@ -34,9 +34,11 @@ export {
 } from './sala/accion-de-sala/accion-de-sala.ts';
 
 export type {
+  EntradaDeHistorial,
   MensajeDeSala,
   MensajeDelHostDeLaSala,
   MensajeDelParticipante,
+  PedidoDeAccion,
   TipoDeMensajeDeSala,
 } from './sala/mensaje-de-sala/mensaje-de-sala.ts';
 
@@ -82,3 +84,58 @@ export {
   interpretarControl,
   serializarControl,
 } from './relay/codec-de-control/codec-de-control.ts';
+
+export {
+  LONGITUD_DEL_COMMIT,
+  type IdentificadorDeCommit,
+  comoIdentificadorDeCommit,
+  generarIdentificadorDeCommit,
+} from './commit/identificador-de-commit/identificador-de-commit.ts';
+
+export {
+  FORMATO_DE_TABLERO,
+  type InterpretacionDeTablero,
+  type TableroEnJson,
+  interpretarTableroEnJson,
+  tableroEnJsonVacio,
+} from './commit/formato-de-tablero/formato-de-tablero.ts';
+
+export {
+  TIPOS_DE_FORMA,
+  type FormaDeTablero,
+  type FormaDocumento,
+  type FormaFigura,
+  type FormaPagina,
+  type FormaRecurso,
+  type FormaVinculo,
+  type InterpretacionDeForma,
+  type MetaDeForma,
+  type TipoDeForma,
+  esTipoDeForma,
+  interpretarForma,
+} from './commit/forma-de-tablero/forma-de-tablero.ts';
+
+export {
+  type RegistroDelTablero,
+  type ResultadoDeExportacion,
+  type ResultadoDeImportacion,
+  TIPOS_DEL_DOCUMENTO_DEL_TABLERO,
+  TIPOS_DE_SESION_DEL_LIENZO,
+  esRegistroDelDocumentoDelTablero,
+  exportarTableroAJson,
+  importarTableroDesdeJson,
+} from './commit/traductor-de-tablero/traductor-de-tablero.ts';
+
+export {
+  type Commit,
+  type DatosParaCrearCommit,
+  type ResultadoDeCommit,
+  comoCommit,
+  crearCommit,
+} from './commit/commit/commit.ts';
+
+export {
+  type ResultadoDePadre,
+  ordenarHistorial,
+  validarPadreDelCommit,
+} from './commit/grafo-de-commits/grafo-de-commits.ts';

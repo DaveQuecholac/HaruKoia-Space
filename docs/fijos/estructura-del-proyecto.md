@@ -43,7 +43,7 @@ motor-colaborativo/
 
 El criterio para crear un proceso nuevo está en [por-que-no-microservicios.md](./arquitectura/por-que-no-microservicios.md). Una capacidad nueva es un módulo dentro de uno de estos paquetes hasta que cumpla alguna de las cuatro condiciones de ahí.
 
-**Réplica central.** La arquitectura agrega Postgres, PowerSync Service y un backend de escritura en la nube ([v2, sección 4](./arquitectura/analisis-arquitectura-v2.md#4-topología)). Todavía no tienen paquete ni contenedor. Dónde vive el backend de escritura es un punto abierto y se cierra en el diseño de la réplica, antes de H4. Cómo lo cableó IOKOIA Space (compose, buckets, JWT, SQLite/secrets): [referencia-space-powersync-sqlite-secrets.md](./referencia-space-powersync-sqlite-secrets.md). Cuando entre una app nueva, se registra como dice `.cursor/rules/pm2-app.mdc`.
+**Réplica central.** Postgres, PowerSync Service y un **backend de escritura como proceso propio** (cerrado 2026-11-17; no vive en el orquestador). La prueba desechable arranca en `pruebas/replica-central/` bajo la rama [versiones-pizarra](../dev/dev/versiones-pizarra/README.md); no bajo `apps/`. Cómo lo cableó IOKOIA Space (compose, buckets, JWT): [referencia-space-powersync-sqlite-secrets.md](./referencia-space-powersync-sqlite-secrets.md). Cuando entre una app nueva de producto, se registra como dice `.cursor/rules/pm2-app.mdc`.
 
 ## Arranque con PM2 y portless
 
@@ -123,4 +123,4 @@ El código de H0 y H1 está en la rama `dev/motor`: arranque, registro de salas,
 
 H2 está cerrada y aprobada (2026-11-09). El lienzo vive en `apps/web`: escribe el tablero en el documento Yjs de la sala, el cursor y la selección van en el awareness junto al nombre, y el navegador guarda el log de ese documento en IndexedDB. El cierre está en [docs/dev/dev/pizarra-colaborativa/README.md](../dev/dev/pizarra-colaborativa/README.md).
 
-Todavía no hay persistencia de la sala en el disco del host, ni commit, ni réplica, ni app Expo. Eso empieza en H3. La réplica se diseña y se prueba antes de H4. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md).
+H3 (persistencia de la sala) y H4 (versiones / commits de pizarra + réplica central de historial) están cerradas. Todavía no hay publicación a git ni CLI `space update` (H5), ni app Expo construida. Las épicas están en la [fase 1](./fases/fase-1-modulos-y-tareas.md). Cierre H4: [docs/dev/dev/versiones-pizarra/](../dev/dev/versiones-pizarra/README.md).

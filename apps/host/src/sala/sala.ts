@@ -27,6 +27,8 @@ import { SQLite } from '@hocuspocus/extension-sqlite';
 import { type Connection, Hocuspocus } from '@hocuspocus/server';
 import Database from 'better-sqlite3';
 import {
+  type EntradaDeHistorial,
+  type IdentificadorDeCommit,
   type IdentificadorDeSala,
   type MensajeDelHostDeLaSala,
   type TokenDeWebDelHost,
@@ -59,6 +61,19 @@ export type OpcionesDeLaSala = {
   readonly archivoSqlite: string;
   readonly acciones: ManejadoresDeAccion;
   readonly registro: Registro;
+  /**
+   * Historial local de commits (V4) + tip de trabajo (V5). Se manda al conectar.
+   * V6: el host sigue enviando la foto por la sala; la réplica central es otro camino.
+   */
+  readonly historial?: () =>
+    | {
+        readonly commits: readonly EntradaDeHistorial[];
+        readonly tip: IdentificadorDeCommit | null;
+      }
+    | Promise<{
+        readonly commits: readonly EntradaDeHistorial[];
+        readonly tip: IdentificadorDeCommit | null;
+      }>;
   /** Solo para pruebas. */
   readonly tiempoDeEspera?: number;
 };
@@ -67,6 +82,14 @@ export type SalaEnVivo = {
   /** El manejador del canal `sesion`. */
   readonly manejador: ManejadorDeCanal;
   participantes(): Participante[];
+  /** Documento Yjs vivo de la sala (estado de trabajo). */
+  documento(): import('yjs').Doc;
+  /**
+   * Compactación H4/V8: escribe ya el estado codificado en `sala.sqlite`
+   * (sin esperar el debounce). No reinicia el Doc vivo: los clientes siguen
+   * sincronizados; el disco queda con estado, no con un log de deltas.
+   */
+  persistirDocumentoAhora(): Promise<void>;
   /** Conexiones de invitados vivas en Hocuspocus. La directa del host no cuenta. */
   conexiones(): number;
   /** Documentos cargados en memoria. Siempre uno: el de la sala. */
@@ -143,7 +166,9 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
     async connected({ socketId, connection, context }) {
       abiertas.set(socketId, connection);
       enviar(connection, { tipo: 'tu-rol', rol: context.rol });
-      registro.info('rol asignado', { rol: context.rol });
+      const foto = (await opciones.historial?.()) ?? { commits: [], tip: null };
+      enviar(connection, { tipo: 'historial', commits: foto.commits, tip: foto.tip });
+      registro.info('rol asignado', { rol: context.rol, commits: foto.commits.length });
     },
     async beforeHandleAwareness({ states, context, socketId }) {
       // Sin contexto, el cambio viene de la conexión directa del propio host.
@@ -175,11 +200,13 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
         return;
       }
 
-      const { accion } = leido.mensaje;
+      const pedido = leido.mensaje;
+      const { accion } = pedido;
       const { rol } = connection.context;
+      const autor = autorDeLaConexion(connection);
       let resultado: Awaited<ReturnType<typeof atenderAccion>>;
       try {
-        resultado = await atenderAccion(accion, rol, acciones);
+        resultado = await atenderAccion(pedido, rol, acciones, { autor });
       } catch (error) {
         registro.error('la acción no se pudo completar', {
           accion,
@@ -241,6 +268,26 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
     return participantesDe(documento.awareness.getStates(), documento.awareness.clientID);
   }
 
+  function autorDeLaConexion(conexion: Connection<ContextoDeLaConexion>): string {
+    let socketId: string | undefined;
+    for (const [id, abierta] of abiertas) {
+      if (abierta === conexion) {
+        socketId = id;
+        break;
+      }
+    }
+    const documento = directa.document;
+    if (!socketId || !documento) return 'host';
+    for (const [cliente, dueno] of duenoDelParticipante) {
+      if (dueno !== socketId) continue;
+      const estado = documento.awareness.getStates().get(cliente);
+      if (typeof estado?.nombre === 'string' && estado.nombre.trim() !== '') {
+        return estado.nombre.trim();
+      }
+    }
+    return 'host';
+  }
+
   const manejador: ManejadorDeCanal = ({ socket, registro: registroDeLaConexion }) => {
     const cliente = hocuspocus.handleConnection(socket, new Request(`http://host.harukoia/${sala}`));
 
@@ -260,6 +307,28 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
   return {
     manejador,
     participantes,
+    documento() {
+      const documento = directa.document;
+      if (!documento) throw new Error('documento de la sala no está cargado');
+      return documento;
+    },
+    async persistirDocumentoAhora() {
+      const documento = directa.document;
+      if (!documento) throw new Error('documento de la sala no está cargado');
+      // immediately=true → debounce 0: la extensión SQLite guarda encodeStateAsUpdate.
+      await hocuspocus.storeDocumentHooks(
+        documento,
+        {
+          clientsCount: documento.getConnectionsCount(),
+          document: documento,
+          documentName: sala,
+          instance: hocuspocus,
+          lastContext: undefined,
+          lastTransactionOrigin: 'compactacion-tras-commit',
+        },
+        true,
+      );
+    },
     // Hocuspocus cuenta también la conexión directa del host.
     conexiones: () => hocuspocus.getConnectionsCount() - 1,
     documentos: () => hocuspocus.getDocumentsCount(),

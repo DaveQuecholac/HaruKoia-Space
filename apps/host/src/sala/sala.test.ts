@@ -41,7 +41,11 @@ beforeEach(async () => {
     sala: identidad.sala,
     archivoSqlite: path.join(directorio, 'sala.sqlite'),
     tokenDeWebDelHost: identidad.tokenDeWebDelHost,
-    acciones: { 'cambiar-invitacion': async () => ({ ok: true, avisos: [] }) },
+    acciones: {
+      'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
+      commitear: async () => ({ ok: true, avisos: [] }),
+      'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+    },
     registro,
   });
 

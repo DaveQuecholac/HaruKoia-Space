@@ -120,7 +120,7 @@ En la sala global, lo colaborado se comitea desde el servidor cuando toque. Es e
 | Caché del invitado | Navegador | SQLite de PowerSync (lectura de lo replicado), y el log de Yjs en IndexedDB |
 | Registro de salas | Orquestador | Memoria |
 
-Qué parte de los commits sube a la copia central —solo metadatos, o también el snapshot Yjs y el JSON del tablero— es un punto abierto (sección 13). Subir el snapshot pone el tablero en la nube.
+Qué sube a la copia central quedó cerrado el 2026-11-17: metadatos del commit **y** el snapshot Yjs **y** el JSON del tablero (sección 13). Subir el snapshot pone el tablero versionado en la nube como copia de lectura.
 
 ### Cómo viaja la réplica (revisión 2026-10-19)
 
@@ -175,7 +175,7 @@ Entra en la v1, con staging, commit e historial navegable. Ramificación queda f
 | Concepto | Qué significa aquí |
 |---|---|
 | Estado de trabajo | El documento Yjs vivo de la sala. Lo editan todos |
-| Staging | Lo que los participantes marcan para entrar en la siguiente versión |
+| Staging | Preparar el guardado de la **pizarra completa** (mensaje y confirmación). En la v1 no se selecciona por elemento ni por marco (cerrado 2026-11-17) |
 | Commit | El host guarda: queda una versión oficial con padre, autor y participantes |
 | Historial | Lista de commits de esa pizarra |
 | Checkout | Cargar un commit anterior como nuevo estado de trabajo |
@@ -189,7 +189,7 @@ El push puede empujar la pizarra entera, no solo el markdown. El commit es la un
 1. El developer entra a su checkout y arranca su host. El contenedor se registra en el orquestador y devuelve un link.
 2. Comparte el link. Los invitados abren el navegador, entran a la sala y ven nombres y cursores.
 3. Trabajan sobre el tablero. Los deltas van por el relay al host y el host los retransmite.
-4. Marcan en staging lo que debe quedar en la versión.
+4. Preparan el guardado (staging de la pizarra completa: mensaje y confirmación).
 5. El host guarda. Se crea el commit con el snapshot y el JSON del tablero en su SQLite, y la cola lo sube a la réplica central: los invitados ven el historial.
 6. El host hace push. En su contenedor, la IA convierte el contenido a markdown con secciones estables, Pandoc genera PDF y Word, los archivos se escriben en la copia de trabajo y se comitean a git. El estado del push se replica igual que el commit.
 7. Git push al remoto.
@@ -363,20 +363,24 @@ Antes de H2 se escribe el **diseño de la app Expo** (lienzo, pantallas y arranq
 
 - Qué proveedor de IA se usa y si hace falta un modo sin IA para repos sensibles.
 - Qué secciones exactas lleva el markdown generado.
-- Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra.
 - Si el CLI de la v1 debe poder unirse a una sala o solo materializar y reportar.
 - Cuándo entra autenticación, y si llega antes de la primera sala global con repo real.
-- Si git queda dentro del alcance inicial. En la junta quedó como posible recorte, y conviene decidirlo antes del paso 5.
-
-Abiertos por la revisión del 2026-10-19:
-
-- **Qué sube a la réplica central**: solo metadatos (commits, autores, estados del push) o también el snapshot Yjs y el JSON del tablero.
-- **Dónde vive el backend de escritura**: dentro del orquestador, lo que cambia su papel, o como proceso propio.
-- **Quién emite el token de lectura** de PowerSync, contra qué credencial (por ejemplo el token de invitación) y con qué alcance.
-- **Almacén de buckets** de PowerSync: MongoDB o Postgres. Referencia: Space usa Postgres `powersync_storage` en el mismo host ([referencia Space](../referencia-space-powersync-sqlite-secrets.md)).
+- Si git queda dentro del alcance inicial. En la junta quedó como posible recorte, y conviene decidirlo antes de H5.
 - Si `space update` sigue bajando de git o lee de la réplica central.
-- Si las reglas del contrato fijadas en H0 (orden por `actualizadoEn`, borrado lógico, migración al leer) siguen igual o se ajustan al modelo de PowerSync. Referencia: Space fija client schema / views y prohíbe migrar el espejo ([referencia Space §5](../referencia-space-powersync-sqlite-secrets.md#5-evolución-de-esquema-en-el-device-146--respuesta-a-s8)).
-- **Cómo se arranca la app Expo** con PM2 y portless, y cuál es su diseño de pantallas y de lienzo. React Native ya entra; esto es el documento siguiente, antes de H2. Para SQLite RN y secrets: [referencia Space](../referencia-space-powersync-sqlite-secrets.md).
+- **Cómo se arranca la app Expo** con PM2 y portless, y cuál es su diseño de pantallas y de lienzo. React Native ya entra; el diseño documentado en H2 no autoriza construirla. Para SQLite RN y secrets: [referencia Space](../referencia-space-powersync-sqlite-secrets.md).
+
+### Cerrados el 2026-11-17 (rama `dev/versiones-pizarra`)
+
+Detalle: [analisis-replica-central.md](../../dev/dev/versiones-pizarra/analisis-replica-central.md) y [analisis-h4-versiones-pizarra.md](../../dev/dev/versiones-pizarra/analisis-h4-versiones-pizarra.md).
+
+| Tema | Decisión |
+|------|----------|
+| Qué parte del tablero entra en staging | **Toda la pizarra** por commit. Sin selección por elementos ni marcos en la v1 |
+| Qué sube a la réplica central | Metadatos del commit **y** snapshot Yjs **y** JSON del tablero |
+| Dónde vive el backend de escritura | **Proceso propio** junto a la réplica; no dentro del orquestador |
+| Quién emite el token de lectura | JWT RS256 emitido por el backend de escritura (alcance por sala; en PdC claves local-dev) |
+| Almacén de buckets | Postgres `powersync_storage` en el mismo host, sin Mongo |
+| Reglas H0 vs PowerSync | Espejo: client schema / views, sin migrar el archivo sync. Yjs de H3 sigue en su SQLite aparte. Identificadores y borrado lógico de dominio se mantienen |
 
 ## 14. Fuera del alcance de la v1
 

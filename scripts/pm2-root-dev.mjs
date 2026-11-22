@@ -29,6 +29,7 @@ const APPS = [
   { name: "orchestrator", filter: "@harukoia/orchestrator" },
   { name: "host", filter: "@harukoia/host" },
   { name: "web", filter: "@harukoia/web" },
+  { name: "backend-escritura", filter: "@harukoia/backend-escritura" },
 ];
 
 const pnpmResolver = resolve(repoRoot, "scripts/resolve-pnpm-for-spawn.mjs");

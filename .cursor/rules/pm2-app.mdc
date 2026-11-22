@@ -14,6 +14,7 @@ Operación global (humano, agente, requisitos del proxy): **`pm2-dev.mdc`**.
 | `apps/orchestrator` | `harukoia-orchestrator-dev` | `orquestador.harukoia.local.iokoia` | `https://orquestador.harukoia.local.iokoia.dev/` | `apps/orchestrator/logs/pm2/*.log` |
 | `apps/host` | `harukoia-host-dev` | `host.harukoia.local.iokoia` | `https://host.harukoia.local.iokoia.dev/` | `apps/host/logs/pm2/*.log` |
 | `apps/web` | `harukoia-web-dev` | `web.harukoia.local.iokoia` | `https://web.harukoia.local.iokoia.dev/` | `apps/web/logs/pm2/*.log` |
+| `apps/backend-escritura` | `harukoia-backend-escritura-dev` | *(sin portless; solo localhost)* | `http://127.0.0.1:18091/` | `apps/backend-escritura/logs/pm2/*.log` |
 
 `apps/cli` no es un proceso de PM2: es un binario que se corre a mano.
 

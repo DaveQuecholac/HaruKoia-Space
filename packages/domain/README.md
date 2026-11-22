@@ -54,6 +54,29 @@ El control es poco frecuente y conviene leerlo en un log; los datos no se envuel
 
 Agregar un mensaje al protocolo = un miembro en la unión y una entrada en el mapa de lectores. Nada más.
 
-### Sin vocabulario de pizarra
+### Sin vocabulario de pizarra (solo en `relay/`)
 
-El relay no sabe qué transporta. Si en este paquete aparece la palabra trazo, figura, lienzo o commit, está en la capa equivocada, y hay una prueba que lo verifica.
+El relay no sabe qué transporta. En `relay/` no deben aparecer trazo, figura, lienzo ni commit; hay una prueba que lo verifica. El concepto de **commit de pizarra** vive en `commit/` (H4), fuera del protocolo del relay.
+
+## Commit de pizarra (H4 / V0)
+
+| Pieza | Dónde |
+|-------|-------|
+| `Identificador<'commit'>` | `commit/identificador-de-commit/` |
+| `Commit` (padre, mensaje, autor, participantes, creadoEn) | `commit/commit/` |
+| Versión de formato del JSON del tablero (`FORMATO_DE_TABLERO = 1`) | `commit/formato-de-tablero/` |
+
+Solo H4: sin documents ni attachments.
+
+## Traductor de tablero (H4 / V1)
+
+| Pieza | Dónde |
+|-------|-------|
+| Unión `FormaDeTablero` (`documento`, `pagina`, `figura`, `recurso`, `vinculo`) | `commit/forma-de-tablero/` |
+| `exportarTableroAJson` / `importarTableroDesdeJson` | `commit/traductor-de-tablero/` |
+
+Entrada: registros del `Y.Map` `tablero` (H2: `id` + `typeName`). Salida: JSON propio con `formato: 1`. Registros de sesión (`user`, `camera`, …) se omiten. Tipo de documento desconocido → fallo explícito, sin fallback.
+
+## Grafo de commits (H4 / V2)
+
+`validarPadreDelCommit` y `ordenarHistorial` viven en `commit/grafo-de-commits/`. La persistencia (SQLite `replica.sqlite`) es del host; este paquete solo fija las reglas del grafo.

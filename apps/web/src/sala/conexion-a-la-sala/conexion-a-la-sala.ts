@@ -33,6 +33,7 @@ import {
   type Rol,
   type TokenDeInvitacion,
   type TokenDeWebDelHost,
+  comoIdentificadorDeCommit,
   esRol,
   interpretarMensajeDeSala,
   serializarMensajeDeSala,
@@ -75,6 +76,15 @@ export type ParticipanteVisible = {
 
 export type AccionRechazada = { readonly accion: AccionDeSala; readonly causa: CausaDeAccionRechazada };
 
+/** Commit anunciado por el host en esta sesión (V3). */
+export type CommitVisible = {
+  readonly id: string;
+  readonly mensaje: string;
+  readonly autor: string;
+  readonly creadoEn: number;
+  readonly padre: string | null;
+};
+
 export type InstantaneaDeLaSala = {
   readonly estado: EstadoDeLaSala;
   readonly participantes: readonly ParticipanteVisible[];
@@ -82,6 +92,13 @@ export type InstantaneaDeLaSala = {
   readonly miRol: Rol | undefined;
   /** La última acción que el host no aceptó, hasta que otra salga bien. */
   readonly accionRechazada: AccionRechazada | undefined;
+  /**
+   * Historial de versiones (V4).
+   * Llega completo al conectar (`historial`) y crece con cada `commit-guardado`.
+   */
+  readonly commits: readonly CommitVisible[];
+  /** Commit del estado de trabajo actual (V5). El próximo guardado cuelga de él. */
+  readonly tipDeTrabajo: string | null;
 };
 
 export type CursorDePresencia = { readonly x: number; readonly y: number };
@@ -105,6 +122,10 @@ export type ConexionALaSala = {
   presenciaDelLienzo(): PresenciaDelLienzo;
   /** Pide al host un link de invitación nuevo. Solo el host lo acepta. */
   cambiarInvitacion(): void;
+  /** Guarda una versión de toda la pizarra. Solo el host lo acepta. */
+  commitear(mensaje: string): void;
+  /** Vuelve el tablero a un commit. Solo el host lo acepta. */
+  hacerCheckout(id: string): void;
   salir(): void;
 };
 
@@ -131,6 +152,8 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
   let estado: EstadoDeLaSala = { tipo: 'conectando' };
   let miRol: Rol | undefined;
   let accionRechazada: AccionRechazada | undefined;
+  let commits: CommitVisible[] = [];
+  let tipDeTrabajo: string | null = null;
   let yaConecto = false;
 
   function detener(final: EstadoDeLaSala): void {
@@ -180,6 +203,30 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
       } else if (mensaje.tipo === 'invitacion-cambiada') {
         accionRechazada = undefined;
         opciones.alCambiarLaInvitacion(mensaje.tokenDeInvitacion);
+      } else if (mensaje.tipo === 'historial') {
+        commits = mensaje.commits.map((c) => ({
+          id: c.id,
+          mensaje: c.mensaje,
+          autor: c.autor,
+          creadoEn: c.creadoEn,
+          padre: c.padre,
+        }));
+        tipDeTrabajo = mensaje.tip;
+      } else if (mensaje.tipo === 'commit-guardado') {
+        accionRechazada = undefined;
+        if (!commits.some((c) => c.id === mensaje.id)) {
+          commits.push({
+            id: mensaje.id,
+            mensaje: mensaje.mensaje,
+            autor: mensaje.autor,
+            creadoEn: mensaje.creadoEn,
+            padre: mensaje.padre,
+          });
+        }
+        tipDeTrabajo = mensaje.id;
+      } else if (mensaje.tipo === 'checkout-hecho') {
+        accionRechazada = undefined;
+        tipDeTrabajo = mensaje.id;
       } else {
         return;
       }
@@ -222,7 +269,14 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
   }
 
   function emitir(): void {
-    opciones.alCambiar({ estado, participantes: participantes(), miRol, accionRechazada });
+    opciones.alCambiar({
+      estado,
+      participantes: participantes(),
+      miRol,
+      accionRechazada,
+      commits: [...commits],
+      tipDeTrabajo,
+    });
   }
 
   emitir();
@@ -264,6 +318,24 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
     cambiarInvitacion() {
       accionRechazada = undefined;
       proveedor.sendStateless(serializarMensajeDeSala({ tipo: 'pedir-accion', accion: 'cambiar-invitacion' }));
+      emitir();
+    },
+    commitear(mensaje) {
+      accionRechazada = undefined;
+      proveedor.sendStateless(
+        serializarMensajeDeSala({ tipo: 'pedir-accion', accion: 'commitear', mensaje }),
+      );
+      emitir();
+    },
+    hacerCheckout(id) {
+      accionRechazada = undefined;
+      proveedor.sendStateless(
+        serializarMensajeDeSala({
+          tipo: 'pedir-accion',
+          accion: 'hacer-checkout',
+          id: comoIdentificadorDeCommit(id),
+        }),
+      );
       emitir();
     },
     salir() {

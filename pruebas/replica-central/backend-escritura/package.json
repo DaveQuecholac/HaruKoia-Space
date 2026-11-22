@@ -1,0 +1,17 @@
+{
+  "name": "harukoia-pdc-backend-escritura",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file=../.env src/main.ts",
+    "test": "node --test src/validar-host.test.ts",
+    "install:pdc": "pnpm install --ignore-workspace"
+  },
+  "dependencies": {
+    "jose": "^6.1.0",
+    "pg": "^8.16.3"
+  }
+}

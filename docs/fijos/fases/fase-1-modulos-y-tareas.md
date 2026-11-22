@@ -245,7 +245,9 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. El archivo JSON se entiende en un diff de git.
 4. El commit después de un checkout cuelga del commit correcto.
 
-**Decisiones que la bloquean.** Qué parte del tablero entra en staging: elementos, marcos o toda la pizarra. Y, para H4-T9, el diseño y la prueba de la réplica central: qué sube, dónde vive el backend de escritura, quién emite el token de lectura, y el almacén de buckets.
+**Decisiones que la bloqueaban (cerradas 2026-11-17).** Staging = **toda la pizarra**. Réplica: sube metadatos + snapshot + JSON; backend de escritura como proceso propio; token de lectura JWT RS256 desde ese backend; buckets en Postgres `powersync_storage`. Detalle y PdC: [docs/dev/dev/versiones-pizarra/](../../dev/dev/versiones-pizarra/README.md).
+
+**H4 cerrada (2026-11-22).** En UI el gesto de versión es **Crear versión / Commitear** (no “guardar”). Tras commit, el host compacta el Doc Yjs vivo en `sala.sqlite` (estado codificado). V0–V9 hechos; suites verdes; el chat aprobó el cierre. Evidencia: [evidencia-h4-cierre.md](../../dev/dev/versiones-pizarra/evidencia-h4-cierre.md). Siguiente: H5.
 
 ---
 
@@ -397,22 +399,22 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 
 | Decisión abierta | Bloquea | Se necesita antes de |
 |------------------|---------|----------------------|
-| Si git entra en el alcance inicial | H5, y con ella H7 | **H4** — cambia la forma de la épica siguiente |
-| Qué parte del tablero entra en staging | H4 | H4 |
+| Si git entra en el alcance inicial | H5, y con ella H7 | **Antes de H5** — cambia la forma de esa épica |
+| ~~Qué parte del tablero entra en staging~~ | — | **Toda la pizarra** (2026-11-17) |
 | ~~Licencia del almacenamiento en disco de la base local~~ | — | Resuelta el 2026-10-19: PowerSync autoalojado, gratis |
-| Diseño de la app Expo: pantallas, lienzo y arranque con PM2 y portless. React Native ya entra | H2 | **H2** |
-| Qué sube a la réplica central: metadatos, o también snapshot y JSON del tablero | H4, H5 | Diseño de la réplica |
-| Dónde vive el backend de escritura: en el orquestador o como proceso propio | H4, H5 | Diseño de la réplica |
-| Quién emite el token de lectura de PowerSync y con qué alcance (Space: JWT tras Bearer) | H4 | Diseño de la réplica |
-| Almacén de buckets de PowerSync: MongoDB o Postgres (Space usa Postgres `powersync_storage`) | H4 | Diseño de la réplica |
-| Si las reglas del contrato de H0 se ajustan a PowerSync (Space: client schema / views; [referencia](../referencia-space-powersync-sqlite-secrets.md)) | H4 | H4 |
+| Diseño de la app Expo: pantallas, lienzo y arranque con PM2 y portless. React Native ya entra | Construir la app | Diseño ya escrito en H2; construir es otra autorización |
+| ~~Qué sube a la réplica central~~ | — | Metadatos + snapshot + JSON (2026-11-17) |
+| ~~Dónde vive el backend de escritura~~ | — | Proceso propio junto a la réplica (2026-11-17) |
+| ~~Quién emite el token de lectura~~ | — | JWT RS256 desde el backend de escritura (2026-11-17) |
+| ~~Almacén de buckets~~ | — | Postgres `powersync_storage` (2026-11-17) |
+| ~~Reglas H0 vs PowerSync~~ | — | Client schema en el espejo; Yjs H3 aparte (2026-11-17) |
 | Si `space update` baja de git o lee de la réplica central | H5 | H5 |
 | Alcance del CLI en la v1: solo materializar, o también unirse a una sala | H5 | H5 |
 | Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
 | Qué secciones exactas lleva el markdown | H6 | H6 |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-Las urgentes son git, qué entra en staging, y el diseño de la app Expo, que bloquea H2.
+Urgente antes de H5: si git entra en el alcance inicial. H4 y la PdC de la réplica están cerradas ([versiones-pizarra](../../dev/dev/versiones-pizarra/README.md)).
 
 ---
 
