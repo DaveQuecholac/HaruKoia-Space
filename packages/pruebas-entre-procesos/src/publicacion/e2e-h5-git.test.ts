@@ -58,7 +58,12 @@ async function escribirYPublicar(
   textoMd: string,
 ): Promise<{ commitId: string; rutas: readonly string[] }> {
   const commitId = generarIdentificadorDeCommit();
-  const rutas = rutasDePublicacionDelCommit(commitId);
+  const rutas = rutasDePublicacionDelCommit({
+    commit: commitId,
+    creadoEn: 1_700_000_000_000,
+    autor: 'e2e',
+    mensaje: textoMd.slice(0, 40) || 'e2e',
+  });
   const md = crearArtefactoDePublicacion(rutas.documentoMarkdown, new TextEncoder().encode(textoMd));
   const json = crearArtefactoDePublicacion(
     rutas.tableroJson,
@@ -109,7 +114,7 @@ describe('H5 E2E — publicación + space update (remoto local)', () => {
     const tablero = path.join(clon, ...rutas[1]!.split('/'));
     expect(fs.readFileSync(md, 'utf8')).toBe('# e2e h5\n');
     expect(fs.readFileSync(tablero, 'utf8')).toBe('{"formato":1,"formas":[]}\n');
-    expect(md).toContain(commitId);
+    expect(md).toContain(String(commitId).slice(0, 8));
 
     const h1 = huellaDePublicadosEnDisco(clon);
     const hashes = [hashArchivo(md), hashArchivo(tablero)];

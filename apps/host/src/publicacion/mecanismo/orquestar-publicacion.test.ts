@@ -51,7 +51,12 @@ function varianteMockQueEmite(
   return {
     id,
     async producir({ entrada }) {
-      const ruta = rutasDePublicacionDelCommit(entrada.commit.id).documentoMarkdown;
+      const ruta = rutasDePublicacionDelCommit({
+        commit: entrada.commit.id,
+        creadoEn: entrada.commit.creadoEn,
+        autor: entrada.commit.autor,
+        mensaje: entrada.commit.mensaje,
+      }).documentoMarkdown;
       const artefacto = crearArtefactoDePublicacion(ruta, new TextEncoder().encode(texto));
       if (!artefacto.ok) return { ok: false, causa: artefacto.causa };
       return { ok: true, artefactos: [artefacto.artefacto] };
@@ -72,7 +77,12 @@ describe('orquestar publicación (P4)', () => {
       async producir(ctx) {
         invocaciones += 1;
         expect(ctx.trabajo.commit).toBe(commit);
-        const ruta = rutasDePublicacionDelCommit(commit).documentoMarkdown;
+        const ruta = rutasDePublicacionDelCommit({
+          commit,
+          creadoEn: 1,
+          autor: 't',
+          mensaje: 'm',
+        }).documentoMarkdown;
         const artefacto = crearArtefactoDePublicacion(
           ruta,
           new TextEncoder().encode('desde-mock'),

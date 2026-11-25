@@ -36,10 +36,15 @@ function checkoutTemporal(): string {
 }
 
 describe('escritura de artefactos (P6)', () => {
-  it('escribe dentro del prefijo harukoia/publicado', () => {
+  it('escribe dentro del prefijo Harukoia/Pizarra', () => {
     const raiz = checkoutTemporal();
     const commit = generarIdentificadorDeCommit();
-    const rutas = rutasDePublicacionDelCommit(commit);
+    const rutas = rutasDePublicacionDelCommit({
+      commit,
+      creadoEn: 1,
+      autor: 't',
+      mensaje: 'm',
+    });
     const md = crearArtefactoDePublicacion(rutas.documentoMarkdown, new TextEncoder().encode('# ok\n'));
     const json = crearArtefactoDePublicacion(
       rutas.tableroJson,
@@ -82,7 +87,12 @@ describe('escritura de artefactos (P6)', () => {
     fs.writeFileSync(manual, 'documentacion manual\n');
 
     const commit = generarIdentificadorDeCommit();
-    const rutas = rutasDePublicacionDelCommit(commit);
+    const rutas = rutasDePublicacionDelCommit({
+      commit,
+      creadoEn: 1,
+      autor: 't',
+      mensaje: 'm',
+    });
     const md = crearArtefactoDePublicacion(
       rutas.documentoMarkdown,
       new TextEncoder().encode('# publicado\n'),
@@ -98,7 +108,7 @@ describe('escritura de artefactos (P6)', () => {
 
   it('resolverRutaDeEscritura rechaza traversal aunque el string pase mal formado', () => {
     const raiz = checkoutTemporal();
-    const intento = resolverRutaDeEscritura(raiz, 'harukoia/publicado/../secrets.txt');
+    const intento = resolverRutaDeEscritura(raiz, 'Harukoia/Pizarra/../secrets.txt');
     expect(intento.ok).toBe(false);
   });
 
@@ -134,7 +144,12 @@ describe('escritura de artefactos (P6)', () => {
     const procesado = await cola.procesarSiguiente(procesador);
     expect(procesado.ok).toBe(true);
 
-    const rutas = rutasDePublicacionDelCommit(commit);
+    const rutas = rutasDePublicacionDelCommit({
+      commit,
+      creadoEn: Date.UTC(2026, 10, 25),
+      autor: 'Hector',
+      mensaje: 'p6',
+    });
     expect(fs.existsSync(path.join(raiz, ...rutas.documentoMarkdown.split('/')))).toBe(true);
     expect(fs.existsSync(path.join(raiz, ...rutas.tableroJson.split('/')))).toBe(true);
     const md = fs.readFileSync(path.join(raiz, ...rutas.documentoMarkdown.split('/')), 'utf8');
@@ -142,3 +157,4 @@ describe('escritura de artefactos (P6)', () => {
     expect(md).toContain(`id: ${commit}`);
   });
 });
+

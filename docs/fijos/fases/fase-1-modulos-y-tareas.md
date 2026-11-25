@@ -280,9 +280,9 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. Un remoto adelantado se resuelve con reintento, sin intervención manual.
 4. Un fallo de publicación se ve, dice la causa y se puede reintentar sin volver a dibujar.
 
-**Decisiones que la bloqueaban (cerradas 2026-11-22).** Git **sí** en el alcance (commit + push + remoto adelantado). `space update` materializa **desde git** (la réplica no sustituye el repo). CLI v1: solo `space host` / `status` / `update` (no unirse a sala). Sala↔repo al arrancar el host desde el checkout. Generados bajo `harukoia/publicado/…`. Backend de escritura y PowerSync: ya cerrados en H4. Detalle: [docs/dev/dev/publicaciones-pizarra/](../../dev/dev/publicaciones-pizarra/README.md).
+**Decisiones que la bloqueaban (cerradas 2026-11-22; D-H5-5 actualizado 2026-11-25).** Git **sí** en el alcance (commit + push + remoto adelantado). `space update` materializa **desde git** (la réplica no sustituye el repo). CLI v1: solo `space host` / `status` / `update` (no unirse a sala). Sala↔repo al arrancar el host dentro del checkout; generados en el **toplevel git** bajo **`Harukoia/Pizarra/…`** (pizarra) y **`Harukoia/documentos/…`** (IA / H6). Backend de escritura y PowerSync: ya cerrados en H4. Detalle: [docs/dev/dev/publicaciones-pizarra/](../../dev/dev/publicaciones-pizarra/README.md).
 
-**Implementación (2026-11-25).** P0–P11 del plan: contratos, documents, cola, mecanismo, markdown determinista, escritura, git (remoto adelantado), estados/UI, CLI, idempotencia de `space update`, E2E con remoto git local. Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). **Cierre de producto** cuando el chat apruebe el humo de esa evidencia. Siguiente: H6 (otra rama).
+**H5 cerrada (2026-11-25).** P0–P11 hechos; el chat aprobó el humo. Publicación determinista a `Harukoia/Pizarra/…`, git commit/push (remoto adelantado), estados en UI, CLI `space host` / `status` / `update` (idempotente), E2E con remoto git local. Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Siguiente: H6 (otra rama).
 
 ---
 
@@ -412,12 +412,12 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 | ~~Reglas H0 vs PowerSync~~ | — | Client schema en el espejo; Yjs H3 aparte (2026-11-17) |
 | ~~Si `space update` baja de git o lee de la réplica~~ | — | **Desde git** (2026-11-22) |
 | ~~Alcance del CLI en la v1~~ | — | Solo `host` / `status` / `update`; no unirse a sala (2026-11-22) |
-| ~~Rutas de generados / vínculo sala↔repo~~ | — | `harukoia/publicado/…`; host desde el checkout (2026-11-22) |
+| ~~Rutas de generados / vínculo sala↔repo~~ | — | `Harukoia/Pizarra/…` + `Harukoia/documentos/…` (H6); toplevel git (2026-11-22; rutas/raíz 2026-11-25) |
 | Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
 | Qué secciones exactas lleva el markdown | H6 | H6 |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-H5: suites P0–P11 hechas (2026-11-25); cierre de producto pendiente del humo en [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Plan: [publicaciones-pizarra](../../dev/dev/publicaciones-pizarra/README.md). Siguiente urgencia de producto: H6 (IA / secciones) cuando el chat cierre H5.
+**H5 cerrada (2026-11-25).** Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Plan: [publicaciones-pizarra](../../dev/dev/publicaciones-pizarra/README.md). Siguiente urgencia de producto: H6 (IA / secciones).
 
 ---
 

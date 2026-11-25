@@ -23,7 +23,7 @@ describe('documento publicado', () => {
     expect(creado.ok).toBe(true);
     if (!creado.ok) return;
     expect(creado.documento.commit).toBe(commit);
-    expect(creado.documento.rutas.tableroJson).toContain(commit);
+    expect(creado.documento.rutas.tableroJson).toContain(String(commit).slice(0, 8));
     expect(creado.documento.rutas.documentoMarkdown.endsWith('documento.md')).toBe(true);
     expect(creado.documento.estado.tipo).toBe('en-proceso');
   });

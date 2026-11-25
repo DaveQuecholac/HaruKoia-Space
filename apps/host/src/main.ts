@@ -11,6 +11,7 @@ import { publicar } from './acciones-de-sala/publicar/publicar.ts';
 import { conectarAlOrquestador } from './conexion-al-orquestador/conexion-al-orquestador.ts';
 import { atenderInvitacion } from './invitacion/invitacion.ts';
 import { archivoDeColaPorDefecto } from './publicacion/correr-publicacion/correr-publicacion.ts';
+import { raizDelRepositorioGit } from './publicacion/git/ejecutar-git.ts';
 import { registro } from './registro-del-proceso/registro-del-proceso.ts';
 import { archivoDeLaSala } from './sala/archivo-de-la-sala.ts';
 import {
@@ -113,18 +114,29 @@ const tipDeTrabajo = crearTipDeTrabajo(
   (await almacenDeCommits.listarHistorial(identidad.sala)).at(-1)?.id ?? null,
 );
 
+// Publicaciones van a la raíz del repo git, no al cwd del proceso (p. ej. apps/host).
+const cwdDelHost = process.cwd();
+const raizDelRepo = await raizDelRepositorioGit(cwdDelHost);
+if (raizDelRepo === null) {
+  registro.error('no se pudo resolver la raíz del repositorio git para publicar (D-H5-4)');
+  process.exit(1);
+}
 const vinculoCreado = crearVinculoSalaRepo({
   sala: identidad.sala,
-  raizDelCheckout: process.cwd(),
+  raizDelCheckout: raizDelRepo,
 });
 if (!vinculoCreado.ok) {
   registro.error('no se pudo vincular sala↔repo', { causa: vinculoCreado.causa });
   process.exit(1);
 }
 const vinculoSalaRepo = vinculoCreado.vinculo;
-registro.info('vínculo sala↔repo', { raiz: vinculoSalaRepo.raizDelCheckout });
+registro.info('vínculo sala↔repo', {
+  raiz: vinculoSalaRepo.raizDelCheckout,
+  cwdDelHost,
+});
 
 const falloInyectado = process.env.HARUKOIA_PUBLICAR_FALLA?.trim();
+const archivoDeCola = archivoDeColaPorDefecto(cwdDelHost);
 
 let sala: Awaited<ReturnType<typeof abrirSalaEnVivo>>;
 try {
@@ -162,14 +174,14 @@ try {
         sala: identidad.sala,
         almacen: almacenDeCommits,
         vinculo: vinculoSalaRepo,
-        archivoDeCola: archivoDeColaPorDefecto(vinculoSalaRepo.raizDelCheckout),
+        archivoDeCola,
         ...(falloInyectado ? { falloInyectado } : {}),
       }),
       'reintentar-publicacion': publicar({
         sala: identidad.sala,
         almacen: almacenDeCommits,
         vinculo: vinculoSalaRepo,
-        archivoDeCola: archivoDeColaPorDefecto(vinculoSalaRepo.raizDelCheckout),
+        archivoDeCola,
         ...(falloInyectado ? { falloInyectado } : {}),
       }),
     },

@@ -52,7 +52,12 @@ async function escribirPublicacion(
   commitId: ReturnType<typeof generarIdentificadorDeCommit>,
   textoMd: string,
 ): Promise<readonly string[]> {
-  const rutas = rutasDePublicacionDelCommit(commitId);
+  const rutas = rutasDePublicacionDelCommit({
+    commit: commitId,
+    creadoEn: 1_700_000_000_000,
+    autor: 'p7',
+    mensaje: textoMd.slice(0, 40) || 'pub',
+  });
   const md = crearArtefactoDePublicacion(rutas.documentoMarkdown, new TextEncoder().encode(textoMd));
   const json = crearArtefactoDePublicacion(
     rutas.tableroJson,
@@ -150,13 +155,12 @@ describe('publicar en git (P7)', () => {
   it('conflicto en generado: gana el generado local del commit nuevo', async () => {
     const { bare, work } = await crearBareYClone();
     const commitId = generarIdentificadorDeCommit();
-    const rutas = rutasDePublicacionDelCommit(commitId);
 
     // Primera publicación.
-    await escribirPublicacion(work, commitId, '# local-v1\n');
+    const rutas = await escribirPublicacion(work, commitId, '# local-v1\n');
     const p1 = await publicarEnGit({
       raizDelCheckout: work,
-      rutasRelativas: [rutas.documentoMarkdown, rutas.tableroJson],
+      rutasRelativas: rutas,
       mensaje: 'harukoia: v1',
     });
     expect(p1.ok).toBe(true);
@@ -165,25 +169,24 @@ describe('publicar en git (P7)', () => {
     const otro = path.join(path.dirname(work), 'conflicto');
     await ejecutarGit(path.dirname(work), ['clone', bare, otro]);
     await configurarIdentidad(otro);
-    fs.writeFileSync(path.join(otro, ...rutas.documentoMarkdown.split('/')), '# remoto-v2\n');
-    await ejecutarGit(otro, ['add', '--', rutas.documentoMarkdown]);
+    fs.writeFileSync(path.join(otro, ...rutas[0]!.split('/')), '# remoto-v2\n');
+    await ejecutarGit(otro, ['add', '--', rutas[0]!]);
     await ejecutarGit(otro, ['commit', '-m', 'remoto cambia generado']);
     const rama = (await ejecutarGit(otro, ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout.trim();
     await ejecutarGit(otro, ['push', 'origin', rama]);
 
     // Local publica versión nueva del mismo path sin haber hecho fetch.
-    fs.writeFileSync(path.join(work, ...rutas.documentoMarkdown.split('/')), '# local-nuevo\n');
+    fs.writeFileSync(path.join(work, ...rutas[0]!.split('/')), '# local-nuevo\n');
     const p2 = await publicarEnGit({
       raizDelCheckout: work,
-      rutasRelativas: [rutas.documentoMarkdown, rutas.tableroJson],
+      rutasRelativas: rutas,
       mensaje: 'harukoia: local-nuevo',
     });
     expect(p2.ok).toBe(true);
 
     const ver = path.join(path.dirname(work), 'ver-conflicto');
     await ejecutarGit(path.dirname(work), ['clone', bare, ver]);
-    expect(fs.readFileSync(path.join(ver, ...rutas.documentoMarkdown.split('/')), 'utf8')).toBe(
-      '# local-nuevo\n',
-    );
+    expect(fs.readFileSync(path.join(ver, ...rutas[0]!.split('/')), 'utf8')).toBe('# local-nuevo\n');
   });
 });
+

@@ -33,7 +33,7 @@ describe('space update (P9)', () => {
     await configurarIdentidad(publicador);
 
     fs.writeFileSync(path.join(publicador, 'README.md'), 'proyecto\n');
-    const dirPub = path.join(publicador, 'harukoia', 'publicado', 'cmtptest123456789');
+    const dirPub = path.join(publicador, 'Harukoia', 'Pizarra', 'cmtptest123456789');
     fs.mkdirSync(dirPub, { recursive: true });
     fs.writeFileSync(path.join(dirPub, 'documento.md'), '# publicado\n');
     fs.writeFileSync(path.join(dirPub, 'tablero.json'), '{"formato":1,"formas":[]}\n');
@@ -51,7 +51,7 @@ describe('space update (P9)', () => {
 
     // Quitar publicados del working tree y volver un commit atrás no: el clone
     // ya los trae. Segundo push + update es el humo real.
-    const dirPub2 = path.join(publicador, 'harukoia', 'publicado', 'cmtbbbbbbbbbbbb');
+    const dirPub2 = path.join(publicador, 'Harukoia', 'Pizarra', 'cmtbbbbbbbbbbbb');
     fs.mkdirSync(dirPub2, { recursive: true });
     fs.writeFileSync(path.join(dirPub2, 'documento.md'), '# segundo\n');
     fs.writeFileSync(path.join(dirPub2, 'tablero.json'), '{"formato":1,"formas":[]}\n');
@@ -63,16 +63,16 @@ describe('space update (P9)', () => {
     expect(r.codigo).toBe(0);
     expect(r.texto).toMatch(/Actualizado/);
     expect(
-      fs.existsSync(path.join(clon, 'harukoia', 'publicado', 'cmtbbbbbbbbbbbb', 'documento.md')),
+      fs.existsSync(path.join(clon, 'Harukoia', 'Pizarra', 'cmtbbbbbbbbbbbb', 'documento.md')),
     ).toBe(true);
     expect(
       fs.readFileSync(
-        path.join(clon, 'harukoia', 'publicado', 'cmtbbbbbbbbbbbb', 'documento.md'),
+        path.join(clon, 'Harukoia', 'Pizarra', 'cmtbbbbbbbbbbbb', 'documento.md'),
         'utf8',
       ),
     ).toBe('# segundo\n');
     expect(
-      fs.existsSync(path.join(clon, 'harukoia', 'publicado', 'cmtbbbbbbbbbbbb', 'tablero.json')),
+      fs.existsSync(path.join(clon, 'Harukoia', 'Pizarra', 'cmtbbbbbbbbbbbb', 'tablero.json')),
     ).toBe(true);
   });
 
@@ -98,7 +98,7 @@ describe('space update idempotencia (P10)', () => {
     await configurarIdentidad(publicador);
 
     fs.writeFileSync(path.join(publicador, 'README.md'), 'proyecto\n');
-    const dirPub = path.join(publicador, 'harukoia', 'publicado', 'cmtcccccccccccc');
+    const dirPub = path.join(publicador, 'Harukoia', 'Pizarra', 'cmtcccccccccccc');
     fs.mkdirSync(dirPub, { recursive: true });
     fs.writeFileSync(path.join(dirPub, 'documento.md'), '# idem\n');
     fs.writeFileSync(path.join(dirPub, 'tablero.json'), '{"formato":1,"formas":[]}\n');
@@ -119,7 +119,7 @@ describe('space update idempotencia (P10)', () => {
 
     const huella1 = primero.huellaDePublicados;
     expect(huella1).toBe(huellaDePublicadosEnDisco(clon));
-    expect(fs.readFileSync(path.join(clon, 'harukoia', 'publicado', 'cmtcccccccccccc', 'documento.md'), 'utf8')).toBe(
+    expect(fs.readFileSync(path.join(clon, 'Harukoia', 'Pizarra', 'cmtcccccccccccc', 'documento.md'), 'utf8')).toBe(
       '# idem\n',
     );
 
@@ -150,7 +150,7 @@ describe('space update idempotencia (P10)', () => {
     await ejecutarGit(root, ['clone', bare, clon]);
     await configurarIdentidad(clon);
 
-    const dirPub = path.join(publicador, 'harukoia', 'publicado', 'cmtdddddddddddd');
+    const dirPub = path.join(publicador, 'Harukoia', 'Pizarra', 'cmtdddddddddddd');
     fs.mkdirSync(dirPub, { recursive: true });
     fs.writeFileSync(path.join(dirPub, 'documento.md'), '# nuevo\n');
     fs.writeFileSync(path.join(dirPub, 'tablero.json'), '{"formato":1,"formas":[]}\n');
@@ -169,7 +169,7 @@ describe('space update idempotencia (P10)', () => {
     expect(otraVez.yaAlDia).toBe(true);
     expect(otraVez.huellaDePublicados).toBe(huella);
     expect(
-      fs.readFileSync(path.join(clon, 'harukoia', 'publicado', 'cmtdddddddddddd', 'documento.md'), 'utf8'),
+      fs.readFileSync(path.join(clon, 'Harukoia', 'Pizarra', 'cmtdddddddddddd', 'documento.md'), 'utf8'),
     ).toBe('# nuevo\n');
   });
 });

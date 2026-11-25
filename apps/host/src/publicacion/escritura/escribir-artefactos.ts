@@ -1,7 +1,7 @@
 /**
  * Escritura de artefactos de publicación en el working tree (H5 / P6 / H5-T8).
  *
- * Solo bajo D-H5-5 (`harukoia/publicado/…`) respecto a la raíz del checkout
+ * Solo bajo D-H5-5 (`Harukoia/Pizarra/…`) respecto a la raíz del checkout
  * (D-H5-4). No es git (P7). No toca documentación manual fuera del prefijo.
  */
 

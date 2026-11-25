@@ -9,9 +9,9 @@ const base = {
   sala: 'salaabcdefghjkmn',
   commit: 'cmtabcdefghjkmnp',
   variante: 'markdown-determinista',
-  rutaDirectorio: 'harukoia/publicado/cmtabcdefghjkmnp',
-  rutaTableroJson: 'harukoia/publicado/cmtabcdefghjkmnp/tablero.json',
-  rutaDocumentoMarkdown: 'harukoia/publicado/cmtabcdefghjkmnp/documento.md',
+  rutaDirectorio: 'Harukoia/Pizarra/2026-11-25_1305__hector__prueba__cmtabcde',
+  rutaTableroJson: 'Harukoia/Pizarra/2026-11-25_1305__hector__prueba__cmtabcde/tablero.json',
+  rutaDocumentoMarkdown: 'Harukoia/Pizarra/2026-11-25_1305__hector__prueba__cmtabcde/documento.md',
   creadoEn: 5,
 };
 

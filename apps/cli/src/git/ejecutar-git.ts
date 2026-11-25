@@ -43,3 +43,14 @@ export async function esRepositorioGit(cwd: string): Promise<boolean> {
   const r = await ejecutarGit(cwd, ['rev-parse', '--is-inside-work-tree']);
   return r.codigo === 0 && r.stdout.trim() === 'true';
 }
+
+/**
+ * Raíz del working tree git (D-H5-4): donde viven `Harukoia/Pizarra/…`.
+ * Desde un subdirectorio sube al toplevel del repo.
+ */
+export async function raizDelRepositorioGit(cwd: string): Promise<string | null> {
+  const r = await ejecutarGit(cwd, ['rev-parse', '--show-toplevel']);
+  if (r.codigo !== 0) return null;
+  const raiz = r.stdout.trim();
+  return raiz === '' ? null : raiz;
+}

@@ -164,13 +164,20 @@ export {
 } from './documento/variante-de-publicacion/variante-de-publicacion.ts';
 
 export {
+  LONGITUD_SUFIJO_DE_COMMIT,
   NOMBRE_DE_DOCUMENTO_MD,
   NOMBRE_DE_TABLERO_JSON,
+  PREFIJO_DOCUMENTOS,
   PREFIJO_PUBLICADO,
+  PREFIJO_RAIZ_HARUKOIA,
+  type DatosParaRutasDePublicacion,
   type ResultadoDeRutaPublicada,
   type RutasDePublicacion,
   comoRutaPublicada,
+  marcaTemporalDeCarpeta,
+  nombreDeCarpetaPublicada,
   rutasDePublicacionDelCommit,
+  slugParaSegmentoDeRuta,
 } from './documento/rutas-publicadas/rutas-publicadas.ts';
 
 export {

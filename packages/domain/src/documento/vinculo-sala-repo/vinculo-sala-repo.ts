@@ -1,6 +1,10 @@
 /**
- * Vínculo sala ↔ repo (D-H5-4): al arrancar el host desde el checkout del proyecto.
+ * Vínculo sala ↔ repo (D-H5-4): al arrancar el host dentro del checkout del proyecto.
  * No es un wizard después de dibujar.
+ *
+ * `raizDelCheckout` es la **raíz del repositorio git** (`git rev-parse --show-toplevel`),
+ * no el cwd del proceso host si este corre en un subdirectorio (p. ej. `apps/host`).
+ * Ahí se escriben `Harukoia/Pizarra/…` y `Harukoia/documentos/…`.
  */
 
 import { comoIdentificadorDeSala, type IdentificadorDeSala } from '../../sala/identidad-de-sala/identidad-de-sala.ts';
@@ -8,8 +12,8 @@ import { comoIdentificadorDeSala, type IdentificadorDeSala } from '../../sala/id
 export type VinculoSalaRepo = {
   readonly sala: IdentificadorDeSala;
   /**
-   * Raíz del working tree (checkout) desde la que se arrancó el host.
-   * Cadena no vacía; la existencia en disco la valida quien abre el host (P9).
+   * Raíz del working tree git del proyecto (toplevel).
+   * Cadena no vacía; quien abre el host la resuelve con git.
    */
   readonly raizDelCheckout: string;
 };

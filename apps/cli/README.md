@@ -7,7 +7,7 @@ Binario de la máquina del developer. No es un proceso de PM2.
 | Comando | Qué hace |
 |---------|----------|
 | `space host` | Arranca el contenedor host con cwd = este checkout (liga sala↔repo, D-H5-4). Fuera de un repo git falla. |
-| `space status` | Rama local vs `origin` (adelante/atrás) y conteo de `harukoia/publicado/` |
+| `space status` | Rama local vs `origin` (adelante/atrás) y conteo de `Harukoia/Pizarra/` |
 | `space update` | `git pull` del remoto del proyecto (D-H5-2); deja los generados en el working tree |
 
 ```bash

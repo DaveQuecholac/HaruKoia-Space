@@ -18,7 +18,12 @@ export function crearVarianteMarkdownDeterminista(): VarianteDeFormato {
   return {
     id: ID_VARIANTE_MARKDOWN_DETERMINISTA,
     async producir({ entrada }) {
-      const rutas = rutasDePublicacionDelCommit(entrada.commit.id);
+      const rutas = rutasDePublicacionDelCommit({
+        commit: entrada.commit.id,
+        creadoEn: entrada.commit.creadoEn,
+        autor: entrada.commit.autor,
+        mensaje: entrada.commit.mensaje,
+      });
 
       const md = crearArtefactoDePublicacion(
         rutas.documentoMarkdown,

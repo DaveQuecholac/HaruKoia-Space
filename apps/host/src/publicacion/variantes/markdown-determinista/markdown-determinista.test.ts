@@ -38,7 +38,12 @@ describe('variante markdown-determinista (plugin P5)', () => {
 
     expect(resultado.ok).toBe(true);
     if (!resultado.ok) return;
-    const rutas = rutasDePublicacionDelCommit(commit);
+    const rutas = rutasDePublicacionDelCommit({
+      commit,
+      creadoEn: Date.UTC(2026, 0, 1),
+      autor: 'Hector',
+      mensaje: 'ok',
+    });
     expect(resultado.artefactos.map((a) => a.rutaRelativa).sort()).toEqual(
       [rutas.documentoMarkdown, rutas.tableroJson].sort(),
     );

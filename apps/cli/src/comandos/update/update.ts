@@ -2,7 +2,7 @@
  * `space update` — materializa desde git (H5 / P9–P10 / D-H5-2).
  *
  * P10: idempotente. Si ya está al día con origin → exit 0, mensaje claro,
- * sin reescribir generados. Dos corridas seguidas no cambian `harukoia/publicado/`.
+ * sin reescribir generados. Dos corridas seguidas no cambian `Harukoia/Pizarra/`.
  */
 
 import { createHash } from 'node:crypto';
@@ -11,14 +11,14 @@ import path from 'node:path';
 
 import { PREFIJO_PUBLICADO } from '@harukoia/domain';
 
-import { ejecutarGit, esRepositorioGit } from '../../git/ejecutar-git.ts';
+import { ejecutarGit, esRepositorioGit, raizDelRepositorioGit } from '../../git/ejecutar-git.ts';
 
 export type ResultadoDeUpdate = {
   readonly codigo: number;
   readonly texto: string;
   /** true si no había nada que traer de origin. */
   readonly yaAlDia: boolean;
-  /** Huella de archivos bajo harukoia/publicado/ (para pruebas de idempotencia). */
+  /** Huella de archivos bajo Harukoia/Pizarra/ (para pruebas de idempotencia). */
   readonly huellaDePublicados: string;
 };
 
@@ -68,15 +68,17 @@ function textoConListado(prefijo: string, cwd: string): string {
   return `${lineas.join('\n')}\n`;
 }
 
-export async function correrUpdate(cwd: string): Promise<ResultadoDeUpdate> {
-  if (!(await esRepositorioGit(cwd))) {
+export async function correrUpdate(desde: string): Promise<ResultadoDeUpdate> {
+  if (!(await esRepositorioGit(desde))) {
     return {
       codigo: 1,
       texto: 'No es un repositorio git. Ejecuta space update dentro del checkout del proyecto.\n',
       yaAlDia: false,
-      huellaDePublicados: huellaDePublicadosEnDisco(cwd),
+      huellaDePublicados: huellaDePublicadosEnDisco(desde),
     };
   }
+
+  const cwd = (await raizDelRepositorioGit(desde)) ?? desde;
 
   const remoto = await ejecutarGit(cwd, ['remote', 'get-url', 'origin']);
   if (remoto.codigo !== 0) {

@@ -388,8 +388,8 @@ Detalle: [analisis-h5-publicaciones-pizarra.md](../../dev/dev/publicaciones-piza
 | ¿Git en el alcance inicial? | **Sí.** Commit + push + remoto adelantado (H5) |
 | ¿De dónde materializa `space update`? | **Desde git** (pull/fetch del remoto del proyecto). La réplica no sustituye el repo |
 | Alcance del CLI en v1 | Solo `space host`, `space status`, `space update`. **No** unirse a sala |
-| Vínculo sala ↔ repo | Al arrancar el host desde el checkout del proyecto |
-| Rutas de generados | Prefijo **`harukoia/publicado/…`**. No pisar docs manuales fuera de ese árbol |
+| Vínculo sala ↔ repo | Host dentro del checkout; escritura en el **toplevel git** (`show-toplevel`), no el cwd del proceso si es un subdirectorio (2026-11-25) |
+| Rutas de generados | **`Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`**; **`Harukoia/documentos/…`** (IA / H6). Sin compat con solo-id ni `harukoia/publicado/…` (2026-11-25) |
 
 ## 14. Fuera del alcance de la v1
 

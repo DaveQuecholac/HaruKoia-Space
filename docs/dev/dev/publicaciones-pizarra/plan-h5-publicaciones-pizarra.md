@@ -2,7 +2,7 @@
 
 Rama: `dev/publicaciones-pizarra`.  
 Análisis: [analisis-h5-publicaciones-pizarra.md](./analisis-h5-publicaciones-pizarra.md).  
-**Estado.** **P0–P11 hechos (suites).** D-H5-1…5 cerradas. Cierre de producto: pendiente de que el chat apruebe el humo en [evidencia-h5-cierre.md](./evidencia-h5-cierre.md).
+**Estado.** **H5 cerrada (2026-11-25).** P0–P11 hechos. D-H5-1…5 cerradas. Humo aprobado en [evidencia-h5-cierre.md](./evidencia-h5-cierre.md). Siguiente: H6 (otra rama).
 
 ## Reglas de trabajo
 
@@ -89,7 +89,7 @@ P11  E2E remoto git local + evidencia + cierre
 | `DocumentoPublicado` | `packages/domain/src/documento/documento-publicado/` |
 | `FilaDeDocumento` | `packages/schema/src/documento/fila-de-documento.ts` |
 
-**Convención de rutas.** `harukoia/publicado/<commitId>/tablero.json` y `…/documento.md`.
+**Convención de rutas.** `Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/tablero.json` y `…/documento.md` (D-H5-5; IA en `Harukoia/documentos/`).
 
 **Verificación.** domain 94 tests / schema 33 tests; typecheck OK. **Parar.**
 
@@ -199,7 +199,7 @@ P11  E2E remoto git local + evidencia + cierre
 | Escritura + allowlist en disco | `apps/host/src/publicacion/escritura/escribir-artefactos.ts` |
 | Consumidor del orquestador | `crearConsumidorQueEscribe(vinculo)` |
 
-**Comportamiento.** Valida con `comoRutaPublicada`; resuelve bajo `raizDelCheckout`; exige quedar dentro de `harukoia/publicado/…`. Fuera del prefijo → rechazo sin escribir. Docs manuales fuera del árbol no se tocan.
+**Comportamiento.** Valida con `comoRutaPublicada`; resuelve bajo `raizDelCheckout`; exige quedar dentro de `Harukoia/Pizarra/…`. Fuera del prefijo → rechazo sin escribir. Docs manuales fuera del árbol no se tocan.
 
 **Verificación.** 5 tests verdes (escritura, rechazo, no pisar manual, traversal, cola+variante→archivos). Typecheck OK. **Parar.**
 
@@ -220,7 +220,7 @@ P11  E2E remoto git local + evidencia + cierre
 | CLI git | `apps/host/src/publicacion/git/ejecutar-git.ts` |
 | Commit + push + reintento | `…/publicar-en-git.ts` (`publicarEnGit`) |
 
-**Comportamiento.** Solo rutas bajo `harukoia/publicado/…`. Sin remoto / sin repo → causa clara. Remoto adelantado → fetch + merge; en generados gana el local (commit nuevo); reintenta push. Sin red externa (tests con bare).
+**Comportamiento.** Solo rutas bajo `Harukoia/Pizarra/…`. Sin remoto / sin repo → causa clara. Remoto adelantado → fetch + merge; en generados gana el local (commit nuevo); reintenta push. Sin red externa (tests con bare).
 
 **Verificación.** 4 tests verdes (push OK, remoto adelantado, sin remoto, conflicto en generado). Typecheck OK. **Parar.**
 
@@ -263,7 +263,7 @@ P11  E2E remoto git local + evidencia + cierre
 | Comando | Comportamiento |
 |---------|----------------|
 | `space host` | Exige git en cwd; arranca `apps/host/src/main.ts` con ese checkout (D-H5-4) |
-| `space status` | Rama vs `origin` (adelante/atrás) + conteo `harukoia/publicado/` |
+| `space status` | Rama vs `origin` (adelante/atrás) + conteo `Harukoia/Pizarra/` |
 | `space update` | `git pull` de `origin` (D-H5-2); lista generados presentes |
 
 **Verificación.** 9 tests CLI verdes (update en clon, host sin git, help solo 3 comandos, status). Typecheck OK. **Parar.**
@@ -296,7 +296,7 @@ P11  E2E remoto git local + evidencia + cierre
 
 **Cómo verlo.** En el checkout del proyecto (p. ej. `apps/host` tras un publish):
 `pnpm --filter @harukoia/cli space -- update` dos veces. La segunda debe decir
-«Ya al día… no se reescribieron generados» y `harukoia/publicado/` sin cambios.
+«Ya al día… no se reescribieron generados» y `Harukoia/Pizarra/` sin cambios.
 
 **Parar.** Pedir autorización de P11 (E2E y cierre).
 
@@ -319,7 +319,7 @@ P11  E2E remoto git local + evidencia + cierre
 
 **Hecho cuando.** Chat aprueba el humo (checklist en la evidencia). **Parar.** Siguiente épica: H6 (otra rama).
 
-**Estado.** Suites y evidencia escritas (2026-11-25). Humo de app: pendiente de OK del chat.
+**Estado.** Hecho (2026-11-25). Chat aprobó el humo.
 
 **Entregables.**
 
@@ -328,7 +328,7 @@ P11  E2E remoto git local + evidencia + cierre
 | E2E remoto git local | `packages/pruebas-entre-procesos/src/publicacion/e2e-h5-git.test.ts` |
 | Evidencia | [evidencia-h5-cierre.md](./evidencia-h5-cierre.md) |
 
-**Parar.** Esperar aprobación del checklist de humo en la evidencia. No abrir H6 en esta rama.
+**Parar.** H5 cerrada. H6 = otra rama cuando el chat lo autorice.
 
 ---
 

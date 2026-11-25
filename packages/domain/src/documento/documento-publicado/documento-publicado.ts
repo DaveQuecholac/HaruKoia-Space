@@ -44,8 +44,12 @@ export type DatosParaCrearDocumentoPublicado = {
   readonly estado: EstadoDePush;
   readonly creadoEn: number;
   readonly id?: IdentificadorDeDocumento;
-  /** Si se omiten, se usan las rutas canónicas del commit (D-H5-5). */
+  /** Si se omiten, se usan las rutas canónicas (D-H5-5) con autor/mensaje. */
   readonly rutas?: RutasDePublicacion;
+  /** Autor del commit de pizarra (para el nombre de carpeta si no hay `rutas`). */
+  readonly autor?: string;
+  /** Mensaje del commit de pizarra (para el nombre de carpeta si no hay `rutas`). */
+  readonly mensaje?: string;
 };
 
 export type ResultadoDeDocumentoPublicado =
@@ -69,7 +73,14 @@ export function crearDocumentoPublicado(
     return { ok: false, causa: 'creado-en-invalido' };
   }
 
-  const rutas = datos.rutas ?? rutasDePublicacionDelCommit(datos.commit);
+  const rutas =
+    datos.rutas ??
+    rutasDePublicacionDelCommit({
+      commit: datos.commit,
+      creadoEn: datos.creadoEn,
+      autor: datos.autor ?? 'sin-autor',
+      mensaje: datos.mensaje ?? 'publicacion',
+    });
   for (const relativa of [rutas.directorio, rutas.tableroJson, rutas.documentoMarkdown]) {
     if (!comoRutaPublicada(relativa).ok) {
       return { ok: false, causa: 'ruta-invalida' };

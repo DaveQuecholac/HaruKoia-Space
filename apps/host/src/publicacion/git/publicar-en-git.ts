@@ -1,7 +1,7 @@
 /**
  * Commit + push de generados al remoto del checkout (H5 / P7 / H5-T9).
  *
- * Solo rutas bajo `harukoia/publicado/…`. Si el remoto adelantó: fetch, merge,
+ * Solo rutas bajo `Harukoia/Pizarra/…`. Si el remoto adelantó: fetch, merge,
  * en conflictos de generados gana el generado local (commit nuevo); reintenta push.
  */
 

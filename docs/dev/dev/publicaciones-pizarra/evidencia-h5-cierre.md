@@ -36,20 +36,13 @@ pnpm --filter @harukoia/pruebas-entre-procesos typecheck
 
 ## Humo en la app (checklist para el chat)
 
-Pendiente de aprobación explícita del chat. Pasos:
+**Aprobado por el chat (2026-11-25).** P11 / H5 cerrados.
 
-1. Host + web arriba (`pnpm dev:start` en raíz o por app).
-2. Entra como host → dibuja → **Crear versión / Commitear**.
-3. En **Historial** → **Publicar al repo** → ver **en proceso** → **publicado** (o fallido + causa).
-4. Si falló (p. ej. `HARUKOIA_PUBLICAR_FALLA=…` en el host): **Reintentar publicación** sin redibujar.
-5. En `apps/host` (checkout ligado):
-   ```bash
-   node ../cli/bin/space.js status
-   node ../cli/bin/space.js update
-   node ../cli/bin/space.js update
-   ```
-   La segunda debe decir «Ya al día…» y no tocar `harukoia/publicado/…`.
-6. En otro clon del mismo remoto: `space update` (o el binario local) → aparecen `documento.md` + `tablero.json`.
+Checklist que se cerró:
+
+1. Host + web: Commitear → **Publicar al repo** → estado publicado (y reintento si falló).
+2. `space update` (binario local desde el checkout) ×2 → segunda «Ya al día»; generados intactos.
+3. Suites E2E + DoD §1–4 en verde (tabla arriba).
 
 ## Qué no entra / queda abierto
 

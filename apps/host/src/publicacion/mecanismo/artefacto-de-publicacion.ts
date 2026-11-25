@@ -6,7 +6,7 @@
 import { comoRutaPublicada } from '@harukoia/domain';
 
 export type ArtefactoDePublicacion = {
-  /** Ruta relativa al checkout, bajo `harukoia/publicado/…`. */
+  /** Ruta relativa al checkout, bajo `Harukoia/Pizarra/…`. */
   readonly rutaRelativa: string;
   readonly bytes: Uint8Array;
 };

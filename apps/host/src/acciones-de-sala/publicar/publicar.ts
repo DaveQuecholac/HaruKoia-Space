@@ -14,6 +14,7 @@ import {
   type VinculoSalaRepo,
   crearDocumentoPublicado,
   comoIdentificadorDeCommit,
+  rutasDePublicacionDelCommit,
 } from '@harukoia/domain';
 
 import {
@@ -92,7 +93,8 @@ export function publicar(deps: DependenciasDePublicar): ManejadorDeAccion {
     }
 
     const historial = await deps.almacen.listarHistorial(deps.sala);
-    if (!historial.some((c) => c.id === commitId)) {
+    const commitMeta = historial.find((c) => c.id === commitId);
+    if (commitMeta === undefined) {
       return { ok: false, causa: 'commit-inexistente' };
     }
 
@@ -112,6 +114,12 @@ export function publicar(deps: DependenciasDePublicar): ManejadorDeAccion {
     }
 
     const ahora = Date.now();
+    const rutas = rutasDePublicacionDelCommit({
+      commit: commitId,
+      creadoEn: commitMeta.creadoEn,
+      autor: commitMeta.autor,
+      mensaje: commitMeta.mensaje,
+    });
     const base =
       pedido.accion === 'reintentar-publicacion' && fallido
         ? fallido
@@ -122,6 +130,9 @@ export function publicar(deps: DependenciasDePublicar): ManejadorDeAccion {
               variante: 'markdown-determinista',
               estado: { tipo: 'en-proceso' },
               creadoEn: ahora,
+              autor: commitMeta.autor,
+              mensaje: commitMeta.mensaje,
+              rutas,
             });
             if (!creado.ok) return null;
             return creado.documento;

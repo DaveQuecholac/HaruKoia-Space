@@ -48,7 +48,9 @@ P11   E2E, evidencia, cierre H5
 
 ## Estado
 
-> **P11 suites hechas (2026-11-25).** E2E + [evidencia-h5-cierre.md](./evidencia-h5-cierre.md). **Cierre de producto** cuando el chat apruebe el humo de la evidencia. Siguiente épica: **H6** (otra rama).
+> **H5 cerrada (2026-11-25).** P0–P11 hechos; humo aprobado. Evidencia: [evidencia-h5-cierre.md](./evidencia-h5-cierre.md). Siguiente épica: **H6** (otra rama).
+>
+> **Rutas (D-H5-5, 2026-11-25):** `Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`; IA en `Harukoia/documentos/…`. Sin compat con solo-id ni `harukoia/publicado/…`.
 
 | Paso | Qué | Estado |
 |------|-----|--------|
@@ -63,7 +65,7 @@ P11   E2E, evidencia, cierre H5
 | P8 | Estados + UI | **Hecho** |
 | P9 | CLI space | **Hecho** |
 | P10 | Idempotencia update | **Hecho** |
-| P11 | E2E + cierre | **Suites hechas** — humo pendiente de OK |
+| P11 | E2E + cierre | **Hecho** |
 
 ## Decisiones cerradas (2026-11-22)
 
@@ -72,10 +74,10 @@ P11   E2E, evidencia, cierre H5
 | D-H5-1 | ¿Git en el alcance? | **Sí:** commit + push + manejo de remoto adelantado |
 | D-H5-2 | ¿De dónde materializa `space update`? | **Desde git** (pull del remoto del proyecto) |
 | D-H5-3 | Alcance del CLI | Solo `space host`, `space status`, `space update`. No unirse a sala |
-| D-H5-4 | Vínculo sala↔repo | Al arrancar el host desde el checkout del proyecto |
-| D-H5-5 | Rutas generadas | Prefijo `harukoia/publicado/…` |
+| D-H5-4 | Vínculo sala↔repo | Host dentro del checkout; escritura en **toplevel git** (no en `apps/host` si el proceso corre ahí) |
+| D-H5-5 | Rutas generadas | `Harukoia/Pizarra/<fecha__autor__mensaje__id8>/`; `Harukoia/documentos/` (H6) |
 
-Promovidas en v2 §13 y fase 1 § H5. Convención de archivos (P1): `harukoia/publicado/<commitId>/tablero.json` y `documento.md`.
+Promovidas en v2 §13 y fase 1 § H5. Convención: carpeta legible + `tablero.json` / `documento.md`.
 
 ## Fuera de esta rama
 
