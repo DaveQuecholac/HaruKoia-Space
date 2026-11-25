@@ -1,0 +1,52 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generar markdown determinista (P5) > fixture fijo → mismos bytes y hash estable 1`] = `
+"# Publicación HaruKoia
+
+## Versión
+
+- id: aaaaaaaaaaaaaaaa
+- mensaje: primera version
+- autor: Hector
+
+## Participantes
+
+- Ana
+- Hector
+
+## Fecha
+
+- creadoEn: 2026-11-25T15:00:00.000Z
+
+## Tablero
+
+- formato: 1
+- formas: 2
+
+### Formas
+
+- figura id=fig-a
+  figura: geo
+  x: 0
+  y: 0
+  rotacion: 0
+  indice: a1
+  padre: pagina-1
+  bloqueado: false
+  opacidad: 1
+  props: {"h":50,"w":100}
+  meta: {}
+
+- figura id=fig-b
+  figura: texto
+  x: 10
+  y: 20
+  rotacion: 0
+  indice: a2
+  padre: pagina-1
+  bloqueado: false
+  opacidad: 1
+  props: {"text":"hola"}
+  meta: {}
+"
+`;

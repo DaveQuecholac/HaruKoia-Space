@@ -6,7 +6,7 @@
  */
 
 import { HistorialDeVersiones } from '../historial-de-versiones/historial-de-versiones.tsx';
-import type { CommitVisible } from '../conexion-a-la-sala/conexion-a-la-sala.ts';
+import type { CommitVisible, EstadoDePushVisible } from '../conexion-a-la-sala/conexion-a-la-sala.ts';
 import './staging-de-version.css';
 
 export function StagingDeVersion(props: {
@@ -17,8 +17,11 @@ export function StagingDeVersion(props: {
   readonly deshabilitado: boolean;
   readonly commits: readonly CommitVisible[];
   readonly tipDeTrabajo: string | null;
+  readonly estadosDePush: readonly EstadoDePushVisible[];
   readonly alCommitear: () => void;
   readonly alHacerCheckout: (id: string) => void;
+  readonly alPublicar: (id: string) => void;
+  readonly alReintentarPublicacion: (id: string) => void;
 }) {
   return (
     <aside className="staging" aria-label="Crear versión">
@@ -51,8 +54,12 @@ export function StagingDeVersion(props: {
       <HistorialDeVersiones
         commits={props.commits}
         tipDeTrabajo={props.tipDeTrabajo}
+        estadosDePush={props.estadosDePush}
         alHacerCheckout={props.alHacerCheckout}
         checkoutDeshabilitado={props.guardando || props.deshabilitado}
+        alPublicar={props.alPublicar}
+        alReintentarPublicacion={props.alReintentarPublicacion}
+        publicacionDeshabilitada={props.guardando || props.deshabilitado}
       />
     </aside>
   );

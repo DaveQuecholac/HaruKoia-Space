@@ -45,6 +45,8 @@ beforeEach(async () => {
       'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
       commitear: async () => ({ ok: true, avisos: [] }),
       'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+      publicar: async () => ({ ok: true, avisos: [] }),
+      'reintentar-publicacion': async () => ({ ok: true, avisos: [] }),
     },
     registro,
   });

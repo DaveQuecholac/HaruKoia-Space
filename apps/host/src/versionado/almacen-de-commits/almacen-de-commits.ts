@@ -1,9 +1,9 @@
 /**
- * Almacén local del grafo de commits (V2 → V6).
+ * Almacén local del espejo de réplica (V2 → V6 → H5 P2).
  *
- * Espejo PowerSync (`replica.sqlite` / archivo propio). Tablas `commits` y
- * `snapshots`. No toca `sala.sqlite` (F-V6). Con backend configurado, la cola
- * sube por `uploadData` al backend de escritura.
+ * Espejo PowerSync (`replica.sqlite` / archivo propio). Tablas `commits`,
+ * `snapshots` y `documents`. No toca `sala.sqlite` (F-V6). Con backend
+ * configurado, la cola sube por `uploadData` al backend de escritura.
  */
 
 import fs from 'node:fs';
@@ -13,9 +13,11 @@ import { Worker } from 'node:worker_threads';
 
 import {
   type Commit,
+  type DocumentoPublicado,
   type IdentificadorDeCommit,
   type IdentificadorDeSala,
   type TableroEnJson,
+  comoDocumentoPublicado,
   comoIdentificadorDeCommit,
   comoIdentificadorDeSala,
   crearCommit,
@@ -24,8 +26,10 @@ import {
 } from '@harukoia/domain';
 import {
   NOMBRE_DE_COLECCION_COMMITS,
+  NOMBRE_DE_COLECCION_DOCUMENTS,
   NOMBRE_DE_COLECCION_SNAPSHOTS,
   comoFilaDeCommit,
+  comoFilaDeDocumento,
   comoFilaDeSnapshot,
 } from '@harukoia/schema';
 import { PowerSyncDatabase } from '@powersync/node';
@@ -68,11 +72,18 @@ export type CredencialDeSubida = {
   readonly powersyncUrl?: string;
 };
 
+export type ResultadoDeGuardarDocumento =
+  | { readonly ok: true; readonly documento: DocumentoPublicado }
+  | { readonly ok: false; readonly causa: 'documento-invalido' };
+
 export type AlmacenDeCommits = {
   readonly archivo: string;
   guardar(datos: DatosParaGuardarCommit): Promise<ResultadoDeGuardar>;
   listarHistorial(sala: IdentificadorDeSala): Promise<readonly Commit[]>;
   leerSnapshot(id: IdentificadorDeCommit): Promise<SnapshotDeCommit | null>;
+  /** H5 P2: persiste un documento publicado en el espejo (cola → réplica). */
+  guardarDocumento(documento: DocumentoPublicado): Promise<ResultadoDeGuardarDocumento>;
+  listarDocumentos(sala: IdentificadorDeSala): Promise<readonly DocumentoPublicado[]>;
   cerrar(): Promise<void>;
 };
 
@@ -272,6 +283,51 @@ export async function abrirAlmacenDeCommits(
       };
     },
 
+    async guardarDocumento(documento) {
+      let validado: DocumentoPublicado;
+      try {
+        validado = comoDocumentoPublicado(documento);
+      } catch {
+        return { ok: false, causa: 'documento-invalido' };
+      }
+
+      const actualizadoEn = Date.now();
+      const { estadoTipo, estadoCausa, estadoMarca } = aplanadoDeEstado(validado.estado);
+
+      // PowerSync expone tablas como vistas: no hay UPSERT. Reemplazo = DELETE + INSERT.
+      await db.writeTransaction(async (tx) => {
+        await tx.execute(`DELETE FROM ${NOMBRE_DE_COLECCION_DOCUMENTS} WHERE id = ?`, [validado.id]);
+        await tx.execute(
+          `INSERT INTO ${NOMBRE_DE_COLECCION_DOCUMENTS} (
+             id, actualizado_en, borrado, sala, commit_id, variante,
+             estado_tipo, estado_causa, estado_marca,
+             ruta_directorio, ruta_tablero_json, ruta_documento_markdown, creado_en
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            validado.id,
+            actualizadoEn,
+            0,
+            validado.sala,
+            validado.commit,
+            validado.variante,
+            estadoTipo,
+            estadoCausa,
+            estadoMarca,
+            validado.rutas.directorio,
+            validado.rutas.tableroJson,
+            validado.rutas.documentoMarkdown,
+            validado.creadoEn,
+          ],
+        );
+      });
+
+      return { ok: true, documento: validado };
+    },
+
+    async listarDocumentos(sala) {
+      return listarDocumentosDesdeDb(sala);
+    },
+
     async cerrar() {
       try {
         await db.disconnect();
@@ -341,4 +397,104 @@ export async function abrirAlmacenDeCommits(
     }
     return ordenarHistorial(commits);
   }
+
+  async function listarDocumentosDesdeDb(sala: IdentificadorDeSala): Promise<DocumentoPublicado[]> {
+    const filas = (await db.getAll(
+      `SELECT id, actualizado_en AS actualizadoEn, borrado, sala,
+              commit_id AS commitId, variante,
+              estado_tipo AS estadoTipo,
+              estado_causa AS estadoCausa,
+              estado_marca AS estadoMarca,
+              ruta_directorio AS rutaDirectorio,
+              ruta_tablero_json AS rutaTableroJson,
+              ruta_documento_markdown AS rutaDocumentoMarkdown,
+              creado_en AS creadoEn
+       FROM ${NOMBRE_DE_COLECCION_DOCUMENTS}
+       WHERE sala = ? AND borrado = 0`,
+      [sala],
+    )) as Array<{
+      id: string;
+      actualizadoEn: number;
+      borrado: number;
+      sala: string;
+      commitId: string;
+      variante: string;
+      estadoTipo: string;
+      estadoCausa: string | null;
+      estadoMarca: number | null;
+      rutaDirectorio: string;
+      rutaTableroJson: string;
+      rutaDocumentoMarkdown: string;
+      creadoEn: number;
+    }>;
+
+    const documentos: DocumentoPublicado[] = [];
+    for (const fila of filas) {
+      const interpretada = comoFilaDeDocumento({
+        id: fila.id,
+        actualizadoEn: fila.actualizadoEn,
+        borrado: fila.borrado === 1,
+        sala: fila.sala,
+        commit: fila.commitId,
+        variante: fila.variante,
+        estadoTipo: fila.estadoTipo,
+        estadoCausa: fila.estadoCausa === '' ? null : fila.estadoCausa,
+        estadoMarca: fila.estadoMarca === null || Number.isNaN(fila.estadoMarca) ? null : fila.estadoMarca,
+        rutaDirectorio: fila.rutaDirectorio,
+        rutaTableroJson: fila.rutaTableroJson,
+        rutaDocumentoMarkdown: fila.rutaDocumentoMarkdown,
+        creadoEn: fila.creadoEn,
+      });
+      if (!interpretada.ok) continue;
+
+      const estado =
+        interpretada.fila.estadoTipo === 'en-proceso'
+          ? { tipo: 'en-proceso' as const }
+          : interpretada.fila.estadoTipo === 'publicado'
+            ? {
+                tipo: 'publicado' as const,
+                publicadoEn: interpretada.fila.estadoMarca ?? interpretada.fila.actualizadoEn,
+              }
+            : {
+                tipo: 'fallido' as const,
+                causa: interpretada.fila.estadoCausa ?? 'desconocida',
+                fallidoEn: interpretada.fila.estadoMarca ?? interpretada.fila.actualizadoEn,
+              };
+
+      try {
+        documentos.push(
+          comoDocumentoPublicado({
+            id: interpretada.fila.id,
+            sala: interpretada.fila.sala,
+            commit: interpretada.fila.commit,
+            variante: interpretada.fila.variante,
+            estado,
+            creadoEn: interpretada.fila.creadoEn,
+            rutas: {
+              directorio: interpretada.fila.rutaDirectorio,
+              tableroJson: interpretada.fila.rutaTableroJson,
+              documentoMarkdown: interpretada.fila.rutaDocumentoMarkdown,
+            },
+          }),
+        );
+      } catch {
+        continue;
+      }
+    }
+    return documentos;
+  }
+}
+
+function aplanadoDeEstado(estado: DocumentoPublicado['estado']): {
+  estadoTipo: string;
+  estadoCausa: string | null;
+  estadoMarca: number | null;
+} {
+  if (estado.tipo === 'en-proceso') {
+    return { estadoTipo: 'en-proceso', estadoCausa: null, estadoMarca: null };
+  }
+  if (estado.tipo === 'publicado') {
+    return { estadoTipo: 'publicado', estadoCausa: null, estadoMarca: estado.publicadoEn };
+  }
+  return { estadoTipo: 'fallido', estadoCausa: estado.causa, estadoMarca: estado.fallidoEn };
 }

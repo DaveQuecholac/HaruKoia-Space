@@ -2,13 +2,15 @@ import { mkdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 
-import { generarIdentidadDeSala, type IdentidadDeSala } from '@harukoia/domain';
+import { crearVinculoSalaRepo, generarIdentidadDeSala, type IdentidadDeSala } from '@harukoia/domain';
 
 import { cambiarInvitacion } from './acciones-de-sala/cambiar-invitacion/cambiar-invitacion.ts';
 import { commitear } from './acciones-de-sala/commitear/commitear.ts';
 import { hacerCheckout } from './acciones-de-sala/hacer-checkout/hacer-checkout.ts';
+import { publicar } from './acciones-de-sala/publicar/publicar.ts';
 import { conectarAlOrquestador } from './conexion-al-orquestador/conexion-al-orquestador.ts';
 import { atenderInvitacion } from './invitacion/invitacion.ts';
+import { archivoDeColaPorDefecto } from './publicacion/correr-publicacion/correr-publicacion.ts';
 import { registro } from './registro-del-proceso/registro-del-proceso.ts';
 import { archivoDeLaSala } from './sala/archivo-de-la-sala.ts';
 import {
@@ -111,6 +113,19 @@ const tipDeTrabajo = crearTipDeTrabajo(
   (await almacenDeCommits.listarHistorial(identidad.sala)).at(-1)?.id ?? null,
 );
 
+const vinculoCreado = crearVinculoSalaRepo({
+  sala: identidad.sala,
+  raizDelCheckout: process.cwd(),
+});
+if (!vinculoCreado.ok) {
+  registro.error('no se pudo vincular sala↔repo', { causa: vinculoCreado.causa });
+  process.exit(1);
+}
+const vinculoSalaRepo = vinculoCreado.vinculo;
+registro.info('vínculo sala↔repo', { raiz: vinculoSalaRepo.raizDelCheckout });
+
+const falloInyectado = process.env.HARUKOIA_PUBLICAR_FALLA?.trim();
+
 let sala: Awaited<ReturnType<typeof abrirSalaEnVivo>>;
 try {
   sala = await abrirSalaEnVivo({
@@ -143,9 +158,24 @@ try {
         documento: () => sala.documento(),
         tip: tipDeTrabajo,
       }),
+      publicar: publicar({
+        sala: identidad.sala,
+        almacen: almacenDeCommits,
+        vinculo: vinculoSalaRepo,
+        archivoDeCola: archivoDeColaPorDefecto(vinculoSalaRepo.raizDelCheckout),
+        ...(falloInyectado ? { falloInyectado } : {}),
+      }),
+      'reintentar-publicacion': publicar({
+        sala: identidad.sala,
+        almacen: almacenDeCommits,
+        vinculo: vinculoSalaRepo,
+        archivoDeCola: archivoDeColaPorDefecto(vinculoSalaRepo.raizDelCheckout),
+        ...(falloInyectado ? { falloInyectado } : {}),
+      }),
     },
     historial: async () => {
       const commits = await almacenDeCommits.listarHistorial(identidad.sala);
+      const documentos = await almacenDeCommits.listarDocumentos(identidad.sala);
       return {
         commits: commits.map((c) => ({
           id: c.id,
@@ -155,6 +185,33 @@ try {
           padre: c.padre,
         })),
         tip: tipDeTrabajo.leer(),
+        estadosDePush: documentos.map((d) => {
+          if (d.estado.tipo === 'en-proceso') {
+            return {
+              documento: d.id,
+              commit: d.commit,
+              estadoTipo: 'en-proceso' as const,
+              causa: null,
+              marca: null,
+            };
+          }
+          if (d.estado.tipo === 'publicado') {
+            return {
+              documento: d.id,
+              commit: d.commit,
+              estadoTipo: 'publicado' as const,
+              causa: null,
+              marca: d.estado.publicadoEn,
+            };
+          }
+          return {
+            documento: d.id,
+            commit: d.commit,
+            estadoTipo: 'fallido' as const,
+            causa: d.estado.causa,
+            marca: d.estado.fallidoEn,
+          };
+        }),
       };
     },
     registro,

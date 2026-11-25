@@ -56,6 +56,8 @@ async function salaEn(
       'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
       commitear: async () => ({ ok: true, avisos: [] }),
       'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+      publicar: async () => ({ ok: true, avisos: [] }),
+      'reintentar-publicacion': async () => ({ ok: true, avisos: [] }),
     },
     registro,
   });
@@ -164,6 +166,8 @@ describe('documento en disco', () => {
       'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
       commitear: async () => ({ ok: true, avisos: [] }),
       'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+      publicar: async () => ({ ok: true, avisos: [] }),
+      'reintentar-publicacion': async () => ({ ok: true, avisos: [] }),
     },
         registro: crearRegistro({ proceso: 'host', destino: (evento) => eventos.push(evento) }),
       }),

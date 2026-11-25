@@ -42,7 +42,7 @@ describe('commitear', () => {
 
     const resultado = await manejador(
       { tipo: 'pedir-accion', accion: 'commitear', mensaje: 'primera' },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
 
     expect(resultado.ok).toBe(true);
@@ -85,12 +85,12 @@ describe('commitear', () => {
 
     const primero = await manejador(
       { tipo: 'pedir-accion', accion: 'commitear', mensaje: 'uno' },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
     expect(primero.ok).toBe(true);
     const segundo = await manejador(
       { tipo: 'pedir-accion', accion: 'commitear', mensaje: 'dos' },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
     expect(segundo.ok).toBe(true);
     if (!segundo.ok || !primero.ok) return;

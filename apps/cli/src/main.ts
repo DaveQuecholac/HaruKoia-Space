@@ -1,21 +1,44 @@
-const ayuda = `space — CLI del motor colaborativo HaruKoia
+/**
+ * CLI `space` (H5 / P9). Solo host / status / update (D-H5-3).
+ */
 
-Comandos de la fase 1 (todavía sin implementar):
-  space host      arranca el contenedor host para este checkout y registra la sala
-  space status    qué versión local hay y si la réplica está al día
-  space update    baja las versiones publicadas y escribe el markdown en el repo
+import { TEXTO_DE_AYUDA } from './ayuda/ayuda.ts';
+import { correrHost } from './comandos/host/host.ts';
+import { correrStatus } from './comandos/status/status.ts';
+import { correrUpdate } from './comandos/update/update.ts';
 
-Diseño: docs/fijos/arquitectura/analisis-arquitectura-v2.md
-`;
+const COMANDOS = new Set(['host', 'status', 'update']);
 
 export async function run(argv: string[]): Promise<number> {
-  const comando = argv[0];
+  // pnpm a veces deja un `--` delante: `pnpm space -- status`
+  const args = argv[0] === '--' ? argv.slice(1) : argv;
+  const comando = args[0];
 
   if (!comando || comando === '-h' || comando === '--help') {
-    process.stdout.write(ayuda);
+    process.stdout.write(TEXTO_DE_AYUDA);
     return 0;
   }
 
-  process.stderr.write(`Comando no implementado: ${comando}\n`);
-  return 1;
+  if (!COMANDOS.has(comando)) {
+    process.stderr.write(
+      `Comando desconocido: ${comando}\nSolo: space host | space status | space update\n`,
+    );
+    return 1;
+  }
+
+  if (comando === 'host') {
+    const r = await correrHost();
+    if (r.texto) process.stderr.write(r.texto);
+    return r.codigo;
+  }
+
+  if (comando === 'status') {
+    const r = await correrStatus(process.cwd());
+    process.stdout.write(r.texto);
+    return r.codigo;
+  }
+
+  const r = await correrUpdate(process.cwd());
+  process.stdout.write(r.texto);
+  return r.codigo;
 }

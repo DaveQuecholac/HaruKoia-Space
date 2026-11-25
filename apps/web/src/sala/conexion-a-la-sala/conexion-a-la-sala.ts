@@ -85,6 +85,15 @@ export type CommitVisible = {
   readonly padre: string | null;
 };
 
+/** Estado de push de una publicación (H5 / P8). */
+export type EstadoDePushVisible = {
+  readonly documento: string;
+  readonly commit: string;
+  readonly estadoTipo: 'en-proceso' | 'publicado' | 'fallido';
+  readonly causa: string | null;
+  readonly marca: number | null;
+};
+
 export type InstantaneaDeLaSala = {
   readonly estado: EstadoDeLaSala;
   readonly participantes: readonly ParticipanteVisible[];
@@ -99,6 +108,8 @@ export type InstantaneaDeLaSala = {
   readonly commits: readonly CommitVisible[];
   /** Commit del estado de trabajo actual (V5). El próximo guardado cuelga de él. */
   readonly tipDeTrabajo: string | null;
+  /** Estados de publicación por commit (H5 / P8). */
+  readonly estadosDePush: readonly EstadoDePushVisible[];
 };
 
 export type CursorDePresencia = { readonly x: number; readonly y: number };
@@ -126,6 +137,10 @@ export type ConexionALaSala = {
   commitear(mensaje: string): void;
   /** Vuelve el tablero a un commit. Solo el host lo acepta. */
   hacerCheckout(id: string): void;
+  /** Publica un commit al repo (markdown + git push). Solo el host. */
+  publicar(id: string): void;
+  /** Reintenta una publicación fallida del mismo commit. Solo el host. */
+  reintentarPublicacion(id: string): void;
   salir(): void;
 };
 
@@ -154,7 +169,13 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
   let accionRechazada: AccionRechazada | undefined;
   let commits: CommitVisible[] = [];
   let tipDeTrabajo: string | null = null;
+  let estadosDePush: EstadoDePushVisible[] = [];
   let yaConecto = false;
+
+  function fusionarEstadoDePush(entrada: EstadoDePushVisible): void {
+    const resto = estadosDePush.filter((e) => e.commit !== entrada.commit);
+    estadosDePush = [...resto, entrada];
+  }
 
   function detener(final: EstadoDeLaSala): void {
     estado = final;
@@ -212,6 +233,13 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
           padre: c.padre,
         }));
         tipDeTrabajo = mensaje.tip;
+        estadosDePush = mensaje.estadosDePush.map((e) => ({
+          documento: e.documento,
+          commit: e.commit,
+          estadoTipo: e.estadoTipo,
+          causa: e.causa,
+          marca: e.marca,
+        }));
       } else if (mensaje.tipo === 'commit-guardado') {
         accionRechazada = undefined;
         if (!commits.some((c) => c.id === mensaje.id)) {
@@ -227,6 +255,15 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
       } else if (mensaje.tipo === 'checkout-hecho') {
         accionRechazada = undefined;
         tipDeTrabajo = mensaje.id;
+      } else if (mensaje.tipo === 'estado-de-push') {
+        accionRechazada = undefined;
+        fusionarEstadoDePush({
+          documento: mensaje.documento,
+          commit: mensaje.commit,
+          estadoTipo: mensaje.estadoTipo,
+          causa: mensaje.causa,
+          marca: mensaje.marca,
+        });
       } else {
         return;
       }
@@ -276,6 +313,7 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
       accionRechazada,
       commits: [...commits],
       tipDeTrabajo,
+      estadosDePush: [...estadosDePush],
     });
   }
 
@@ -333,6 +371,28 @@ export function conectarALaSala(opciones: OpcionesDeLaConexion): ConexionALaSala
         serializarMensajeDeSala({
           tipo: 'pedir-accion',
           accion: 'hacer-checkout',
+          id: comoIdentificadorDeCommit(id),
+        }),
+      );
+      emitir();
+    },
+    publicar(id) {
+      accionRechazada = undefined;
+      proveedor.sendStateless(
+        serializarMensajeDeSala({
+          tipo: 'pedir-accion',
+          accion: 'publicar',
+          id: comoIdentificadorDeCommit(id),
+        }),
+      );
+      emitir();
+    },
+    reintentarPublicacion(id) {
+      accionRechazada = undefined;
+      proveedor.sendStateless(
+        serializarMensajeDeSala({
+          tipo: 'pedir-accion',
+          accion: 'reintentar-publicacion',
           id: comoIdentificadorDeCommit(id),
         }),
       );

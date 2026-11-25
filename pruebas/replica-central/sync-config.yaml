@@ -1,5 +1,5 @@
 # Estación réplica — edition 3.
-# Producto H4 (V6): commits + snapshots. PdC humo: commits_prueba (referencia).
+# Producto H4: commits + snapshots. H5 (P2): documents. PdC humo: commits_prueba.
 # Filtra por claim JWT `sala` (D-R3 / F-R6).
 # yaml-language-server: $schema=https://unpkg.com/@powersync/service-sync-rules@latest/schema/sync_rules.json
 config:
@@ -24,3 +24,9 @@ streams:
       INNER JOIN commits ON commits.id = snapshots.id
       WHERE commits.sala = auth.parameter('sala')
         AND snapshots.borrado = false
+  documents:
+    auto_subscribe: true
+    query: >
+      SELECT * FROM documents AS documents
+      WHERE documents.sala = auth.parameter('sala')
+        AND documents.borrado = false

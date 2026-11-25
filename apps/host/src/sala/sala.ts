@@ -69,10 +69,12 @@ export type OpcionesDeLaSala = {
     | {
         readonly commits: readonly EntradaDeHistorial[];
         readonly tip: IdentificadorDeCommit | null;
+        readonly estadosDePush?: readonly import('@harukoia/domain').EntradaDeEstadoDePush[];
       }
     | Promise<{
         readonly commits: readonly EntradaDeHistorial[];
         readonly tip: IdentificadorDeCommit | null;
+        readonly estadosDePush?: readonly import('@harukoia/domain').EntradaDeEstadoDePush[];
       }>;
   /** Solo para pruebas. */
   readonly tiempoDeEspera?: number;
@@ -166,8 +168,13 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
     async connected({ socketId, connection, context }) {
       abiertas.set(socketId, connection);
       enviar(connection, { tipo: 'tu-rol', rol: context.rol });
-      const foto = (await opciones.historial?.()) ?? { commits: [], tip: null };
-      enviar(connection, { tipo: 'historial', commits: foto.commits, tip: foto.tip });
+      const foto = (await opciones.historial?.()) ?? { commits: [], tip: null, estadosDePush: [] };
+      enviar(connection, {
+        tipo: 'historial',
+        commits: foto.commits,
+        tip: foto.tip,
+        estadosDePush: foto.estadosDePush ?? [],
+      });
       registro.info('rol asignado', { rol: context.rol, commits: foto.commits.length });
     },
     async beforeHandleAwareness({ states, context, socketId }) {
@@ -204,9 +211,12 @@ export async function abrirSalaEnVivo(opciones: OpcionesDeLaSala): Promise<SalaE
       const { accion } = pedido;
       const { rol } = connection.context;
       const autor = autorDeLaConexion(connection);
+      const avisar = (mensaje: import('@harukoia/domain').MensajeDelHostDeLaSala) => {
+        for (const abierta of abiertas.values()) enviar(abierta, mensaje);
+      };
       let resultado: Awaited<ReturnType<typeof atenderAccion>>;
       try {
-        resultado = await atenderAccion(pedido, rol, acciones, { autor });
+        resultado = await atenderAccion(pedido, rol, acciones, { autor, avisar });
       } catch (error) {
         registro.error('la acción no se pudo completar', {
           accion,

@@ -2,7 +2,7 @@
 
 Rama: `dev/publicaciones-pizarra`.  
 Análisis: [analisis-h5-publicaciones-pizarra.md](./analisis-h5-publicaciones-pizarra.md).  
-**Estado.** **P0 hecho.** D-H5-1…5 cerradas (chat + fijos). P1+ pendiente de autorización explícita de esa rebanada.
+**Estado.** **P0–P11 hechos (suites).** D-H5-1…5 cerradas. Cierre de producto: pendiente de que el chat apruebe el humo en [evidencia-h5-cierre.md](./evidencia-h5-cierre.md).
 
 ## Reglas de trabajo
 
@@ -73,267 +73,207 @@ P11  E2E remoto git local + evidencia + cierre
 
 ---
 
-## P1 — Contratos de dominio y esquema
+## P1 — Contratos de dominio y esquema — **hecho**
 
 **Objetivo.** H5-T1 (documents; attachments binarios aplazados a H6). Tipos: documento publicado, estados de push, vínculo sala↔repo, nombres/rutas bajo D-H5-5.
 
-**Depende de.** D-H5-3…5 cerradas. Autorización del chat para empezar P1.
+**Entregado.**
 
-**Archivos esperados.**
+| Pieza | Ruta |
+|-------|------|
+| `IdentificadorDeDocumento` | `packages/domain/src/documento/identificador-de-documento/` |
+| `EstadoDePush` | `packages/domain/src/documento/estado-de-push/` |
+| `VarianteDePublicacion` | `packages/domain/src/documento/variante-de-publicacion/` |
+| Rutas D-H5-5 | `packages/domain/src/documento/rutas-publicadas/` |
+| `VinculoSalaRepo` | `packages/domain/src/documento/vinculo-sala-repo/` |
+| `DocumentoPublicado` | `packages/domain/src/documento/documento-publicado/` |
+| `FilaDeDocumento` | `packages/schema/src/documento/fila-de-documento.ts` |
 
-| Dueño | Ruta orientativa |
-|-------|------------------|
-| Domain | `packages/domain/src/…` (documento, estado de push, rutas) |
-| Schema | `packages/schema/src/…` (fila de document) |
+**Convención de rutas.** `harukoia/publicado/<commitId>/tablero.json` y `…/documento.md`.
 
-Sin UI. Sin escritura a disco de proyecto ni git.
+**Verificación.** domain 94 tests / schema 33 tests; typecheck OK. **Parar.**
 
-**Errores.**
-
-| Error | Mitigación |
-|-------|------------|
-| Campos de H6 (PDF/Word) como obligatorios | Lista explícita “H5: documents + estado”; adjuntos binarios fuera o stub |
-| Un archivo dios | Un asunto por carpeta (model-oriented-layout) |
-| Confundir commit de pizarra con documento publicado | Identificadores tipados distintos |
-
-**Pruebas.**
-
-- Unitarias: construir/validar documento; estados solo los acordados.
-- Tipado: no asignar `commit` a `documento` ni confundir estado de push con estado de sala.
-- Rutas: helper rechaza paths fuera del prefijo D-H5-5.
-
-**Verificación.** `pnpm --filter @harukoia/domain test` y `@harukoia/schema test`; typecheck. **Parar.**
-
-**Definition of done del paso.**
-
-1. Contratos compilando y con tests verdes.
-2. Rutas/nombres viven en domain (host y CLI coincidirán).
-3. Nada escrito aún en disco del proyecto ni en git.
+**Estado.** Hecho (2026-11-25).
 
 ---
 
-## P2 — Delta réplica: documents
+## P2 — Delta réplica: documents — **hecho**
 
 **Objetivo.** Ampliar la réplica **ya cableada en H4** (commits/snapshots, backend, PowerSync host) con tabla/filas `documents` (+ sync rules). **No** rehacer M3 ni la PdC.
 
-Cubre lo que falta de H5-T2/T3 respecto a documents; el espejo y la cola de subida del host para commits ya existen.
+**Entregado.**
 
-**Archivos esperados.** SQL/sync en la estación de réplica de producto; `apps/backend-escritura`; espejo host según patrón H4 V6. No tocar `sala.sqlite` (Yjs).
+| Pieza | Ruta |
+|-------|------|
+| SQL + grants + REPLICA IDENTITY | `pruebas/replica-central/init/05-documents-h5.sql` |
+| Apply | `pruebas/replica-central/apply-tablas-h5-documents.sh` |
+| Sync rules `documents` | `pruebas/replica-central/sync-config.yaml` |
+| Backend PUT/DELETE `documents` | `apps/backend-escritura/src/escribir-batch/` |
+| Esquema cliente + espejo host | `apps/host/src/versionado/esquema-de-replica/`, `almacen-de-commits` (`guardarDocumento` / listar) |
+| Client schema humo | `packages/pruebas-entre-procesos/.../esquema-cliente-replica.ts` |
+| Humo P2 | `packages/pruebas-entre-procesos/.../humo-documents-p2.ts` (`humo:p2`) |
 
-**Errores.**
+**Verificación.** Tests host (guardarDocumento) + backend (acepta host / rechaza sala ajena); `humo:p2` verde: escritura host → lectura PowerSync; rechazo sin token. **Parar.**
 
-| Error | Mitigación |
-|-------|------------|
-| Reconstruir Postgres/PowerSync desde cero | Reusar compose y patrón H4; solo delta documents |
-| Mezclar documents en `sala.sqlite` | Prohibido; espejo aparte |
-| Invitado escribe documents | Backend rechaza no-host (mismo contrato H4) |
+**Estado.** Hecho (2026-11-25). Nota: tras `CREATE TABLE documents`, reiniciar PowerSync si el lector no ve filas nuevas (stream / publication lag).
 
-**Pruebas.**
-
-- Insert de document como host → lector PowerSync lo ve.
-- Escritura sin token de host → rechazo.
-- Host apagado: lector sigue viendo documents ya subidos (espíritu V7).
-
-**Verificación.** Suites host / backend / entre-procesos que toquen documents. **Parar.**
-
-**Definition of done del paso.**
-
-1. Document de prueba visible vía PowerSync sin pasar por el relay.
-2. Invitado no puede escribir documents.
+**Parar.** Pedir autorización de P3 (cola de publicación).
 
 ---
 
-## P3 — Cola de publicación en el host
+## P3 — Cola de publicación en el host — **hecho**
 
 **Objetivo.** H5-T4. Encolar un trabajo ligado a un `Identificador<'commit'>`; persistir la cola en disco del host; reintentos.
 
-**Archivos esperados.** Dueño en `apps/host` (carpeta de publicación / cola), sin UI.
+**Entregado.**
 
-**Errores.**
+| Pieza | Ruta |
+|-------|------|
+| Ruta del archivo | `apps/host/src/publicacion/archivo-de-la-cola/` → `data/cola-publicacion.json` |
+| Trabajo | `apps/host/src/publicacion/trabajo-de-publicacion/` |
+| Cola | `apps/host/src/publicacion/cola-de-publicacion/` (`encolar`, `procesarSiguiente`, `reintentar`) |
 
-| Error | Mitigación |
-|-------|------------|
-| Cola pierde el trabajo al matar el host | Persistencia en disco; prueba de rearranque |
-| Fallo del job borra el commit H4 | Prohibido; commit de pizarra intacto |
-| Doble encolado silencioso | Política de idempotencia explícita en el paso |
+**Política de idempotencia.** Un commit no admite dos trabajos activos (`pendiente`/`en-proceso`) ni re-encolarse si ya está `publicado`. Tras `fallido`: `reintentar(id)` o un nuevo `encolar`. Al abrir, `en-proceso` interrumpido vuelve a `pendiente` con causa `proceso-interrumpido`. Procesador inyectable (P4).
 
-**Pruebas.**
+**Verificación.** 14 tests host en `src/publicacion` verdes; typecheck OK. **Parar.**
 
-- Encolar → procesar → estado terminal.
-- Matar el proceso a mitad → al rearrancar el job sigue o queda fallido con causa (sin silencios).
-- Fallo del job **no** borra el commit de pizarra H4.
+**Estado.** Hecho (2026-11-25).
 
-**Verificación.** Tests en `apps/host` (o paquete dueño). **Parar.**
-
-**Definition of done del paso.**
-
-1. Cola operable en pruebas sin UI.
-2. Un commit H4 puede encolarse una vez (o con política de idempotencia explícita).
+**Parar.** Pedir autorización de P4 (mecanismo genérico de publicación).
 
 ---
 
-## P4 — Mecanismo genérico de publicación
+## P4 — Mecanismo genérico de publicación — **hecho**
 
 **Objetivo.** H5-T5. Interfaz de variante de formato; registro de variantes; orquestación genérica.
 
-**Errores.**
+**Entregado.**
 
-| Error | Mitigación |
-|-------|------------|
-| Tubería bautizada “soloMarkdown” | Nombres genéricos; variante = plugin |
-| Hardcode de “determinista” en la capa genérica | Prueba de extensión con variante mock |
+| Pieza | Ruta |
+|-------|------|
+| Artefacto en memoria | `apps/host/src/publicacion/mecanismo/artefacto-de-publicacion.ts` |
+| Plugin `VarianteDeFormato` + `EntradaDePublicacion` | `…/variante-de-formato.ts` |
+| Registro | `…/registro-de-variantes.ts` |
+| Orquestador → `ProcesadorDePublicacion` | `…/orquestar-publicacion.ts` |
 
-**Pruebas.**
+**Contrato.** Cargador de entrada inyectable; consumidor de artefactos por defecto solo valida (P6 escribe). Variante nueva = `registro.registrar(plugin)`; la cola no se bifurca.
 
-- Variante mock registrada → la cola la invoca.
-- Sin hardcode del nombre “determinista” en la capa genérica.
-- Prueba de extensión documentada: agregar segunda variante mock no toca git ni CLI.
+**Verificación.** 10 tests del mecanismo verdes; typecheck OK; capas genéricas sin string `determinista`. **Parar.**
 
-**Verificación.** Unitarias del mecanismo. **Parar.**
+**Estado.** Hecho (2026-11-25).
 
-**Definition of done del paso.**
-
-1. Existe un solo mecanismo; la variante es plugin.
-2. Typecheck verde.
+**Parar.** Pedir autorización de P5 (variante markdown determinista).
 
 ---
 
-## P5 — Variante determinista (markdown)
+## P5 — Variante determinista (markdown) — **hecho**
 
 **Objetivo.** H5-T6. Markdown a partir del commit: versión, participantes, fecha, notas/datos del tablero; **mismo input → mismos bytes**. Aún **sin** escribir al working tree (eso es P6).
 
-**Errores.**
+**Entregado.**
 
-| Error | Mitigación |
-|-------|------------|
-| Markdown no determinista | Snapshot de string o hash en test |
-| Llamadas a red / modelo | Prohibido en esta variante |
+| Pieza | Ruta |
+|-------|------|
+| Generador puro | `apps/host/src/publicacion/variantes/markdown-determinista/generar-markdown-determinista.ts` |
+| Plugin | `…/markdown-determinista.ts` (`id: markdown-determinista`) |
+| Snapshot + hash | `…/__snapshots__/`, SHA-256 del fixture fijado en test |
 
-**Pruebas.**
+**Salida en memoria.** `documento.md` + `tablero.json` (rutas D-H5-5). Participantes y formas ordenados; sin red/IA.
 
-- Fixture de commit → markdown fijo (snapshot de string o hash).
-- Cambiar un campo del commit → markdown distinto.
-- Sin llamadas a red / modelo.
+**Verificación.** 7 tests verdes; typecheck OK. **Parar.**
 
-**Verificación.** Suite domain o host de la variante. **Parar.**
+**Estado.** Hecho (2026-11-25).
 
-**Definition of done del paso.**
-
-1. Markdown determinista verificado en test.
-2. No depende de proveedor de IA.
+**Parar.** Pedir autorización de P6 (escritura en rutas propias).
 
 ---
 
-## P6 — Escritura en rutas propias
+## P6 — Escritura en rutas propias — **hecho**
 
 **Objetivo.** H5-T8. Escribir markdown + JSON del tablero solo bajo el prefijo D-H5-5 en el working tree del checkout ligado a la sala (D-H5-4).
 
-**Errores.**
+**Entregado.**
 
-| Error | Mitigación |
-|-------|------------|
-| Escribir fuera del prefijo | Allowlist en domain; prueba de rechazo |
-| Pisar docs manuales | Archivo de prueba fuera del árbol no cambia |
+| Pieza | Ruta |
+|-------|------|
+| Escritura + allowlist en disco | `apps/host/src/publicacion/escritura/escribir-artefactos.ts` |
+| Consumidor del orquestador | `crearConsumidorQueEscribe(vinculo)` |
 
-**Pruebas.**
+**Comportamiento.** Valida con `comoRutaPublicada`; resuelve bajo `raizDelCheckout`; exige quedar dentro de `harukoia/publicado/…`. Fuera del prefijo → rechazo sin escribir. Docs manuales fuera del árbol no se tocan.
 
-- Escribe dentro del prefijo.
-- Intento fuera del prefijo → rechazo.
-- No modifica un archivo manual de prueba fuera del árbol.
+**Verificación.** 5 tests verdes (escritura, rechazo, no pisar manual, traversal, cola+variante→archivos). Typecheck OK. **Parar.**
 
-**Verificación.** Tests con directorio temporal. **Parar.**
+**Estado.** Hecho (2026-11-25).
 
-**Definition of done del paso.**
-
-1. Allowlist efectiva.
-2. Archivos generados listos para el paso git.
+**Parar.** Pedir autorización de P7 (git commit + push).
 
 ---
 
-## P7 — Git commit + push + remoto adelantado
+## P7 — Git commit + push + remoto adelantado — **hecho**
 
 **Objetivo.** H5-T9. Commit git de generados; push; si el remoto adelantó, resolver y reintentar. “Publicado” de verdad = este paso en verde (la UI llega en P8).
 
-**Errores.**
+**Entregado.**
 
-| Error | Mitigación |
-|-------|------------|
-| Sin remoto / sin checkout | Estado fallido con causa clara |
-| Remoto adelantado | Detectar, traer, reintentar (DoD épica §3) |
-| Conflicto en generado | Gana el generado del commit nuevo (v2) |
+| Pieza | Ruta |
+|-------|------|
+| CLI git | `apps/host/src/publicacion/git/ejecutar-git.ts` |
+| Commit + push + reintento | `…/publicar-en-git.ts` (`publicarEnGit`) |
 
-**Pruebas.**
+**Comportamiento.** Solo rutas bajo `harukoia/publicado/…`. Sin remoto / sin repo → causa clara. Remoto adelantado → fetch + merge; en generados gana el local (commit nuevo); reintenta push. Sin red externa (tests con bare).
 
-- Remoto local bare: push OK; archivos en el remoto.
-- Remoto adelantado (segundo commit en bare) → detecta, trae, reintenta, termina publicado.
-- Sin remoto configurado → fallido con causa clara.
+**Verificación.** 4 tests verdes (push OK, remoto adelantado, sin remoto, conflicto en generado). Typecheck OK. **Parar.**
 
-**Verificación.** Suite con repos temporales (sin red externa). **Parar.**
+**Estado.** Hecho (2026-11-25).
 
-**Definition of done del paso.**
-
-1. Push feliz path verde.
-2. Remoto adelantado sin intervención manual (DoD épica §3).
+**Parar.** Pedir autorización de P8 (estados replicados + UI mínima).
 
 ---
 
-## P8 — Estados replicados + UI mínima
+## P8 — Estados replicados + UI mínima — **hecho**
 
 **Objetivo.** H5-T7. Estados: en proceso, publicado, fallido (+ reintento). Visibles en la web del host; replicados. **Depende de P6–P7:** no mostrar “publicado” sin push real.
 
-**Errores.**
+**Entregado.**
 
-| Error | Mitigación |
-|-------|------------|
-| UI de estados antes del camino real | Prohibido en este plan; P8 después de P7 |
-| Reintento exige redibujar | Reintento desde fallido sin tocar el tablero |
+| Pieza | Ruta |
+|-------|------|
+| Acciones `publicar` / `reintentar-publicacion` | domain + `apps/host/.../publicar/` |
+| Mensaje `estado-de-push` + historial con estados | `mensaje-de-sala` / codec |
+| Tubería real en la acción | `correr-publicacion` → variante → disco → git |
+| UI historial | `apps/web/.../historial-de-versiones` (Publicar / Reintentar / causa) |
+| Palanca de fallo | `HARUKOIA_PUBLICAR_FALLA` en el host |
 
-**Pruebas.**
+**Verificación.** Tests domain/host/web verdes; typecheck OK. **Parar.**
 
-- Tras push OK → “publicado”.
-- Tras fallo inyectado → “fallido” con causa.
-- Reintento desde fallido sin redibujar el tablero.
+**Estado.** Hecho (2026-11-25).
 
-**Verificación.** Tests host/web + humo manual breve en la app. **Parar.**
+**Cómo verlo en la app.** Host + web: Commitear una versión → en el historial, **Publicar al repo** → ver en proceso / publicado o fallido+causa → **Reintentar publicación** si falló (sin redibujar). Fallo forzado: `HARUKOIA_PUBLICAR_FALLA=mensaje` en el entorno del host.
 
-**Definition of done del paso.**
-
-1. El usuario ve el estado y la causa en la app.
-2. Reintento no exige volver a dibujar (DoD épica §4).
-
-**Cómo verlo en la app.** Host + web: disparar publicación de un commit H4 → ver estado; forzar fallo (si hay palanca de prueba) → causa; reintentar.
+**Parar.** Pedir autorización de P9 (CLI space).
 
 ---
 
-## P9 — CLI `space host` / `status` / `update`
+## P9 — CLI `space host` / `status` / `update` — **hecho**
 
 **Objetivo.** H5-T10. Dejar de ser stub (`apps/cli`).
 
-| Comando | Comportamiento mínimo |
-|---------|----------------------|
-| `space host` | Arranca/registra host usando el checkout actual (D-H5-4) |
-| `space status` | Reporta versión/estado local vs remoto git (mínimo viable; réplica al día es opcional/extra) |
-| `space update` | Fetch/pull del remoto del proyecto; deja generados en el working tree (D-H5-2) |
+**Entregado.**
 
-**Errores.**
+| Comando | Comportamiento |
+|---------|----------------|
+| `space host` | Exige git en cwd; arranca `apps/host/src/main.ts` con ese checkout (D-H5-4) |
+| `space status` | Rama vs `origin` (adelante/atrás) + conteo `harukoia/publicado/` |
+| `space update` | `git pull` de `origin` (D-H5-2); lista generados presentes |
 
-| Error | Mitigación |
-|-------|------------|
-| `space host` fuera de un git repo | Error claro |
-| `space update` contra otro remoto / carpeta ajena | Opera sobre cwd; falla claro |
+**Verificación.** 9 tests CLI verdes (update en clon, host sin git, help solo 3 comandos, status). Typecheck OK. **Parar.**
 
-**Pruebas.**
+**Estado.** Hecho (2026-11-25).
 
-- `space update` en clon limpio tras un push de prueba → aparecen markdown + JSON.
-- `space host` fuera de un git repo → error claro.
-- Help documenta solo los tres comandos (D-H5-3).
+**Cómo verlo.** Desde el checkout del proyecto:
+`pnpm --filter @harukoia/cli space -- status` / `update` / `host`.
 
-**Verificación.** Tests CLI + entre-procesos si aplica. **Parar.**
-
-**Definition of done del paso.**
-
-1. Los tres comandos hacen lo declarado (D-H5-3).
-2. Quien no estuvo puede obtener archivos sin haber entrado a la sala.
+**Parar.** Pedir autorización de P10 (idempotencia de `space update`).
 
 ---
 
@@ -351,6 +291,14 @@ Cubre lo que falta de H5-T2/T3 respecto a documents; el espejo y la cola de subi
 **Definition of done del paso.**
 
 1. DoD épica §2 cubierto por prueba automatizada.
+
+**Estado.** Hecho (2026-11-25).
+
+**Cómo verlo.** En el checkout del proyecto (p. ej. `apps/host` tras un publish):
+`pnpm --filter @harukoia/cli space -- update` dos veces. La segunda debe decir
+«Ya al día… no se reescribieron generados» y `harukoia/publicado/` sin cambios.
+
+**Parar.** Pedir autorización de P11 (E2E y cierre).
 
 ---
 
@@ -371,7 +319,16 @@ Cubre lo que falta de H5-T2/T3 respecto a documents; el espejo y la cola de subi
 
 **Hecho cuando.** Chat aprueba el humo (checklist en la evidencia). **Parar.** Siguiente épica: H6 (otra rama).
 
-**Estado.** Pendiente.
+**Estado.** Suites y evidencia escritas (2026-11-25). Humo de app: pendiente de OK del chat.
+
+**Entregables.**
+
+| Artefacto | Ruta |
+|-----------|------|
+| E2E remoto git local | `packages/pruebas-entre-procesos/src/publicacion/e2e-h5-git.test.ts` |
+| Evidencia | [evidencia-h5-cierre.md](./evidencia-h5-cierre.md) |
+
+**Parar.** Esperar aprobación del checklist de humo en la evidencia. No abrir H6 en esta rama.
 
 ---
 

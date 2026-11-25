@@ -68,7 +68,7 @@ describe('hacer-checkout', () => {
 
     const resultado = await manejador(
       { tipo: 'pedir-accion', accion: 'hacer-checkout', id: a.commit.id },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
     expect(resultado.ok).toBe(true);
     if (!resultado.ok) return;
@@ -108,7 +108,7 @@ describe('hacer-checkout', () => {
 
     const resultado = await manejador(
       { tipo: 'pedir-accion', accion: 'hacer-checkout', id: generarIdentificadorDeCommit() },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
     expect(resultado).toEqual({ ok: false, causa: 'commit-inexistente' });
     await almacen.cerrar();

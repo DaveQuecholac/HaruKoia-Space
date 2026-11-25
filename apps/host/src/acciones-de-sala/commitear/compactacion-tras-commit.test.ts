@@ -86,6 +86,8 @@ async function salaConCommitear(
       'cambiar-invitacion': async () => ({ ok: true, avisos: [] }),
       commitear: async () => ({ ok: true, avisos: [] }),
       'hacer-checkout': async () => ({ ok: true, avisos: [] }),
+      publicar: async () => ({ ok: true, avisos: [] }),
+      'reintentar-publicacion': async () => ({ ok: true, avisos: [] }),
     },
     registro,
   });
@@ -174,7 +176,7 @@ describe('compactación tras commit (V8)', () => {
 
     const resultado = await manejador(
       { tipo: 'pedir-accion', accion: 'commitear', mensaje: 'v8 compacta' },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
     expect(resultado.ok).toBe(true);
 
@@ -241,7 +243,7 @@ describe('compactación tras commit (V8)', () => {
 
     const resultado = await manejador(
       { tipo: 'pedir-accion', accion: 'commitear', mensaje: 'aunque falle compactar' },
-      { autor: 'Marco' },
+      { autor: 'Marco', avisar: () => {} },
     );
 
     expect(resultado.ok).toBe(true);

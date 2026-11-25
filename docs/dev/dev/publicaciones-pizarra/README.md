@@ -48,22 +48,22 @@ P11   E2E, evidencia, cierre H5
 
 ## Estado
 
-> **P0 hecho (2026-11-22).** Carpeta de rama con análisis y plan. D-H5-1…5 cerradas y promovidas a fijos. Sin código de producto hasta que el chat autorice P1.
+> **P11 suites hechas (2026-11-25).** E2E + [evidencia-h5-cierre.md](./evidencia-h5-cierre.md). **Cierre de producto** cuando el chat apruebe el humo de la evidencia. Siguiente épica: **H6** (otra rama).
 
 | Paso | Qué | Estado |
 |------|-----|--------|
 | P0 | Rama y esta carpeta | **Hecho** |
-| P1 | Contratos domain/schema | Pendiente |
-| P2 | Documents en réplica (delta) | Pendiente |
-| P3 | Cola de publicación | Pendiente |
-| P4 | Mecanismo + variantes | Pendiente |
-| P5 | Markdown determinista | Pendiente |
-| P6 | Rutas en working tree | Pendiente |
-| P7 | Git commit/push | Pendiente |
-| P8 | Estados + UI | Pendiente |
-| P9 | CLI space | Pendiente |
-| P10 | Idempotencia update | Pendiente |
-| P11 | E2E + cierre | Pendiente |
+| P1 | Contratos domain/schema | **Hecho** |
+| P2 | Documents en réplica (delta) | **Hecho** |
+| P3 | Cola de publicación | **Hecho** |
+| P4 | Mecanismo + variantes | **Hecho** |
+| P5 | Markdown determinista | **Hecho** |
+| P6 | Rutas en working tree | **Hecho** |
+| P7 | Git commit/push | **Hecho** |
+| P8 | Estados + UI | **Hecho** |
+| P9 | CLI space | **Hecho** |
+| P10 | Idempotencia update | **Hecho** |
+| P11 | E2E + cierre | **Suites hechas** — humo pendiente de OK |
 
 ## Decisiones cerradas (2026-11-22)
 
@@ -75,7 +75,7 @@ P11   E2E, evidencia, cierre H5
 | D-H5-4 | Vínculo sala↔repo | Al arrancar el host desde el checkout del proyecto |
 | D-H5-5 | Rutas generadas | Prefijo `harukoia/publicado/…` |
 
-Promovidas en v2 §13 y fase 1 § H5. P1 queda pendiente de autorización explícita en el chat (una rebanada).
+Promovidas en v2 §13 y fase 1 § H5. Convención de archivos (P1): `harukoia/publicado/<commitId>/tablero.json` y `documento.md`.
 
 ## Fuera de esta rama
 

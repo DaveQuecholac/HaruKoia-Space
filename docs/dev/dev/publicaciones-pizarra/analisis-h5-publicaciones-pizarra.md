@@ -137,7 +137,7 @@ Orden de implementación (plan): contratos → delta documents → cola → meca
 
 | Tema | Notas |
 |------|-------|
-| Detalle de archivos bajo `harukoia/publicado/` | Convención de nombres en P1 (domain) |
+| Detalle de archivos bajo `harukoia/publicado/` | **Cerrado en P1:** `…/<commitId>/tablero.json` y `…/<commitId>/documento.md` |
 | Adjuntos PDF/Word | Tabla puede existir mínima; generación es H6 |
 | Despliegue de réplica en Makino Hara | No bloquea la tubería local de H5 |
 | `space status` detalle de “réplica al día” vs “remoto al día” | Mínimo viable en P9 |
