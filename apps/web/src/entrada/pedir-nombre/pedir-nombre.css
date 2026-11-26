@@ -1,0 +1,29 @@
+.pedir-nombre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pedir-nombre label {
+  font-weight: 650;
+}
+
+.pedir-nombre-fila {
+  display: flex;
+  gap: 8px;
+}
+
+.pedir-nombre-fila input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pedir-nombre-fila button {
+  border-color: #1c1917;
+  background: #1c1917;
+  color: white;
+}
+
+.pedir-nombre .pedir-nombre-fila button:hover:not(:disabled) {
+  background: #292524;
+}

@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 
 import { VolvermeHost } from '../../host/volverme-host/volverme-host.tsx';
 import { type Invitacion, leerEnlace } from '../enlace-de-invitacion/enlace-de-invitacion.ts';
+import './inicio.css';
 
 export function Inicio(props: {
   readonly nombre: string;
@@ -24,33 +25,42 @@ export function Inicio(props: {
   }
 
   return (
-    <>
-      <p>
-        Hola, <strong>{props.nombre}</strong>.{' '}
+    <div className="inicio">
+      <p className="inicio-saludo">
+        <span>
+          Hola, <strong>{props.nombre}</strong>.
+        </span>
         <button type="button" onClick={props.alCambiarNombre}>
           Cambiar nombre
         </button>
       </p>
 
-      <h2>Abrir una sala</h2>
-      <VolvermeHost urlDelHost={props.urlDelHost} alObtener={props.alSerHost} />
+      <section className="inicio-bloque">
+        <h2>Abrir una sala</h2>
+        <p>Abre la sala del host que corre en esta máquina.</p>
+        <VolvermeHost urlDelHost={props.urlDelHost} alObtener={props.alSerHost} />
+      </section>
 
-      <h2>Unirme a una sala</h2>
-      <form onSubmit={unirse}>
-        <input
-          placeholder="Pega aquí el link de invitación"
-          value={enlace}
-          onChange={(e) => {
-            setEnlace(e.target.value);
-            setError(undefined);
-          }}
-          size={60}
-        />{' '}
-        <button type="submit" disabled={!enlace.trim()}>
-          Unirme
-        </button>
-      </form>
-      {error && <p role="alert">{error}</p>}
-    </>
+      <div className="inicio-separador">o</div>
+
+      <section className="inicio-bloque">
+        <h2>Unirme a una sala</h2>
+        <form className="inicio-unirse" onSubmit={unirse}>
+          <input
+            aria-label="Pega aquí el link de invitación"
+            placeholder="Pega aquí el link de invitación"
+            value={enlace}
+            onChange={(e) => {
+              setEnlace(e.target.value);
+              setError(undefined);
+            }}
+          />
+          <button type="submit" disabled={!enlace.trim()}>
+            Unirme
+          </button>
+        </form>
+        {error && <p role="alert">{error}</p>}
+      </section>
+    </div>
   );
 }

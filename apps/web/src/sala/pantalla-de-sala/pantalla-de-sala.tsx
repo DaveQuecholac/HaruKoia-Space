@@ -188,20 +188,41 @@ export function PantallaDeSala(props: {
     <div className="sala">
       <header className="sala-barra">
         <span className="sala-marca">HaruKoia</span>
-        <span>{invitacion.sala}</span>
+        <span className="sala-codigo" title={`Sala ${invitacion.sala}`}>
+          {invitacion.sala}
+        </span>
         {enElTablero ? (
-          <span className="sala-estado" aria-live="polite">
+          <span className={`sala-estado sala-estado-${estado.tipo}`} aria-live="polite">
             {ESTADO_VISIBLE[estado.tipo]}
           </span>
         ) : null}
-        <span className="sala-orquestador">{new URL(orquestador).host}</span>
+        <span className="sala-orquestador" title={`Orquestador: ${new URL(orquestador).host}`}>
+          {new URL(orquestador).host}
+        </span>
         <span className="sala-espacio" />
         {enElTablero && participantes.length > 0 ? (
-          <span className="sala-personas">
-            {participantes
-              .map((p) => `${p.nombre ?? '(sin nombre)'} · ${p.rol ? NOMBRE_DEL_ROL[p.rol] : 'sin rol'}${p.soyYo ? ' (tú)' : ''}`)
-              .join(' · ')}
-          </span>
+          <ul className="sala-personas" aria-label="Participantes">
+            {participantes.map((p, i) => {
+              const nombreVisible = p.nombre ?? '(sin nombre)';
+              const rol = p.rol ? NOMBRE_DEL_ROL[p.rol] : 'sin rol';
+              return (
+                <li
+                  key={`${nombreVisible}-${i}`}
+                  className={p.soyYo ? 'sala-persona sala-persona-yo' : 'sala-persona'}
+                  title={`${nombreVisible} · ${rol}${p.soyYo ? ' (tú)' : ''}`}
+                >
+                  <span className="sala-persona-inicial" aria-hidden="true">
+                    {nombreVisible.trim().charAt(0).toUpperCase() || '?'}
+                  </span>
+                  <span className="sala-persona-nombre">
+                    {nombreVisible}
+                    {p.soyYo ? ' (tú)' : ''}
+                  </span>
+                  <span className="sala-persona-rol">{rol}</span>
+                </li>
+              );
+            })}
+          </ul>
         ) : null}
         {miRol === 'host' ? (
           <>

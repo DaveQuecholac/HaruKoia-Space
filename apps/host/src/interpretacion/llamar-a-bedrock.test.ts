@@ -36,6 +36,14 @@ describe('llamada real a Bedrock', () => {
     expect(textoDeLaRespuesta({ output: { message: { content: [] } } })).toBeNull();
   });
 
+  it('quita el bloque de código que envuelve toda la respuesta', () => {
+    const respuesta = (text: string) => textoDeLaRespuesta({ output: { message: { content: [{ text }] } } });
+    expect(respuesta('```markdown\n# Zona\n\nUn perro.\n```')).toBe('# Zona\n\nUn perro.');
+    expect(respuesta('```\nHola\n```')).toBe('Hola');
+    expect(respuesta('# Zona\n\n```js\nx\n```')).toBe('# Zona\n\n```js\nx\n```');
+    expect(respuesta('```markdown\n```')).toBeNull();
+  });
+
   it('pide Converse con la imagen y devuelve el Markdown', async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ output: { message: { content: [{ text: '# Visto' }] } } }), { status: 200 }));
     const markdown = await llamarABedrock(

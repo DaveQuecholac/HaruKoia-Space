@@ -27,37 +27,113 @@
 }
 
 .sala-marca {
-  font-weight: 650;
+  flex: none;
+  font-size: 15px;
+  font-weight: 700;
   letter-spacing: -0.03em;
 }
 
-.sala-estado {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: #e9f8ef;
-  color: #166534;
-  font-size: 12px;
-  font-weight: 650;
+.sala-codigo {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f5f5f4;
+  color: #57534e;
+  font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-.sala-orquestador,
-.sala-personas {
-  color: #57534e;
-  font-size: 13px;
+.sala-estado {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.sala-estado::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sala-estado-conectada {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.sala-orquestador {
+  color: #78716c;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 .sala-espacio {
   flex: 1;
 }
 
+.sala-personas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.sala-persona {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 3px;
+  border-radius: 999px;
+  background: #f5f5f4;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sala-persona-yo {
+  background: #eff6ff;
+}
+
+.sala-persona-inicial {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1c1917;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sala-persona-yo .sala-persona-inicial {
+  background: #2563eb;
+}
+
+.sala-persona-rol {
+  color: #78716c;
+}
+
 .sala-barra button {
+  flex: none;
   height: 32px;
   padding: 0 12px;
   border-radius: 8px;
@@ -66,6 +142,16 @@
   color: #1c1917;
   font: inherit;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.sala-barra button:hover:not(:disabled) {
+  background: #f5f5f4;
+}
+
+.sala-barra button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .sala-barra button.sala-primario {
@@ -74,11 +160,29 @@
   border-color: #1c1917;
 }
 
+.sala-barra button.sala-primario:hover {
+  background: #292524;
+}
+
 .sala-aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   padding: 8px 16px;
   background: #fff6d8;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid #f3e1a6;
+  color: #713f12;
+}
+
+.sala-aviso button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #d6b85a;
+  background: white;
+  font: inherit;
+  cursor: pointer;
 }
 
 .sala-cuerpo {
@@ -97,8 +201,8 @@
 
 .sala-panel-historial {
   flex: none;
-  width: 280px;
-  padding: 12px 14px;
+  width: 300px;
+  padding: 14px;
   border-left: 1px solid #e7e5e4;
   background: #fafaf9;
   overflow: auto;
@@ -109,8 +213,25 @@
   width: 100%;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   .sala-orquestador {
     display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .sala-persona-rol,
+  .sala-codigo {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .sala-persona-nombre {
+    display: none;
+  }
+
+  .sala-persona {
+    padding-right: 3px;
   }
 }

@@ -25,42 +25,49 @@ export function StagingDeVersion(props: {
 }) {
   return (
     <aside className="staging" aria-label="Crear versión">
-      <h2 className="staging-titulo">Crear versión</h2>
-      <p className="staging-ayuda">
-        Versión oficial de toda la pizarra: entra al historial y a la réplica. No es un borrador.
-      </p>
-      <label className="staging-campo">
-        <span>Mensaje</span>
-        <input
-          type="text"
-          value={props.mensaje}
-          onChange={(e) => props.alCambiarMensaje(e.target.value)}
-          placeholder="Qué cambió en esta versión"
-          disabled={props.guardando || props.deshabilitado}
-        />
-      </label>
-      <p className="staging-presentes">
-        Participantes ahora:{' '}
-        {props.participantes.length > 0 ? props.participantes.join(', ') : '(nadie más)'}
-      </p>
-      <button
-        type="button"
-        className="staging-guardar"
-        onClick={props.alCommitear}
-        disabled={props.guardando || props.deshabilitado}
+      <form
+        className="staging-crear"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!props.guardando && !props.deshabilitado) props.alCommitear();
+        }}
       >
-        {props.guardando ? 'Commiteando…' : 'Commitear'}
-      </button>
-      <HistorialDeVersiones
-        commits={props.commits}
-        tipDeTrabajo={props.tipDeTrabajo}
-        estadosDePush={props.estadosDePush}
-        alHacerCheckout={props.alHacerCheckout}
-        checkoutDeshabilitado={props.guardando || props.deshabilitado}
-        alPublicar={props.alPublicar}
-        alReintentarPublicacion={props.alReintentarPublicacion}
-        publicacionDeshabilitada={props.guardando || props.deshabilitado}
-      />
+        <h2 className="staging-titulo">Crear versión</h2>
+        <p className="staging-ayuda">
+          Versión oficial de toda la pizarra: entra al historial y a la réplica. No es un borrador.
+        </p>
+        <label className="staging-campo">
+          <span>Mensaje</span>
+          <input
+            type="text"
+            value={props.mensaje}
+            onChange={(e) => props.alCambiarMensaje(e.target.value)}
+            placeholder="Qué cambió en esta versión"
+            disabled={props.guardando || props.deshabilitado}
+          />
+        </label>
+        <div className="staging-pie">
+          <p className="staging-presentes" title="Participantes ahora">
+            Participantes ahora:{' '}
+            {props.participantes.length > 0 ? props.participantes.join(', ') : '(nadie más)'}
+          </p>
+          <button type="submit" className="staging-guardar" disabled={props.guardando || props.deshabilitado}>
+            {props.guardando ? 'Commiteando…' : 'Commitear'}
+          </button>
+        </div>
+      </form>
+      <div className="staging-historial">
+        <HistorialDeVersiones
+          commits={props.commits}
+          tipDeTrabajo={props.tipDeTrabajo}
+          estadosDePush={props.estadosDePush}
+          alHacerCheckout={props.alHacerCheckout}
+          checkoutDeshabilitado={props.guardando || props.deshabilitado}
+          alPublicar={props.alPublicar}
+          alReintentarPublicacion={props.alReintentarPublicacion}
+          publicacionDeshabilitada={props.guardando || props.deshabilitado}
+        />
+      </div>
     </aside>
   );
 }

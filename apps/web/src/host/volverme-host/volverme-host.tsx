@@ -26,7 +26,7 @@ export function VolvermeHost(props: {
   }
 
   return (
-    <section>
+    <section className="volverme-host">
       <button type="button" onClick={pedir} disabled={pidiendo}>
         {pidiendo ? 'Buscando el host…' : 'Volverme host'}
       </button>

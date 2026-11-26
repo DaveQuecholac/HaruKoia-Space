@@ -18,4 +18,4 @@ Arquitectura: [analisis-arquitectura-v2.md](../../../fijos/arquitectura/analisis
 
 ## Estado
 
-Rebanadas **A** a **E** (2026-11-26). Generar y guardar deja tres archivos en `Harukoia/documentacion/`: Markdown, Word y PDF. El convertidor es de este motor. Si falla, el Markdown queda y el reintento no llama a Bedrock. Sin Publicar, sin commit y sin push.
+Rebanadas **A** a **E** (2026-11-26). Generar y guardar deja tres archivos en `Harukoia/documentacion/`: Markdown, Word y PDF. El convertidor es de este motor. Si falla, el Markdown queda y el reintento no llama a Bedrock. Sin Publicar, sin commit y sin push. Rebanada **F** (2026-11-26): pulido de la interfaz de la web, y el host quita el bloque de código que a veces envuelve la respuesta de Bedrock.

@@ -1,0 +1,91 @@
+body {
+  margin: 0;
+  background: #f5f4f1;
+  color: #1c1917;
+  font: 14px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.entrada {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.entrada-tarjeta {
+  box-sizing: border-box;
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+  border: 1px solid #e7e5e4;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 12px 40px rgb(28 25 23 / 8%);
+}
+
+.entrada-cabecera h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.entrada-cabecera p {
+  margin: 4px 0 0;
+  color: #78716c;
+}
+
+.entrada h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.entrada input {
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #d6d3d1;
+  border-radius: 8px;
+  background: white;
+  color: #1c1917;
+  font: inherit;
+}
+
+.entrada input:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: -1px;
+}
+
+.entrada button {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #d6d3d1;
+  background: white;
+  color: #1c1917;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.entrada button:hover:not(:disabled) {
+  background: #f5f5f4;
+}
+
+.entrada button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.entrada [role='alert'] {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}

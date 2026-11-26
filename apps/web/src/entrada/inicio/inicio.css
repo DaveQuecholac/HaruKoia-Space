@@ -1,0 +1,73 @@
+.inicio {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inicio-saludo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fafaf9;
+}
+
+.inicio .inicio-saludo button {
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.inicio-bloque {
+  display: flex;
+  flex-direction: column;
+}
+
+.inicio-bloque > p {
+  margin: 0 0 10px;
+  color: #78716c;
+  font-size: 13px;
+}
+
+.inicio .volverme-host button {
+  width: 100%;
+  border-color: #1c1917;
+  background: #1c1917;
+  color: white;
+}
+
+.inicio .volverme-host button:hover:not(:disabled) {
+  background: #292524;
+}
+
+.inicio-separador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #a8a29e;
+  font-size: 12px;
+}
+
+.inicio-separador::before,
+.inicio-separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e7e5e4;
+}
+
+.inicio-unirse {
+  display: flex;
+  gap: 8px;
+}
+
+.inicio-unirse input {
+  flex: 1;
+  min-width: 0;
+}

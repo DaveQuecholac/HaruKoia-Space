@@ -48,14 +48,15 @@ export function HistorialDeVersiones(props: {
                 <span className="historial-autor">{c.autor.trim() === '' ? '(sin autor)' : c.autor}</span>
                 <time dateTime={new Date(c.creadoEn).toISOString()}>{formatearFecha(c.creadoEn)}</time>
               </div>
-              <p className="historial-push" aria-live="polite">
+              <p className={`historial-push historial-push-${push?.estadoTipo ?? 'sin-publicar'}`} aria-live="polite">
                 {etiquetaDePush(push)}
               </p>
               {push?.estadoTipo === 'fallido' && push.causa ? (
-                <p className="historial-push-causa" role="status">
+                <p className="historial-push-causa" role="status" title={push.causa}>
                   {push.causa}
                 </p>
               ) : null}
+              <div className="historial-acciones">
               {puedeCheckout ? (
                 <button
                   type="button"
@@ -93,6 +94,7 @@ export function HistorialDeVersiones(props: {
                   </button>
                 )
               ) : null}
+              </div>
             </li>
           );
         })}

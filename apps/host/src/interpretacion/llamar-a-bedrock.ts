@@ -61,8 +61,14 @@ export function textoDeLaRespuesta(cuerpo: unknown): string | null {
       if (texto !== '') partes.push(texto);
     }
   }
-  const junto = partes.join('\n').trim();
+  const junto = sinBloqueQueEnvuelve(partes.join('\n').trim());
   return junto === '' ? null : junto;
+}
+
+/** El modelo a veces devuelve todo dentro de un bloque ```markdown … ```. Se guarda solo el contenido. */
+function sinBloqueQueEnvuelve(texto: string): string {
+  const envuelto = /^```[\w-]*[ \t]*\n([\s\S]*?)\n?```$/.exec(texto);
+  return envuelto ? (envuelto[1] ?? '').trim() : texto;
 }
 
 export async function llamarABedrock(

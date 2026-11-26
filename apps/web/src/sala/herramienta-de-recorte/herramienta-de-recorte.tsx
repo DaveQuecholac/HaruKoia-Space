@@ -3,7 +3,7 @@
  * El rectángulo es una capa encima de la pizarra. No crea formas en el tablero.
  */
 
-import { useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { Editor } from 'tldraw';
 
 import { rasterDeLaZona } from './imagen-de-zona.ts';
@@ -47,13 +47,23 @@ export function HerramientaDeRecorte(props: {
   const vistaActual = useRef<string | null>(null);
   const imagenActual = useRef<Blob | null>(null);
   const turno = useRef(0);
+  const resultado = useRef<HTMLElement>(null);
   const editorActual = useRef(props.editor);
   editorActual.current = props.editor;
+
+  useEffect(() => {
+    const seccion = resultado.current;
+    const panel = seccion?.offsetParent;
+    if (rutaGuardada && seccion && panel) panel.scrollTo({ top: seccion.offsetTop - 12, behavior: 'smooth' });
+  }, [rutaGuardada]);
 
   function punto(evento: PointerEvent<HTMLDivElement>): PuntoDeRecorte {
     const caja = capa.current?.getBoundingClientRect();
     if (!caja) return { x: 0, y: 0 };
-    return { x: evento.clientX - caja.left, y: evento.clientY - caja.top };
+    return {
+      x: Math.min(Math.max(evento.clientX - caja.left, 0), caja.width),
+      y: Math.min(Math.max(evento.clientY - caja.top, 0), caja.height),
+    };
   }
 
   function alBajar(evento: PointerEvent<HTMLDivElement>) {
@@ -213,43 +223,68 @@ export function HerramientaDeRecorte(props: {
           <form
             className="herramienta-de-recorte-panel"
             aria-label="Interpretar zona"
-            onSubmit={(evento) => evento.preventDefault()}
+            onSubmit={(evento) => {
+              evento.preventDefault();
+              if (vista && !interpretando) void interpretar();
+            }}
           >
+            <header className="herramienta-de-recorte-cabecera">
+              <h2>Interpretar zona</h2>
+              <button type="button" className="herramienta-de-recorte-cerrar" onClick={cerrar} aria-label="Cerrar">
+                ×
+              </button>
+            </header>
+
+            {vista ? (
+              <img className="herramienta-de-recorte-vista" alt="Zona enmarcada" src={vista} />
+            ) : (
+              <p className="herramienta-de-recorte-guia">
+                {tomando ? 'Tomando la zona…' : 'Arrastra sobre la pizarra para enmarcar lo que quieres interpretar.'}
+              </p>
+            )}
+            {vista ? <p className="herramienta-de-recorte-nota">Puedes volver a arrastrar para cambiar la zona.</p> : null}
+            {fallo ? <p className="herramienta-de-recorte-error">No se pudo tomar la imagen de la zona.</p> : null}
+
             <label className="herramienta-de-recorte-campo">
               <span>Nombre del documento</span>
               <input
                 type="text"
                 value={sesion.nombre}
-                onChange={(evento) => setSesion((actual) => nombrarDocumento(actual, evento.target.value))}
+                onChange={(evento) => {
+                  setSinNombre(false);
+                  setSesion((actual) => nombrarDocumento(actual, evento.target.value));
+                }}
                 placeholder="Cómo se va a llamar"
+                aria-invalid={sinNombre}
               />
             </label>
-            <button type="button" onClick={cerrar}>
-              Cerrar
+            {sinNombre ? <p className="herramienta-de-recorte-error">Ponle un nombre al documento.</p> : null}
+
+            <button type="submit" className="herramienta-de-recorte-interpretar" disabled={!vista || interpretando}>
+              {interpretando ? 'Generando…' : 'Generar y guardar'}
             </button>
-            {vista ? (
-              <button type="button" className="herramienta-de-recorte-interpretar" onClick={() => void interpretar()} disabled={interpretando}>
-                {interpretando ? 'Guardando…' : 'Generar y guardar'}
-              </button>
-            ) : null}
-            {tomando ? <p className="herramienta-de-recorte-estado">Tomando la zona…</p> : null}
-            {fallo ? <p className="herramienta-de-recorte-estado">No se pudo tomar la imagen de la zona.</p> : null}
-            {sinNombre ? <p className="herramienta-de-recorte-estado">Ponle un nombre al documento.</p> : null}
             {falloInterpretacion ? (
-              <p className="herramienta-de-recorte-estado">No se pudo guardar el documento. No quedó archivo.</p>
+              <p className="herramienta-de-recorte-error">No se pudo guardar el documento. No quedó archivo.</p>
             ) : null}
-            {rutaGuardada ? <p className="herramienta-de-recorte-estado">Guardado en {rutaGuardada}</p> : null}
-            {wordGuardado ? <p className="herramienta-de-recorte-estado">Word en {wordGuardado}</p> : null}
-            {pdfGuardado ? <p className="herramienta-de-recorte-estado">PDF en {pdfGuardado}</p> : null}
-            {falloConversion ? (
-              <>
-                <p className="herramienta-de-recorte-estado">El Markdown quedó. Word y PDF no se generaron.</p>
-                <button type="button" onClick={() => void reintentar()} disabled={interpretando}>
-                  Reintentar Word y PDF
-                </button>
-              </>
+
+            {rutaGuardada ? (
+              <section ref={resultado} className="herramienta-de-recorte-resultado" aria-label="Archivos guardados">
+                <p className="herramienta-de-recorte-carpeta">Guardado en {carpetaDe(rutaGuardada)}</p>
+                <ul className="herramienta-de-recorte-archivos">
+                  <Archivo tipo="MD" ruta={rutaGuardada} />
+                  {wordGuardado ? <Archivo tipo="Word" ruta={wordGuardado} /> : null}
+                  {pdfGuardado ? <Archivo tipo="PDF" ruta={pdfGuardado} /> : null}
+                </ul>
+                {falloConversion ? (
+                  <div className="herramienta-de-recorte-aviso">
+                    <p>El Markdown quedó. Word y PDF no se generaron.</p>
+                    <button type="button" onClick={() => void reintentar()} disabled={interpretando}>
+                      Reintentar Word y PDF
+                    </button>
+                  </div>
+                ) : null}
+              </section>
             ) : null}
-            {vista ? <img className="herramienta-de-recorte-vista" alt="Zona enmarcada" src={vista} /> : null}
             {markdown ? <pre className="herramienta-de-recorte-markdown">{markdown}</pre> : null}
           </form>
         </>
@@ -260,4 +295,17 @@ export function HerramientaDeRecorte(props: {
       )}
     </div>
   );
+}
+
+function Archivo(props: { readonly tipo: string; readonly ruta: string }) {
+  return (
+    <li title={props.ruta}>
+      <span className="herramienta-de-recorte-tipo">{props.tipo}</span>
+      <span className="herramienta-de-recorte-archivo">{props.ruta.slice(props.ruta.lastIndexOf('/') + 1)}</span>
+    </li>
+  );
+}
+
+function carpetaDe(ruta: string): string {
+  return ruta.slice(0, ruta.lastIndexOf('/') + 1);
 }

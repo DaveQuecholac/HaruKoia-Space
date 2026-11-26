@@ -8,6 +8,7 @@ import { guardarNombre, leerNombre } from './entrada/nombre-recordado/nombre-rec
 import { PedirNombre } from './entrada/pedir-nombre/pedir-nombre.tsx';
 import { guardarCredencialDeHost, leerCredencialDeHost } from './host/credencial-de-host/credencial-de-host.ts';
 import { PantallaDeSala } from './sala/pantalla-de-sala/pantalla-de-sala.tsx';
+import './app.css';
 
 const configuracion = leerConfiguracion();
 
@@ -47,9 +48,18 @@ export function App() {
   const enSala = estaEnLaSala();
 
   return (
-    <main className={enSala ? 'sala-pagina' : undefined}>
-      {enSala ? null : <h1>HaruKoia</h1>}
-      {contenido()}
+    <main className={enSala ? 'sala-pagina' : 'entrada'}>
+      {enSala ? (
+        contenido()
+      ) : (
+        <div className="entrada-tarjeta">
+          <header className="entrada-cabecera">
+            <h1>HaruKoia</h1>
+            <p>Pizarra colaborativa con host.</p>
+          </header>
+          {contenido()}
+        </div>
+      )}
     </main>
   );
 
