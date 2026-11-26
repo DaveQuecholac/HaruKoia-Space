@@ -4,7 +4,7 @@
  *
  * `raizDelCheckout` es la **raíz del repositorio git** (`git rev-parse --show-toplevel`),
  * no el cwd del proceso host si este corre en un subdirectorio (p. ej. `apps/host`).
- * Ahí se escriben `Harukoia/Pizarra/…` y `Harukoia/documentos/…`.
+ * Ahí se escriben `Harukoia/Pizarra/…` y `Harukoia/documentacion/…`.
  */
 
 import { comoIdentificadorDeSala, type IdentificadorDeSala } from '../../sala/identidad-de-sala/identidad-de-sala.ts';

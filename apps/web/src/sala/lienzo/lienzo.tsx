@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tldraw, createTLStore } from 'tldraw';
+import { Tldraw, createTLStore, type Editor } from 'tldraw';
 import 'tldraw/tldraw.css';
 import type * as Y from 'yjs';
 
@@ -22,6 +22,8 @@ export function Lienzo(props: {
   readonly sembrar: boolean;
   /** El awareness de esta conexión. El nombre ya está ahí. */
   readonly presencia: PresenciaDelLienzo;
+  /** La herramienta de recorte toma la imagen de una zona. No escribe en el tablero. */
+  readonly alMontarEditor?: (editor: Editor | null) => void;
 }) {
   const { documento, sincronizado, sembrar, presencia } = props;
   const [store] = useState(() => createTLStore());
@@ -30,8 +32,10 @@ export function Lienzo(props: {
   const dejarPresencia = useRef<(() => void) | undefined>(undefined);
   const sesion = useRef<SesionDelTablero>({ sincronizado, sembrar });
   const presenciaActual = useRef(presencia);
+  const alMontarEditor = useRef(props.alMontarEditor);
   sesion.current = { sincronizado, sembrar };
   presenciaActual.current = presencia;
+  alMontarEditor.current = props.alMontarEditor;
 
   useEffect(() => {
     const creado = enlazarTablero(store, documento, () => {});
@@ -39,6 +43,7 @@ export function Lienzo(props: {
     creado.alCambiarLaSesion(sesion.current);
     if (editorListo.current) creado.editorMontado();
     return () => {
+      alMontarEditor.current?.(null);
       dejarPresencia.current?.();
       dejarPresencia.current = undefined;
       creado.cerrar();
@@ -62,6 +67,7 @@ export function Lienzo(props: {
           enlace.current?.editorMontado();
           dejarPresencia.current?.();
           dejarPresencia.current = seguirPresencia(editor, presenciaActual.current);
+          alMontarEditor.current?.(editor);
         }}
       />
     </div>

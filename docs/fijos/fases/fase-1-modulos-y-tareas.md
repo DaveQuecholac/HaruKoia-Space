@@ -31,7 +31,7 @@ Un módulo aparece en varias épicas: el relay (M5) nace en H1 y se endurece en 
 | **H3** | Cierro la laptop y la sala vuelve | Reiniciar el host y matar el relay sin perder el tablero | Pérdida de trabajo; es lo que hace inusable el producto |
 | **H4** | Guardo una versión y vuelvo a ella | Staging, commit, historial, checkout; tablero como archivo | El versionado de pizarra es lo que estamos inventando |
 | **H5** | Lo guardado llega al repositorio de quien no estuvo | `space update` en otra máquina trae el archivo | Que la promesa del producto no se cumpla |
-| **H6** | La IA convierte la pizarra en documento | Markdown con secciones, PDF y Word | Calidad de la salida del modelo |
+| **H6** | La IA interpreta una zona de la pizarra | Recorte de lo que se ve, Bedrock, Markdown con el nombre elegido; Word y PDF después | Que el documento sea un volcado del tablero |
 | **H7** | La sala vive en el servidor | Sala global sin que nadie clone el repositorio | Operación del host fuera de la máquina del developer |
 
 ### Por qué ese orden
@@ -42,7 +42,7 @@ Un módulo aparece en varias épicas: el relay (M5) nace en H1 y se endurece en 
 
 **H4 antes de publicar.** Staging, commit y checkout sobre un tablero no son un patrón que podamos copiar de ningún lado. Hay que usarlo un par de semanas antes de construir la publicación encima.
 
-**H5 publica sin IA.** La primera publicación que llega al repositorio es un markdown **determinista** —versión, participantes, fecha, notas del tablero— verificable carácter por carácter. Así se depura el transporte sin depurar al mismo tiempo una salida que cambia en cada corrida, y no depende del proveedor de IA, que es una decisión abierta. No es un simulacro que se tire: queda como una variante más del mecanismo de publicación de M11, al lado de la variante con IA.
+**H5 publica sin IA.** La publicación de la pizarra es un markdown **determinista** —versión, participantes, fecha, notas del tablero— verificable carácter por carácter. Así se depuró el transporte sin depurar al mismo tiempo una salida que cambia en cada corrida. Queda como la publicación del tablero. La IA no es otra variante de ese push: es una herramienta aparte (H6) que mira una zona y escribe su propio documento.
 
 ### Despliegue al cerrar cada épica
 
@@ -56,7 +56,7 @@ Cada épica se demuestra en el **entorno compartido** (Coolify, Makino Hara), no
 | **H3** | Orquestador y web, si el cambio los tocó. El disco de la sala sigue en la laptop del host | El host |
 | **H4** | La **réplica central** (Postgres, PowerSync Service y backend de escritura), aparte del orquestador. No pasa por el relay. Solo el host la alimenta | El host, que sigue siendo quien escribe |
 | **H5** | Lo que esa épica cambie en orquestador, web o réplica. El CLI se corre en la máquina | El CLI no es un proceso de Coolify |
-| **H6** | El proceso nuevo, si la épica agrega uno | — |
+| **H6** | La web, con la herramienta de recorte. El host llama a Bedrock; no hay proceso nuevo | El CLI. `space update` ya baja lo que el host haya subido a git |
 | **H7** | El contenedor host de la **sala global** | La sala de usuario puede seguir con el host en la laptop |
 
 El orquestador no guarda el tablero. La web pública tampoco: sirve el lienzo y habla con el orquestador. La réplica no entra en el despliegue de H2.
@@ -74,13 +74,13 @@ El orquestador no guarda el tablero. La web pública tampoco: sirve el lienzo y 
 | M5 Relay | | ● | | ● | | | | ◐ |
 | M6 Sala en vivo | | ◐ | ◐ | ● | | | | |
 | M7 Presencia | | ● | ◐ | | | | | |
-| M8 Pizarra | | | ● | ◐ | | | | |
+| M8 Pizarra | | | ● | ◐ | | | ◐ | |
 | M9 Traductor | | | | | ● | | | |
 | M10 Staging y commits | | | | | ● | | | |
-| M11 Push | | | | | | ● | ◐ | |
+| M11 Push | | | | | | ● | | |
 | M12 Markdown con IA | | | | | | | ● | |
 | M13 Exportación | | | | | | | ● | |
-| M14 Git | | | | | | ● | | ◐ |
+| M14 Git | | | | | | ● | ◐ | ◐ |
 | M15 CLI | | | | | | ● | | |
 | M16 Identidad y roles | | ◐ | | | ◐ | | | ● |
 | M17 Sala global | | | | | | | | ● |
@@ -280,33 +280,37 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. Un remoto adelantado se resuelve con reintento, sin intervención manual.
 4. Un fallo de publicación se ve, dice la causa y se puede reintentar sin volver a dibujar.
 
-**Decisiones que la bloqueaban (cerradas 2026-11-22; D-H5-5 actualizado 2026-11-25).** Git **sí** en el alcance (commit + push + remoto adelantado). `space update` materializa **desde git** (la réplica no sustituye el repo). CLI v1: solo `space host` / `status` / `update` (no unirse a sala). Sala↔repo al arrancar el host dentro del checkout; generados en el **toplevel git** bajo **`Harukoia/Pizarra/…`** (pizarra) y **`Harukoia/documentos/…`** (IA / H6). Backend de escritura y PowerSync: ya cerrados en H4. Detalle: [docs/dev/dev/publicaciones-pizarra/](../../dev/dev/publicaciones-pizarra/README.md).
+**Decisiones que la bloqueaban (cerradas 2026-11-22; D-H5-5 actualizado 2026-11-25).** Git **sí** en el alcance (commit + push + remoto adelantado). `space update` materializa **desde git** (la réplica no sustituye el repo). CLI v1: solo `space host` / `status` / `update` (no unirse a sala). Sala↔repo al arrancar el host dentro del checkout; generados en el **toplevel git** bajo **`Harukoia/Pizarra/…`** (pizarra) y **`Harukoia/documentacion/…`** (IA / H6). Backend de escritura y PowerSync: ya cerrados en H4. Detalle: [docs/dev/dev/publicaciones-pizarra/](../../dev/dev/publicaciones-pizarra/README.md).
 
 **H5 cerrada (2026-11-25).** P0–P11 hechos; el chat aprobó el humo. Publicación determinista a `Harukoia/Pizarra/…`, git commit/push (remoto adelantado), estados en UI, CLI `space host` / `status` / `update` (idempotente), E2E con remoto git local. Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Siguiente: H6 (otra rama).
 
 ---
 
-## 9. H6 — La IA convierte la pizarra en documento
+## 9. H6 — La IA interpreta una zona de la pizarra
 
-> **Historia.** Hago push y lo que dibujamos llega como un documento con contexto, decisiones, planes y pendientes, más su PDF y su Word.
+> **Historia.** Elijo la herramienta, enmarco la zona que quiero que mire —como un recorte de pantalla— y le pongo nombre. Bedrock ve esa zona y escribe un Markdown que es su interpretación. Después, de ese mismo Markdown salen un Word y un PDF.
 
-**Alcance.** Variante con modelo de la tubería de publicación, validación de secciones, y exportación.
+**Alcance.** Herramienta en la pizarra, llamada a Bedrock con la imagen de la zona, y el Markdown con el nombre elegido en `Harukoia/documentacion/`. Word y PDF entran después, con un convertidor propio de ese Markdown. Sin Pandoc ni otro conversor externo.
+
+**No entra.** Volcar formas, coordenadas o el JSON del tablero dentro del documento. Secciones fijas. Disparar la IA al hacer push de la pizarra. Un proceso nuevo: la llamada sale del host. Un comando nuevo de CLI: `space update` ya baja el archivo cuando está en git. Que alguien que no es el host dispare la llamada (la primera rebanada la usa el host, que es quien escribe el repo).
 
 | Tarea | Qué | Módulo |
 |-------|-----|--------|
-| H6-T1 | Entrada del modelo desde el snapshot y el JSON del tablero | M12 |
-| H6-T2 | Secciones fijas y su validación antes de escribir el archivo | M12 |
-| H6-T3 | Reintento y guardado de la salida cruda cuando no valida | M12 |
-| H6-T4 | Modelo simulado en las pruebas, sin ramas de simulación en el camino real | M12, M19 |
-| H6-T5 | PDF y Word desde el markdown publicado | M13 |
-| H6-T6 | Adjuntos asociados al commit y reintento sin regenerar el texto | M13 |
+| H6-T1 | Herramienta de recorte: rectángulo sobre lo que se ve, y nombre del documento | M8, M18 |
+| H6-T2 | Raster de esa zona. La entrada del modelo es la imagen, no el JSON | M12 |
+| H6-T3 | Bedrock devuelve el Markdown de la interpretación | M12 |
+| H6-T4 | El host escribe `Harukoia/documentacion/<nombre>.md`. Si la llamada falla, no hay archivo | M12, M14 |
+| H6-T5 | El archivo sale por el git y `space update` ya existentes | M14, M15 |
+| H6-T6 | Modelo simulado en las pruebas; el camino real llama a Bedrock | M12, M19 |
+| H6-T7 | Convertidor propio: Word y PDF del mismo Markdown. Reintento sin volver a llamar al modelo | M13 |
 
 **Definition of done.**
-1. Un commit produce markdown con las secciones acordadas, PDF y Word.
-2. Si el modelo devuelve algo que no valida, no se escribe el archivo y queda la salida cruda para revisar.
-3. Un fallo de exportación no obliga a volver a pasar por el modelo.
+1. Enmarcas una zona, le pones nombre, y queda un Markdown que es la interpretación de lo que se ve ahí.
+2. Ese archivo no es el volcado de formas ni de coordenadas. Eso sigue viviendo en la publicación de la pizarra (H5).
+3. Quien no estuvo lo recibe con `space update` o con git.
+4. Word y PDF salen de ese Markdown con el convertidor propio, sin una segunda lectura del tablero.
 
-**Decisiones que la bloquean.** Qué proveedor de IA, si hace falta un modo sin modelo para repositorios sensibles, y qué secciones exactas lleva el markdown.
+**Decisiones.** Proveedor: **Bedrock** (2026-11-26). No hay secciones fijas: el documento es la interpretación y el nombre lo elige quien usa la herramienta. La publicación H5 no llama al modelo; si no se usa la herramienta, no sale nada a Bedrock. Si el nombre ya existe en `Harukoia/documentacion/`, el archivo nuevo es `<nombre> v2.md`, luego `v3`, y el anterior queda (2026-11-26). Plan: [docs/dev/dev/documentos-ia/](../../dev/dev/documentos-ia/README.md).
 
 ---
 
@@ -349,8 +353,8 @@ Qué es cada pieza y dónde vive. Las tareas están en las épicas.
 | **M9** Traductor | Tablero a JSON portable y de vuelta. Es el archivo que git revisa | M8, M2 | H4 |
 | **M10** Staging y commits | Staging, commit con padre y participantes, historial, checkout | M6, M9, M16 | H4 |
 | **M11** Push | Tubería de publicación: cola, variantes de formato, estados | M10, M3 | H5, H6 |
-| **M12** Markdown con IA | Variante con modelo, con secciones fijas y validación | M11, M9 | H6 |
-| **M13** Exportación | PDF y Word desde el markdown, y sus adjuntos | M12, M11 | H6 |
+| **M12** Interpretación con IA | Herramienta de recorte, imagen de la zona, Bedrock, Markdown con el nombre elegido | M8, M14 | H6 |
+| **M13** Convertidor | Word y PDF a partir de ese Markdown. Código de este motor; sin Pandoc ni otro conversor externo | M12 | H6 |
 | **M14** Git | Copia de trabajo, escritura de generados, commit y push | M11, M16 | H5, H7 |
 | **M15** CLI `space` | Arrancar host, estado, materializar en el repositorio | M3, M2, M14 | H5 |
 | **M16** Identidad y roles | Link y nombre; host y espectador; validación en el servidor | M4, M6 | H1, H4, H7 |
@@ -412,12 +416,13 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 | ~~Reglas H0 vs PowerSync~~ | — | Client schema en el espejo; Yjs H3 aparte (2026-11-17) |
 | ~~Si `space update` baja de git o lee de la réplica~~ | — | **Desde git** (2026-11-22) |
 | ~~Alcance del CLI en la v1~~ | — | Solo `host` / `status` / `update`; no unirse a sala (2026-11-22) |
-| ~~Rutas de generados / vínculo sala↔repo~~ | — | `Harukoia/Pizarra/…` + `Harukoia/documentos/…` (H6); toplevel git (2026-11-22; rutas/raíz 2026-11-25) |
-| Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
-| Qué secciones exactas lleva el markdown | H6 | H6 |
+| ~~Rutas de generados / vínculo sala↔repo~~ | — | `Harukoia/Pizarra/…` + `Harukoia/documentacion/…` (H6); toplevel git (2026-11-22; rutas/raíz 2026-11-25) |
+| ~~Proveedor de IA~~ | — | **Bedrock**, llamada desde el host (2026-11-26). La publicación H5 no usa modelo |
+| ~~Secciones fijas del markdown de la IA~~ | — | No hay. El archivo es la interpretación; el nombre lo elige quien usa la herramienta (2026-11-26) |
+| ~~Nombre repetido en `Harukoia/documentacion/`~~ | — | `<nombre> v2.md`, luego `v3`, sin pisar el anterior (2026-11-26) |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-**H5 cerrada (2026-11-25).** Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Plan: [publicaciones-pizarra](../../dev/dev/publicaciones-pizarra/README.md). Siguiente urgencia de producto: H6 (IA / secciones).
+**H5 cerrada (2026-11-25).** Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Plan: [publicaciones-pizarra](../../dev/dev/publicaciones-pizarra/README.md). Siguiente urgencia de producto: H6 (herramienta de recorte e interpretación con Bedrock).
 
 ---
 

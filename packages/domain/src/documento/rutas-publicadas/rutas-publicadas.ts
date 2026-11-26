@@ -5,7 +5,7 @@
  *
  *   Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/tablero.json
  *   Harukoia/Pizarra/<…>/documento.md
- *   Harukoia/documentos/…   ← salidas de IA (H6; reservado)
+ *   Harukoia/documentacion/…   ← salidas de IA (H6; reservado)
  *
  * El segmento de carpeta es legible (momento + autor + mensaje) y único
  * (8 primeros caracteres del id del commit de pizarra).
@@ -21,7 +21,7 @@ export const PREFIJO_RAIZ_HARUKOIA = 'Harukoia' as const;
 export const PREFIJO_PUBLICADO = `${PREFIJO_RAIZ_HARUKOIA}/Pizarra` as const;
 
 /** Documentos generados por IA (H6). Reservado; aún no escribe el motor. */
-export const PREFIJO_DOCUMENTOS = `${PREFIJO_RAIZ_HARUKOIA}/documentos` as const;
+export const PREFIJO_DOCUMENTOS = `${PREFIJO_RAIZ_HARUKOIA}/documentacion` as const;
 
 export const NOMBRE_DE_TABLERO_JSON = 'tablero.json' as const;
 export const NOMBRE_DE_DOCUMENTO_MD = 'documento.md' as const;

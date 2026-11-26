@@ -23,12 +23,12 @@ Estructura del grupo, roles, capacidades y reglas.
 | **Fuera de sala** | Leer historial (réplica), materializar con CLI / git | Sync en vivo de esa sesión |
 | **Orquestador** | Registrar salas, links, relay | Guardar datos de producto |
 | **Réplica central** | Aceptar escritura del host; lectura a los demás | Sustituir al host como autoridad |
-| **IA extractora** | Markdown (+ exportes) en el push | Escribir mientras se dibuja |
+| **IA extractora** | Ver una zona enmarcada y escribir el Markdown con el nombre elegido (Bedrock). Word y PDF, después, con un convertidor propio de ese Markdown | Volcar formas o coordenadas; escribir mientras se dibuja; correr al hacer push de la pizarra; usar Pandoc u otro conversor externo |
 | **CLI `space`** | `host`, `status`, `update` | — |
 
 **Modos:** sala de usuario (host en máquina del developer) · sala global (host en servidor).
 
-**Leyes:** un host por sala; orquestador sin datos; solo el host escribe historial; sync en vivo ≠ réplica ≠ push/git; markdown solo en el push; sala muere con el host (v1).
+**Leyes:** un host por sala; orquestador sin datos; solo el host escribe historial; sync en vivo ≠ réplica ≠ push/git; el markdown de la pizarra sale en el push y el de la IA al usar la herramienta; sala muere con el host (v1).
 
 **Horizonte Space** (misma comunidad, aún sin detalle de vistas): diseño, tipologías, mapa, tareas, minutas, calendario, correo, agentes, git UI, autenticación, entidades.
 
@@ -61,7 +61,8 @@ Tareas cooperativas y sus relaciones.
 | T5 | Marcar staging | Participantes | Candidatos a versión |
 | T6 | Commitear | **Solo host** | Versión oficial |
 | T7 | Historial / checkout | Host aplica; otros leen | Estado desde un commit |
-| T8 | Push (IA o determinista + export + git) | **Solo host** | Docs en repo |
+| T8 | Push de la pizarra (determinista + git) | **Solo host** | Tablero en el repo |
+| T8b | Interpretar una zona (Bedrock) | **Host** escribe el archivo | Markdown con el nombre elegido |
 | T9 | Materializar (`space update` / git) | Fuera de sala | Archivos locales |
 | T10 | Restaurar sala | Host | Último estado vivo |
 | T11 | Sala global | Host en nube | Misma cooperación sin laptop |
@@ -72,6 +73,7 @@ flowchart LR
   T1 --> T3
   T3 --> T4
   T3 --> T5 --> T6 --> T8 --> T9
+  T3 --> T8b --> T9
   T6 --> T7 --> T3
   T10 --> T3
 ```
@@ -161,7 +163,7 @@ Marco **i\*** (Eric Yu). **No** es AMENITIES: aquí solo el modelo **SD** — qu
 | Host | R | Staging del grupo | Espectadores |
 | Espectador / fuera | R | Historial y estado de push | Réplica |
 | Host | T | Aceptar cola solo del host | Réplica |
-| Host | G | Markdown (+ exportes) del commit | IA / publicador |
+| Host | G | Interpretación de una zona enmarcada | IA / Bedrock |
 | Host | R | Remoto acepta generados | Git |
 | Fuera de sala | G | Docs sin haber estado | Host (+ git / CLI) |
 | Fuera de sala | T | `space update` | CLI |
@@ -188,7 +190,7 @@ flowchart TB
   Host -->|"T: cola solo host"| Rep
   Esp -->|"R: historial"| Rep
   Fuera -->|"R: historial"| Rep
-  Host -->|"G: markdown del commit"| IA
+  Host -->|"G: interpretación de una zona"| IA
   Host -->|"R: remoto acepta"| Git
   Fuera -->|"G: docs sin estar"| Host
   Fuera -->|"T: space update"| CLI

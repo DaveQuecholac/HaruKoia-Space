@@ -20,7 +20,7 @@ Desde la revisión del 2026-10-19 existe una **réplica central**: una copia de 
 | App | Pizarra tldraw, SQLite local de PowerSync (lectura de lo replicado), presencia | Expo (React Native), web y móvil. La de H1 sigue en Vite |
 | CLI | Arrancar host, estado, materializar markdown en el repo | Máquina del usuario |
 
-Lo que cambia respecto a la propuesta anterior: **fuera MongoDB** y **fuera RxDB**; el host persiste; roles host y espectadores; markdown solo al hacer push; la pizarra tiene commits e historial; orquestador y contenedor host separados; identidad por link en la v1; base local y réplica con **PowerSync**; frontend de la v1 en **React Native**.
+Lo que cambia respecto a la propuesta anterior: **fuera MongoDB** y **fuera RxDB**; el host persiste; roles host y espectadores; el markdown de la pizarra solo al hacer push, y el de la IA al usar la herramienta de recorte; la pizarra tiene commits e historial; orquestador y contenedor host separados; identidad por link en la v1; base local y réplica con **PowerSync**; frontend de la v1 en **React Native**.
 
 ## 2. Qué cambia respecto a la v1
 
@@ -28,7 +28,7 @@ Lo que cambia respecto a la propuesta anterior: **fuera MongoDB** y **fuera RxDB
 |---|---|---|---|
 | Maestro de datos | MongoDB en la nube como maestro de réplica | No hay maestro central. El host es el único que escribe | Si varios replican y comitean, tres personas suben lo mismo. Con host único no hay commits duplicados |
 | Quién sube | Cualquier cliente replicaba y materializaba | Solo el host comitea y hace push | Elimina el conflicto de raíz, y el rol es valor de producto |
-| Markdown | Versión publicada replicada a todos | Se genera al cerrar la sesión o el bloque, no en vivo | Escribir markdown mientras se dibuja es lento. Nunca fue la intención |
+| Markdown | Versión publicada replicada a todos | El de la pizarra se genera al publicar. El de la IA, al enmarcar una zona: Bedrock la ve y el archivo es esa interpretación. Ninguno se escribe mientras se dibuja | Escribir markdown mientras se dibuja es lento. La IA interpreta lo que se ve; no vuelca el tablero |
 | Estado de la pizarra | Snapshot al publicar | Commits con staging, historial y checkout | Lo pidió Kua: guardar es commitear una versión oficial del tablero |
 | Entrega a los demás | Réplica desde el maestro en la nube | El host comitea y empuja a git; los demás bajan con git o con el CLI | Git ya es la copia que el equipo revisa |
 | Procesos de servidor | Sync, réplica y worker separados | Orquestador y contenedor host. IA y exportación dentro del host. Desde el 2026-10-19, además, la réplica central | Ver sección 4 |
@@ -73,7 +73,7 @@ La réplica central no cambia el patrón: no es un segundo host ni recibe la sal
        │            │  Hocuspocus (sala Yjs)       │
        │            │  SQLite de PowerSync         │
        │            │  copia de trabajo del repo   │
-       │            │  IA (markdown) + Pandoc      │
+       │            │  IA (Bedrock, recorte)       │
        │            └──────┬───────────────┬───────┘
        │                   │               │ cola de subida
        │      git push     ▼               │ (saliente)
@@ -182,7 +182,7 @@ Entra en la v1, con staging, commit e historial navegable. Ramificación queda f
 
 El checkout no reescribe nada. Trae el commit elegido al estado de trabajo, y el siguiente commit cuelga de aquel. Ese encadenamiento es el que permite, más adelante, ramificar sin cambiar el modelo.
 
-El push puede empujar la pizarra entera, no solo el markdown. El commit es la unidad: snapshot, JSON del tablero, markdown y adjuntos pertenecen a un mismo commit.
+El push de la pizarra empuja el tablero: snapshot, JSON y el markdown determinista de esa versión. El documento de la IA es otro archivo. Nace cuando alguien usa la herramienta de recorte, lleva el nombre que esa persona elige, y vive en `Harukoia/documentacion/`. No forma parte del volcado de cada commit de pizarra.
 
 ## 8. Flujo completo de una sesión
 
@@ -191,10 +191,11 @@ El push puede empujar la pizarra entera, no solo el markdown. El commit es la un
 3. Trabajan sobre el tablero. Los deltas van por el relay al host y el host los retransmite.
 4. Preparan el guardado (staging de la pizarra completa: mensaje y confirmación).
 5. El host guarda. Se crea el commit con el snapshot y el JSON del tablero en su SQLite, y la cola lo sube a la réplica central: los invitados ven el historial.
-6. El host hace push. En su contenedor, la IA convierte el contenido a markdown con secciones estables, Pandoc genera PDF y Word, los archivos se escriben en la copia de trabajo y se comitean a git. El estado del push se replica igual que el commit.
+6. El host hace push de la pizarra. Se escriben el JSON del tablero y el markdown determinista en `Harukoia/Pizarra/…`, se comitean y el estado del push se replica igual que el commit. Esa publicación no llama a un modelo.
 7. Git push al remoto.
-8. El resto del equipo baja esos archivos con git o con el CLI. No necesitan haber estado en la sesión ni tener la máquina del host encendida en ese momento. El historial y el estado del push los ven en la web, también con el host apagado.
-9. Si el host cierra, la sala se cierra. El último commit ya está en el repo y en la réplica central.
+8. El host usa la herramienta de IA: enmarca una zona de la pizarra, como un recorte de pantalla, y le pone nombre. El host manda la imagen de esa zona a Bedrock. El Markdown que vuelve es la interpretación, y se escribe en `Harukoia/documentacion/<nombre>.md`. Word y PDF salen después, de ese mismo Markdown. El rectángulo no se guarda: la pizarra ya guarda las formas.
+9. El resto del equipo baja esos archivos con git o con el CLI. No necesitan haber estado en la sesión ni tener la máquina del host encendida en ese momento. El historial y el estado del push los ven en la web, también con el host apagado.
+10. Si el host cierra, la sala se cierra. El último commit ya está en el repo y en la réplica central.
 
 ## 9. Interfaz
 
@@ -207,6 +208,7 @@ La misma interfaz siempre, sin pantallas distintas por rol.
 - Presencia con nombre, no con un punto genérico.
 - El estado del push visible: en proceso, hecho, falló.
 - El estado de la réplica visible en el host: al día, o cambios pendientes de subir.
+- Herramienta de IA, en el host: enmarcar una zona de la pizarra y nombrar el documento.
 - Controles de acceso (quién entra, link privado, contraseña) quedan para después.
 
 **React Native entra en la v1** (2026-11-04). La app es Expo, para web y para móvil, con tldraw dentro de un componente DOM. La gramática visual de IOKOIA Space (React DOM, Tailwind, Base UI) no se trae tal cual: el diseño de componentes de esa app es el siguiente documento, antes de H2. Hasta que exista y se autorice construirla, las pantallas de H1 siguen en `apps/web` con Vite. Un teléfono no puede ser host local: en el móvil se entra como espectador o a una sala global.
@@ -259,10 +261,10 @@ La misma interfaz siempre, sin pantallas distintas por rol.
 
 | Riesgo | Solución |
 |---|---|
-| El modelo falla o tarda demasiado | El commit ya existe. El documento queda en estado fallido y se reintenta sin volver a dibujar nada |
-| El modelo devuelve markdown sin la estructura esperada | Se valida contra las secciones fijas antes de escribir el archivo. Si no valida, se reintenta y se guarda la salida cruda para revisar |
-| Pandoc falla | El markdown ya está comiteado. El PDF y el Word se reintentan sin regenerar el texto |
-| El contenido de la pizarra sale de la organización al llamar al modelo | Decisión pendiente de la sección 13: qué proveedor y si hace falta un modo sin IA |
+| El modelo falla o tarda demasiado | La pizarra y su publicación no dependen de la llamada. El Markdown de interpretación no se escribe y se puede reintentar el mismo recorte |
+| La herramienta se usa sin enmarcar una zona | No hay llamada y no hay archivo. El documento no nace vacío |
+| El convertidor propio falla | El Markdown ya está escrito. El PDF y el Word se reintentan sin volver a llamar a Bedrock |
+| El contenido de la zona sale de la organización al llamar al modelo | El proveedor es Bedrock y la llamada sale del host (2026-11-26). Si no se usa la herramienta, no hay llamada |
 
 ### Seguridad en la v1
 
@@ -283,7 +285,7 @@ El valor del producto es que lo dibujado llegue al repositorio de otra persona. 
 ### Unitarias
 
 - Traductor: formas de tldraw a JSON y de vuelta, sin pérdida de coordenadas ni de orden.
-- Constructor de markdown: de un snapshot fijo a las secciones esperadas, con el modelo simulado.
+- Interpretación: de una imagen fija de una zona al Markdown, con el modelo simulado. El camino real llama a Bedrock y no arma el documento desde el JSON del tablero.
 - Grafo de commits: padre correcto, checkout, encadenamiento después de un checkout.
 - Materialización de archivos: rutas, idempotencia, no pisar documentación manual.
 - Nombres y estados: de sala, de commit, de documento.
@@ -315,7 +317,7 @@ Con el relay y el host en contenedores, se tumban a propósito:
 - Partir la red entre invitado y relay.
 - Inyectar latencia y pérdida de paquetes.
 - Agotar el tiempo del modelo de IA.
-- Hacer fallar Pandoc.
+- Hacer fallar el convertidor propio.
 
 En cada caso se verifica que no hay dato perdido sin aviso y que el reintento llega al mismo resultado.
 
@@ -329,12 +331,12 @@ Se mide y se fija objetivo, para poder decir si la v1 cumple:
 | Participantes por sala | 10 sin degradación perceptible |
 | Tiempo de commit de un tablero de mil formas | por debajo de 2 segundos |
 | Tiempo de un commit hasta que lo ve un lector de la réplica | se mide en la prueba de la réplica central y se fija ahí |
-| Generación de markdown de una sesión típica | por debajo de 30 segundos |
+| Una interpretación de una zona | por debajo de 30 segundos |
 | `space update` con muchas versiones acumuladas | tiempo que no crece con el historial, por el checkpoint |
 
 ### De extremo a extremo
 
-Dos contextos de navegador en la misma sala, con el modelo simulado: dibujar, marcar staging, commitear, hacer push, y verificar el archivo en el remoto de prueba.
+La publicación de la pizarra se prueba sin modelo: dibujar, commitear, hacer push y ver el archivo en el remoto. La herramienta de IA se prueba aparte: enmarcar una zona, modelo simulado, y el Markdown con el nombre elegido en `Harukoia/documentacion/`.
 
 ### Entorno de pruebas
 
@@ -352,7 +354,7 @@ El trabajo se agrupa en ocho épicas que se pueden probar una por una. El desglo
 | H3 | La sala sobrevive | Reiniciar el host o el relay no pierde el trabajo |
 | H4 | Versiones de la pizarra | Staging, commit, historial, checkout, y el tablero como archivo |
 | H5 | Llega al repositorio | Publicación determinista, git y CLI; quien no estuvo recibe los archivos |
-| H6 | Documento con IA | Markdown con secciones, PDF y Word |
+| H6 | Interpretación con IA | Recorte de lo que se ve, Bedrock, Markdown con nombre; Word y PDF después |
 | H7 | Sala global | Host en servidor, sin que nadie clone el repositorio |
 
 Una versión anterior de esta sección ponía la publicación y el CLI antes de la sala, para probar primero la promesa que distingue al producto. Se cambió al orden de arriba porque **el riesgo técnico que hay que matar primero es el alcance del host detrás de NAT a través del relay** (H1): es la única pieza que no podemos copiar de una librería, y descubrir que no funciona después de construir la pizarra encima sale mucho más caro. La promesa de la entrega al repositorio sigue siendo prioritaria y por eso H5 llega antes que la IA, con una salida determinista que se verifica carácter por carácter.
@@ -361,8 +363,6 @@ Antes de H2 se escribe el **diseño de la app Expo** (lienzo, pantallas y arranq
 
 ## 13. Puntos abiertos
 
-- Qué proveedor de IA se usa y si hace falta un modo sin IA para repos sensibles.
-- Qué secciones exactas lleva el markdown generado (la variante determinista de H5 fija un mínimo; el “bonito” con modelo es H6).
 - Cuándo entra autenticación, y si llega antes de la primera sala global con repo real.
 - **Cómo se arranca la app Expo** con PM2 y portless, y cuál es su diseño de pantallas y de lienzo. React Native ya entra; el diseño documentado en H2 no autoriza construirla. Para SQLite RN y secrets: [referencia Space](../referencia-space-powersync-sqlite-secrets.md).
 
@@ -389,7 +389,21 @@ Detalle: [analisis-h5-publicaciones-pizarra.md](../../dev/dev/publicaciones-piza
 | ¿De dónde materializa `space update`? | **Desde git** (pull/fetch del remoto del proyecto). La réplica no sustituye el repo |
 | Alcance del CLI en v1 | Solo `space host`, `space status`, `space update`. **No** unirse a sala |
 | Vínculo sala ↔ repo | Host dentro del checkout; escritura en el **toplevel git** (`show-toplevel`), no el cwd del proceso si es un subdirectorio (2026-11-25) |
-| Rutas de generados | **`Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`**; **`Harukoia/documentos/…`** (IA / H6). Sin compat con solo-id ni `harukoia/publicado/…` (2026-11-25) |
+| Rutas de generados | **`Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`**; **`Harukoia/documentacion/<nombre>.md`** (interpretación de IA). Sin compat con solo-id ni `harukoia/publicado/…` (2026-11-25; el documento de IA, 2026-11-26) |
+
+### Cerrados el 2026-11-26 (rama `dev/documentos-ia`)
+
+Detalle: [analisis-h6-documentos-ia.md](../../dev/dev/documentos-ia/analisis-h6-documentos-ia.md).
+
+| Tema | Decisión |
+|------|----------|
+| Qué hace la IA | Herramienta en la pizarra. Se enmarca una zona, como un recorte de pantalla. Bedrock ve esa imagen y escribe la interpretación |
+| Qué se guarda | El Markdown con el nombre elegido, en `Harukoia/documentacion/<nombre>.md`. Si ya existe, `<nombre> v2.md`, luego `v3`, sin pisar el anterior. No el rectángulo, ni formas, ni coordenadas. El gesto no hace commit ni push |
+| Proveedor | **Bedrock**. La llamada sale del host. No hay proceso nuevo |
+| Secciones del Markdown | No hay plantilla fija. El texto es la interpretación |
+| Cuándo corre | Al usar la herramienta. El push de la pizarra sigue siendo determinista y no llama al modelo |
+| Word y PDF | Después, con un convertidor propio de ese Markdown. Sin Pandoc ni otro conversor externo. Si falla, no hay otra llamada a Bedrock |
+| Cómo llega a quien no estuvo | El git y `space update` que ya existen. Sin comando nuevo |
 
 ## 14. Fuera del alcance de la v1
 

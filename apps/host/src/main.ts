@@ -9,6 +9,10 @@ import { commitear } from './acciones-de-sala/commitear/commitear.ts';
 import { hacerCheckout } from './acciones-de-sala/hacer-checkout/hacer-checkout.ts';
 import { publicar } from './acciones-de-sala/publicar/publicar.ts';
 import { conectarAlOrquestador } from './conexion-al-orquestador/conexion-al-orquestador.ts';
+import { escribirConversiones, reintentarConversion } from './convertidor/escribir-conversiones.ts';
+import { guardarDocumento } from './interpretacion/guardar-documento.ts';
+import { llamarABedrock, leerEntornoDeBedrock } from './interpretacion/llamar-a-bedrock.ts';
+import { atenderInterpretacion } from './interpretacion/ruta-de-interpretacion.ts';
 import { atenderInvitacion } from './invitacion/invitacion.ts';
 import { archivoDeColaPorDefecto } from './publicacion/correr-publicacion/correr-publicacion.ts';
 import { raizDelRepositorioGit } from './publicacion/git/ejecutar-git.ts';
@@ -247,9 +251,35 @@ const conexion = conectarAlOrquestador({
 
 const origenDeLaWeb = process.env.WEB_ORIGEN;
 const invitacionVigente = conexion.invitacionVigente;
+const entornoDeBedrock = leerEntornoDeBedrock(process.env);
+if (entornoDeBedrock) {
+  registro.info('interpretación con Bedrock activa', {
+    region: entornoDeBedrock.region,
+    modelo: entornoDeBedrock.modelId,
+  });
+} else {
+  registro.info('interpretación con Bedrock inactiva (faltan AWS_REGION, BEDROCK_CHAT_MODEL_ID o AWS_BEARER_TOKEN_BEDROCK)');
+}
 
 const server = createServer((req, res) => {
   if (origenDeLaWeb && atenderInvitacion(req, res, { identidad, invitacionVigente, origenDeLaWeb })) return;
+  if (
+    origenDeLaWeb &&
+    atenderInterpretacion(req, res, {
+      origenDeLaWeb,
+      tokenDeWebDelHost: identidad.tokenDeWebDelHost,
+      modelo: (imagen) => {
+        if (!entornoDeBedrock) return Promise.reject(new Error('bedrock no configurado'));
+        return llamarABedrock(entornoDeBedrock, imagen);
+      },
+      guardar: (titulo, markdown) => guardarDocumento(vinculoSalaRepo.raizDelCheckout, titulo, markdown),
+      convertir: (ruta, markdown) => escribirConversiones(vinculoSalaRepo.raizDelCheckout, ruta, markdown),
+      reintentar: (ruta) => reintentarConversion(vinculoSalaRepo.raizDelCheckout, ruta),
+      alFallar: (causa) => registro.error('no se pudo interpretar la zona', { causa }),
+    })
+  ) {
+    return;
+  }
   if (req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ service: 'host', status: 'ok' }));

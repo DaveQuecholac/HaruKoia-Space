@@ -62,7 +62,7 @@ H4 dejó versiones oficiales de la pizarra (commit, historial, checkout, réplic
 | **D-H5-2** | ¿De dónde materializa `space update`? | **Desde git** (pull / fetch del remoto del proyecto). La réplica sigue para historial y estado de push; no escribe el markdown en el disco del que no estuvo. |
 | **D-H5-3** | Alcance del CLI en v1 | Solo `space host`, `space status`, `space update`. **No** unirse a sala desde el CLI. |
 | **D-H5-4** | Cuándo se liga sala ↔ repo | Al arrancar el host **dentro del checkout** del proyecto. La raíz de escritura es el **toplevel git** (`git rev-parse --show-toplevel`), no el cwd del proceso si corre en un subdirectorio (p. ej. `apps/host`). Actualizado 2026-11-25. |
-| **D-H5-5** | Rutas de generados | Raíz **`Harukoia/`**: pizarra en **`Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`**; IA (H6) en **`Harukoia/documentos/…`**. Nunca pisar docs manuales fuera de ese árbol. (Sin compat con solo-id ni `harukoia/publicado/…` — 2026-11-25.) |
+| **D-H5-5** | Rutas de generados | Raíz **`Harukoia/`**: pizarra en **`Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`**; IA (H6) en **`Harukoia/documentacion/…`**. Nunca pisar docs manuales fuera de ese árbol. (Sin compat con solo-id ni `harukoia/publicado/…` — 2026-11-25.) |
 
 Detalle en v2 §13 (cerrados H5) y fase 1 § H5. Código de producto (P1+) solo cuando el chat autorice esa rebanada.
 
@@ -137,7 +137,7 @@ Orden de implementación (plan): contratos → delta documents → cola → meca
 
 | Tema | Notas |
 |------|-------|
-| Detalle de archivos bajo `Harukoia/` | **Cerrado:** carpeta `YYYY-MM-DD_HHMM__autor__mensaje__id8` con `tablero.json` y `documento.md`; `Harukoia/documentos/` reservado a H6 |
+| Detalle de archivos bajo `Harukoia/` | **Cerrado:** carpeta `YYYY-MM-DD_HHMM__autor__mensaje__id8` con `tablero.json` y `documento.md`; `Harukoia/documentacion/` reservado a H6 |
 | Adjuntos PDF/Word | Tabla puede existir mínima; generación es H6 |
 | Despliegue de réplica en Makino Hara | No bloquea la tubería local de H5 |
 | `space status` detalle de “réplica al día” vs “remoto al día” | Mínimo viable en P9 |

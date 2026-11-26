@@ -80,6 +80,7 @@ export function App() {
       return (
         <PantallaDeSala
           orquestador={configuracion.orquestador}
+          urlDelHost={configuracion.host}
           invitacion={invitacion}
           nombre={nombre}
           tokenDeWebDelHost={leerCredencialDeHost(sessionStorage, invitacion.sala)}

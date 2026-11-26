@@ -89,7 +89,7 @@ P11  E2E remoto git local + evidencia + cierre
 | `DocumentoPublicado` | `packages/domain/src/documento/documento-publicado/` |
 | `FilaDeDocumento` | `packages/schema/src/documento/fila-de-documento.ts` |
 
-**Convención de rutas.** `Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/tablero.json` y `…/documento.md` (D-H5-5; IA en `Harukoia/documentos/`).
+**Convención de rutas.** `Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/tablero.json` y `…/documento.md` (D-H5-5; IA en `Harukoia/documentacion/`).
 
 **Verificación.** domain 94 tests / schema 33 tests; typecheck OK. **Parar.**
 

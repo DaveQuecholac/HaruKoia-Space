@@ -67,7 +67,7 @@ No hay un estudio con usuarios. Lo que se va a poder mostrar es el propio sistem
 - **Registro de salas.** Un orquestador en la nube. Anota la sala, entrega el link y retransmite el dibujo en vivo. No guarda el tablero.
 - **Base del dueño.** SQLite, con el SDK de Node de PowerSync. El dueño escribe ahí.
 - **Copia de lectura.** Postgres, PowerSync Service y un backend de escritura. Ese backend solo acepta al dueño de la sala. Invitados, web y la línea de comandos solo leen. Esta copia no pasa por el orquestador. Sirve para ver el historial aunque la máquina del dueño esté apagada.
-- **Documento y repositorio.** El markdown se escribe al publicar. PDF y Word salen de ese markdown con Pandoc. Los archivos se integran a git, y solo el dueño de la sala empuja.
+- **Documento y repositorio.** El markdown de la pizarra se escribe al publicar. El de la IA sale al interpretar una zona. PDF y Word salen de ese markdown con un convertidor propio del motor, sin Pandoc. Los archivos se integran a git, y solo el dueño de la sala empuja.
 - **Aplicación.** La prevista para esta versión es React Native con Expo, en el navegador y en el teléfono, con la pizarra dentro de un componente de página. Un teléfono puede abrir el link. No puede ser el dueño de la sala. Las pantallas que ya se usan siguen en la web con Vite, hasta construir la aplicación de Expo.
 - **Entrada.** Link de invitación y nombre.
 

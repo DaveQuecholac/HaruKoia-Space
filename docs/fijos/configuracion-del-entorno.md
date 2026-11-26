@@ -37,6 +37,9 @@ cp apps/orchestrator/.env.example apps/orchestrator/.env
 |---|---|---|---|
 | `apps/host` | `ORQUESTADOR_URL` | Compartido | Dónde registra su sala. Obligatoria: sin ella el host no arranca |
 | `apps/host` | `WEB_ORIGEN` | `https://web.harukoia.local.iokoia.dev` | Habilita "Volverme host" para la web de esta máquina |
+| `apps/host` | `AWS_REGION` | `us-east-2` | Región de Bedrock para interpretar una zona. Sin ella la sala arranca y la herramienta falla sin escribir archivo |
+| `apps/host` | `BEDROCK_CHAT_MODEL_ID` | `amazon.nova-lite-v1:0` | Modelo que ve la imagen. La clave no va en la web |
+| `apps/host` | `AWS_BEARER_TOKEN_BEDROCK` | (en el `.env` del host) | Clave de Bedrock. Se queda en el host |
 | `apps/web` | `VITE_ORQUESTADOR_URL` | Compartido | Por dónde entra a las salas. **Igual que `ORQUESTADOR_URL` del host** |
 | `apps/web` | `VITE_HOST_URL` | `https://host.harukoia.local.iokoia.dev` | A qué host le pide la invitación "Volverme host" |
 | `apps/web` | `VITE_TLDRAW_LICENSE_KEY` | Vacía en desarrollo | Licencia de tldraw. El build público la hornea. Sin ella el lienzo se apaga a los cinco segundos |

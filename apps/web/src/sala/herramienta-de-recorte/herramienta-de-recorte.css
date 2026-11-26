@@ -1,0 +1,120 @@
+.herramienta-de-recorte {
+  position: absolute;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+}
+
+.herramienta-de-recorte-abrir,
+.herramienta-de-recorte-panel,
+.herramienta-de-recorte-capa {
+  pointer-events: auto;
+}
+
+.herramienta-de-recorte-abrir {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #1c1917;
+  background: #1c1917;
+  color: white;
+  font: inherit;
+}
+
+.herramienta-de-recorte-capa {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.herramienta-de-recorte-marco {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #1c1917;
+  background: rgb(28 25 23 / 12%);
+  pointer-events: none;
+}
+
+.herramienta-de-recorte-panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: min(420px, calc(100% - 24px));
+  padding: 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  background: #fafaf9;
+}
+
+.herramienta-de-recorte-estado {
+  margin: 0;
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #57534e;
+}
+
+.herramienta-de-recorte-vista {
+  display: block;
+  flex-basis: 100%;
+  width: 160px;
+  height: 90px;
+  object-fit: contain;
+  border: 1px solid #d6d3d1;
+  border-radius: 6px;
+  background: white;
+}
+
+.herramienta-de-recorte-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #57534e;
+}
+
+.herramienta-de-recorte-campo input {
+  height: 32px;
+  width: 220px;
+  padding: 0 8px;
+  border: 1px solid #d6d3d1;
+  border-radius: 8px;
+  background: white;
+  color: #1c1917;
+  font: inherit;
+  font-size: 14px;
+}
+
+.herramienta-de-recorte-panel button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #d6d3d1;
+  background: white;
+  color: #1c1917;
+  font: inherit;
+}
+
+.herramienta-de-recorte-interpretar {
+  border-color: #1c1917;
+  background: #1c1917;
+  color: white;
+}
+
+.herramienta-de-recorte-markdown {
+  flex-basis: 100%;
+  max-height: 180px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #1c1917;
+}

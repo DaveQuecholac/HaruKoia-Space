@@ -50,7 +50,7 @@ P11   E2E, evidencia, cierre H5
 
 > **H5 cerrada (2026-11-25).** P0–P11 hechos; humo aprobado. Evidencia: [evidencia-h5-cierre.md](./evidencia-h5-cierre.md). Siguiente épica: **H6** (otra rama).
 >
-> **Rutas (D-H5-5, 2026-11-25):** `Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`; IA en `Harukoia/documentos/…`. Sin compat con solo-id ni `harukoia/publicado/…`.
+> **Rutas (D-H5-5, 2026-11-25):** `Harukoia/Pizarra/<YYYY-MM-DD_HHMM__autor__mensaje__id8>/`; IA en `Harukoia/documentacion/…`. Sin compat con solo-id ni `harukoia/publicado/…`.
 
 | Paso | Qué | Estado |
 |------|-----|--------|
@@ -75,7 +75,7 @@ P11   E2E, evidencia, cierre H5
 | D-H5-2 | ¿De dónde materializa `space update`? | **Desde git** (pull del remoto del proyecto) |
 | D-H5-3 | Alcance del CLI | Solo `space host`, `space status`, `space update`. No unirse a sala |
 | D-H5-4 | Vínculo sala↔repo | Host dentro del checkout; escritura en **toplevel git** (no en `apps/host` si el proceso corre ahí) |
-| D-H5-5 | Rutas generadas | `Harukoia/Pizarra/<fecha__autor__mensaje__id8>/`; `Harukoia/documentos/` (H6) |
+| D-H5-5 | Rutas generadas | `Harukoia/Pizarra/<fecha__autor__mensaje__id8>/`; `Harukoia/documentacion/` (H6) |
 
 Promovidas en v2 §13 y fase 1 § H5. Convención: carpeta legible + `tablero.json` / `documento.md`.
 

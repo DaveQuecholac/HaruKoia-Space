@@ -1,6 +1,7 @@
 import type { CausaDeRechazoDeEntrada } from '@harukoia/cliente-del-relay';
 import type { CausaDeAccionRechazada, CausaDeCierre, Rol, TokenDeInvitacion, TokenDeWebDelHost } from '@harukoia/domain';
 import { useEffect, useRef, useState } from 'react';
+import type { Editor } from 'tldraw';
 import type * as Y from 'yjs';
 
 import { type Invitacion, crearEnlace } from '../../entrada/enlace-de-invitacion/enlace-de-invitacion.ts';
@@ -11,6 +12,7 @@ import {
   type PresenciaDelLienzo,
   conectarALaSala,
 } from '../conexion-a-la-sala/conexion-a-la-sala.ts';
+import { HerramientaDeRecorte } from '../herramienta-de-recorte/herramienta-de-recorte.tsx';
 import { HistorialDeVersiones } from '../historial-de-versiones/historial-de-versiones.tsx';
 import { StagingDeVersion } from '../staging-de-version/staging-de-version.tsx';
 import './pantalla-de-sala.css';
@@ -64,6 +66,7 @@ const ESTADO_VISIBLE = {
 
 export function PantallaDeSala(props: {
   readonly orquestador: string;
+  readonly urlDelHost: string;
   readonly invitacion: Invitacion;
   readonly nombre: string;
   readonly tokenDeWebDelHost: TokenDeWebDelHost | undefined;
@@ -91,6 +94,7 @@ export function PantallaDeSala(props: {
   const [presencia, setPresencia] = useState<PresenciaDelLienzo | undefined>(undefined);
   const [generacion, setGeneracion] = useState(0);
   const [sincronizado, setSincronizado] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const [logFallido, setLogFallido] = useState(false);
   const conexion = useRef<ConexionALaSala>(undefined);
   const alCambiarLaInvitacion = useRef(props.alCambiarLaInvitacion);
@@ -252,7 +256,11 @@ export function PantallaDeSala(props: {
               sincronizado={sincronizado}
               sembrar={miRol === 'host'}
               presencia={presencia}
+              alMontarEditor={setEditor}
             />
+            {miRol === 'host' ? (
+              <HerramientaDeRecorte editor={editor} urlDelHost={props.urlDelHost} tokenDeWebDelHost={tokenDeWebDelHost} />
+            ) : null}
           </div>
           {miRol === 'host' ? (
             <StagingDeVersion
