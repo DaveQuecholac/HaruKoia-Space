@@ -29,6 +29,11 @@ export type ResultadoDeAccion =
 /** Quién pidió la acción (nombre de presencia al momento). */
 export type ContextoDeAccion = {
   readonly autor: string;
+  /**
+   * Aviso en vivo durante una acción larga (H5 / P8: estados de push).
+   * El host de la sala lo cablea a todas las conexiones.
+   */
+  readonly avisar: (mensaje: MensajeDelHostDeLaSala) => void;
 };
 
 export type ManejadorDeAccion = (

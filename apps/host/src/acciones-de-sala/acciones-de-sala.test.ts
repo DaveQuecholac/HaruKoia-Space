@@ -17,11 +17,19 @@ function manejadoresContados() {
       llamadas++;
       return { ok: true, avisos: [] };
     },
+    publicar: async () => {
+      llamadas++;
+      return { ok: true, avisos: [] };
+    },
+    'reintentar-publicacion': async () => {
+      llamadas++;
+      return { ok: true, avisos: [] };
+    },
   };
   return { manejadores, llamadas: () => llamadas };
 }
 
-const contexto = { autor: 'Marco' };
+const contexto = { autor: 'Marco', avisar: () => {} };
 
 describe('acciones de sala en el host', () => {
   it('un espectador recibe rol insuficiente y el manejador no corre', async () => {

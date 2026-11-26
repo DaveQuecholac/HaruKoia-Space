@@ -29,3 +29,11 @@ export {
   type ResultadoDeFilaDeSnapshot,
   comoFilaDeSnapshot,
 } from './snapshot/fila-de-snapshot.ts';
+
+export {
+  CAMPOS_DE_DOCUMENTO_H5,
+  NOMBRE_DE_COLECCION_DOCUMENTS,
+  type FilaDeDocumento,
+  type ResultadoDeFilaDeDocumento,
+  comoFilaDeDocumento,
+} from './documento/fila-de-documento.ts';

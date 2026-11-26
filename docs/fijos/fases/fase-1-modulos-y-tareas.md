@@ -261,13 +261,13 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 
 | Tarea | Qué | Módulo |
 |-------|-----|--------|
-| H5-T1 | Tablas de documentos y adjuntos en el contrato | M2 |
-| H5-T2 | SQLite de PowerSync en el host (SDK de Node) y su cola de subida | M3 |
-| H5-T3 | Réplica central: backend de escritura que solo acepta al host de la sala, Postgres y PowerSync Service | M3 |
+| H5-T1 | Tablas de documentos (adjuntos binarios: H6) en el contrato | M2 |
+| H5-T2 | Espejo PowerSync en el host — **delta `documents`** (commits/cola base: H4) | M3 |
+| H5-T3 | Réplica central — **delta `documents`** (estación y backend: H4) | M3 |
 | H5-T4 | Cola de trabajos de publicación en el host | M11 |
 | H5-T5 | Mecanismo genérico de publicación con variantes de formato | M11 |
 | H5-T6 | Variante determinista: markdown sin modelo, a partir del commit | M11 |
-| H5-T7 | Estados replicados: en proceso, publicado, fallido, y reintento | M11, M18 |
+| H5-T7 | Estados replicados: en proceso, publicado, fallido, y reintento (UI **después** del push) | M11, M18 |
 | H5-T8 | Escritura en rutas propias y declaradas, sin tocar documentación manual | M14 |
 | H5-T9 | Commit y push a git, con el caso de remoto adelantado | M14 |
 | H5-T10 | `space host`, `space status`, `space update` | M15 |
@@ -280,7 +280,9 @@ M19 y M20 no son una épica aparte: cada épica termina con sus pruebas y sus es
 3. Un remoto adelantado se resuelve con reintento, sin intervención manual.
 4. Un fallo de publicación se ve, dice la causa y se puede reintentar sin volver a dibujar.
 
-**Decisiones que la bloquean.** Si git entra en el alcance inicial —se necesita **antes de H4**, porque cambia la forma de esta épica—, dónde vive el backend de escritura, y si `space update` baja de git o lee de la réplica central. La licencia del almacenamiento en disco quedó resuelta el 2026-10-19: PowerSync autoalojado y sus SDK son gratis.
+**Decisiones que la bloqueaban (cerradas 2026-11-22; D-H5-5 actualizado 2026-11-25).** Git **sí** en el alcance (commit + push + remoto adelantado). `space update` materializa **desde git** (la réplica no sustituye el repo). CLI v1: solo `space host` / `status` / `update` (no unirse a sala). Sala↔repo al arrancar el host dentro del checkout; generados en el **toplevel git** bajo **`Harukoia/Pizarra/…`** (pizarra) y **`Harukoia/documentos/…`** (IA / H6). Backend de escritura y PowerSync: ya cerrados en H4. Detalle: [docs/dev/dev/publicaciones-pizarra/](../../dev/dev/publicaciones-pizarra/README.md).
+
+**H5 cerrada (2026-11-25).** P0–P11 hechos; el chat aprobó el humo. Publicación determinista a `Harukoia/Pizarra/…`, git commit/push (remoto adelantado), estados en UI, CLI `space host` / `status` / `update` (idempotente), E2E con remoto git local. Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Siguiente: H6 (otra rama).
 
 ---
 
@@ -399,7 +401,7 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 
 | Decisión abierta | Bloquea | Se necesita antes de |
 |------------------|---------|----------------------|
-| Si git entra en el alcance inicial | H5, y con ella H7 | **Antes de H5** — cambia la forma de esa épica |
+| ~~Si git entra en el alcance inicial~~ | — | **Sí** (commit + push + remoto adelantado; 2026-11-22) |
 | ~~Qué parte del tablero entra en staging~~ | — | **Toda la pizarra** (2026-11-17) |
 | ~~Licencia del almacenamiento en disco de la base local~~ | — | Resuelta el 2026-10-19: PowerSync autoalojado, gratis |
 | Diseño de la app Expo: pantallas, lienzo y arranque con PM2 y portless. React Native ya entra | Construir la app | Diseño ya escrito en H2; construir es otra autorización |
@@ -408,13 +410,14 @@ Decisiones de producto que detienen épicas. No se cierran implementando: se cie
 | ~~Quién emite el token de lectura~~ | — | JWT RS256 desde el backend de escritura (2026-11-17) |
 | ~~Almacén de buckets~~ | — | Postgres `powersync_storage` (2026-11-17) |
 | ~~Reglas H0 vs PowerSync~~ | — | Client schema en el espejo; Yjs H3 aparte (2026-11-17) |
-| Si `space update` baja de git o lee de la réplica central | H5 | H5 |
-| Alcance del CLI en la v1: solo materializar, o también unirse a una sala | H5 | H5 |
+| ~~Si `space update` baja de git o lee de la réplica~~ | — | **Desde git** (2026-11-22) |
+| ~~Alcance del CLI en la v1~~ | — | Solo `host` / `status` / `update`; no unirse a sala (2026-11-22) |
+| ~~Rutas de generados / vínculo sala↔repo~~ | — | `Harukoia/Pizarra/…` + `Harukoia/documentos/…` (H6); toplevel git (2026-11-22; rutas/raíz 2026-11-25) |
 | Proveedor de IA y si hace falta un modo sin modelo | H6 | H6 |
 | Qué secciones exactas lleva el markdown | H6 | H6 |
 | Cuándo entra autenticación | H7 con repositorios reales | Antes de la primera sala global con un repositorio del equipo |
 
-Urgente antes de H5: si git entra en el alcance inicial. H4 y la PdC de la réplica están cerradas ([versiones-pizarra](../../dev/dev/versiones-pizarra/README.md)).
+**H5 cerrada (2026-11-25).** Evidencia: [evidencia-h5-cierre.md](../../dev/dev/publicaciones-pizarra/evidencia-h5-cierre.md). Plan: [publicaciones-pizarra](../../dev/dev/publicaciones-pizarra/README.md). Siguiente urgencia de producto: H6 (IA / secciones).
 
 ---
 

@@ -7,7 +7,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "humo:v7": "node --env-file=../../pruebas/replica-central/.env src/versionado/historial-con-host-apagado/leer-historial-replica.ts"
+    "humo:v7": "node --env-file=../../pruebas/replica-central/.env src/versionado/historial-con-host-apagado/leer-historial-replica.ts",
+    "humo:p2": "node --env-file=../../pruebas/replica-central/.env src/versionado/documents-en-replica/humo-documents-p2.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

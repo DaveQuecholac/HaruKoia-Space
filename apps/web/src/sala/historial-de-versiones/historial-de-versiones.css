@@ -101,3 +101,40 @@
   font-size: 11px;
   color: #57534e;
 }
+
+.historial-push {
+  margin: 0;
+  font-size: 11px;
+  color: #57534e;
+}
+
+.historial-push-causa {
+  margin: 0;
+  font-size: 11px;
+  color: #9a3412;
+  word-break: break-word;
+}
+
+.historial-push-ok,
+.historial-push-curso {
+  margin: 0;
+  font-size: 11px;
+  color: #57534e;
+}
+
+.historial-publicar {
+  align-self: flex-start;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid #d6d3d1;
+  background: #fafaf9;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.historial-publicar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

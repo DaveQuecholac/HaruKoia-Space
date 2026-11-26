@@ -34,6 +34,7 @@ export {
 } from './sala/accion-de-sala/accion-de-sala.ts';
 
 export type {
+  EntradaDeEstadoDePush,
   EntradaDeHistorial,
   MensajeDeSala,
   MensajeDelHostDeLaSala,
@@ -139,3 +140,57 @@ export {
   ordenarHistorial,
   validarPadreDelCommit,
 } from './commit/grafo-de-commits/grafo-de-commits.ts';
+
+export {
+  LONGITUD_DEL_DOCUMENTO,
+  type IdentificadorDeDocumento,
+  comoIdentificadorDeDocumento,
+  generarIdentificadorDeDocumento,
+} from './documento/identificador-de-documento/identificador-de-documento.ts';
+
+export {
+  ESTADOS_DE_PUSH,
+  type EstadoDePush,
+  type ResultadoDeEstadoDePush,
+  type TipoDeEstadoDePush,
+  comoEstadoDePush,
+  esTipoDeEstadoDePush,
+} from './documento/estado-de-push/estado-de-push.ts';
+
+export {
+  VARIANTES_DE_PUBLICACION,
+  type VarianteDePublicacion,
+  esVarianteDePublicacion,
+} from './documento/variante-de-publicacion/variante-de-publicacion.ts';
+
+export {
+  LONGITUD_SUFIJO_DE_COMMIT,
+  NOMBRE_DE_DOCUMENTO_MD,
+  NOMBRE_DE_TABLERO_JSON,
+  PREFIJO_DOCUMENTOS,
+  PREFIJO_PUBLICADO,
+  PREFIJO_RAIZ_HARUKOIA,
+  type DatosParaRutasDePublicacion,
+  type ResultadoDeRutaPublicada,
+  type RutasDePublicacion,
+  comoRutaPublicada,
+  marcaTemporalDeCarpeta,
+  nombreDeCarpetaPublicada,
+  rutasDePublicacionDelCommit,
+  slugParaSegmentoDeRuta,
+} from './documento/rutas-publicadas/rutas-publicadas.ts';
+
+export {
+  type ResultadoDeVinculo,
+  type VinculoSalaRepo,
+  comoVinculoSalaRepo,
+  crearVinculoSalaRepo,
+} from './documento/vinculo-sala-repo/vinculo-sala-repo.ts';
+
+export {
+  type DatosParaCrearDocumentoPublicado,
+  type DocumentoPublicado,
+  type ResultadoDeDocumentoPublicado,
+  comoDocumentoPublicado,
+  crearDocumentoPublicado,
+} from './documento/documento-publicado/documento-publicado.ts';

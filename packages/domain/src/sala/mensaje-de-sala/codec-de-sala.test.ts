@@ -15,10 +15,21 @@ describe('codec de mensajes de sala', () => {
         accion: 'hacer-checkout',
         id: generarIdentificadorDeCommit(),
       },
+      {
+        tipo: 'pedir-accion',
+        accion: 'publicar',
+        id: generarIdentificadorDeCommit(),
+      },
+      {
+        tipo: 'pedir-accion',
+        accion: 'reintentar-publicacion',
+        id: generarIdentificadorDeCommit(),
+      },
       { tipo: 'tu-rol', rol: 'espectador' },
       { tipo: 'accion-rechazada', accion: 'cambiar-invitacion', causa: 'rol-insuficiente' },
       { tipo: 'accion-rechazada', accion: 'commitear', causa: 'commit-fallido' },
       { tipo: 'accion-rechazada', accion: 'hacer-checkout', causa: 'commit-inexistente' },
+      { tipo: 'accion-rechazada', accion: 'publicar', causa: 'ya-publicado' },
       { tipo: 'invitacion-cambiada', tokenDeInvitacion: generarIdentidadDeSala().tokenDeInvitacion },
       {
         tipo: 'historial',
@@ -32,6 +43,7 @@ describe('codec de mensajes de sala', () => {
             padre: null,
           },
         ],
+        estadosDePush: [],
       },
       {
         tipo: 'commit-guardado',
@@ -42,6 +54,30 @@ describe('codec de mensajes de sala', () => {
         padre: null,
       },
       { tipo: 'checkout-hecho', id: generarIdentificadorDeCommit() },
+      {
+        tipo: 'estado-de-push',
+        documento: 'p2docaaaaaaaaaaaa',
+        commit: generarIdentificadorDeCommit(),
+        estadoTipo: 'en-proceso',
+        causa: null,
+        marca: null,
+      },
+      {
+        tipo: 'estado-de-push',
+        documento: 'p2docbbbbbbbbbbbb',
+        commit: generarIdentificadorDeCommit(),
+        estadoTipo: 'publicado',
+        causa: null,
+        marca: 100,
+      },
+      {
+        tipo: 'estado-de-push',
+        documento: 'p2doccccccccccccccccc',
+        commit: generarIdentificadorDeCommit(),
+        estadoTipo: 'fallido',
+        causa: 'sin-remoto',
+        marca: 200,
+      },
     ];
 
     for (const mensaje of mensajes) {

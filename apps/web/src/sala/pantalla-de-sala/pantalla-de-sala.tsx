@@ -44,6 +44,10 @@ const POR_QUE_NO_SE_PUDO: Record<CausaDeAccionRechazada, string> = {
   'commit-fallido': 'No se pudo guardar la versión. Vuelve a intentar.',
   'commit-inexistente': 'Esa versión ya no existe. El tablero no cambió.',
   'checkout-fallido': 'No se pudo volver a esa versión. Vuelve a intentar.',
+  'ya-publicado': 'Esa versión ya está publicada en el repositorio.',
+  'publicacion-en-curso': 'Ya hay una publicación en curso para esa versión.',
+  'sin-fallido-para-reintentar': 'No hay un fallo de publicación para reintentar.',
+  'publicacion-no-disponible': 'No se pudo iniciar la publicación. Vuelve a intentar.',
 };
 
 const NOMBRE_DEL_ROL: Record<Rol, string> = {
@@ -74,6 +78,7 @@ export function PantallaDeSala(props: {
     accionRechazada: undefined,
     commits: [],
     tipDeTrabajo: null,
+    estadosDePush: [],
   });
   const [intento, setIntento] = useState(0);
   const [copiado, setCopiado] = useState(false);
@@ -137,7 +142,8 @@ export function PantallaDeSala(props: {
     };
   }, [orquestador, invitacion.sala, invitacion.tokenDeInvitacion, nombre, tokenDeWebDelHost, intento]);
 
-  const { estado, participantes, miRol, accionRechazada, commits, tipDeTrabajo } = instantanea;
+  const { estado, participantes, miRol, accionRechazada, commits, tipDeTrabajo, estadosDePush } =
+    instantanea;
   const enlace = crearEnlace(window.location.origin, invitacion);
   const enElTablero =
     estado.tipo === 'conectando' ||
@@ -164,6 +170,14 @@ export function PantallaDeSala(props: {
   function volverAVersion(id: string) {
     setHaciendoCheckout(true);
     conexion.current?.hacerCheckout(id);
+  }
+
+  function publicarVersion(id: string) {
+    conexion.current?.publicar(id);
+  }
+
+  function reintentarPublicacion(id: string) {
+    conexion.current?.reintentarPublicacion(id);
   }
 
   return (
@@ -251,12 +265,19 @@ export function PantallaDeSala(props: {
               deshabilitado={estado.tipo !== 'conectada'}
               commits={commits}
               tipDeTrabajo={tipDeTrabajo}
+              estadosDePush={estadosDePush}
               alCommitear={guardarVersion}
               alHacerCheckout={volverAVersion}
+              alPublicar={publicarVersion}
+              alReintentarPublicacion={reintentarPublicacion}
             />
           ) : miRol === 'espectador' ? (
             <aside className="sala-panel-historial" aria-label="Historial de versiones">
-              <HistorialDeVersiones commits={commits} tipDeTrabajo={tipDeTrabajo} />
+              <HistorialDeVersiones
+                commits={commits}
+                tipDeTrabajo={tipDeTrabajo}
+                estadosDePush={estadosDePush}
+              />
             </aside>
           ) : null}
         </div>
